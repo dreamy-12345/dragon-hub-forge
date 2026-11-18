@@ -55,6 +55,11 @@ header .grow { flex: 1; }
 .stage { position: relative; min-width: 0; }
 .stage canvas.gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .toolbar { position: absolute; left: 14px; top: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+#donateNudge { position: fixed; right: 16px; bottom: 16px; z-index: 60; max-width: 340px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: 0 10px 40px rgba(0,0,0,.45); font-size: 14px; line-height: 1.45; }
+#donateNudge p { margin: 0 0 10px; }
+#donateNudge div { display: flex; gap: 8px; flex-wrap: wrap; }
+#donateNudge a { text-decoration: none; }
+@media (max-width: 600px) { #donateNudge { left: 12px; right: 12px; max-width: none; } }
 .donateBtn { text-decoration: none; display: inline-flex; align-items: center; border-color: color-mix(in srgb, #ff6b8a 55%, var(--line)); }
 .donateBtn:hover { color: #ff8aa3; }
 .chip { background: color-mix(in srgb, var(--panel) 85%, transparent); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 13px; }
