@@ -5,6 +5,7 @@ import { LED_MODES, PAGE_NAMES } from './leds.js'
 import { BubbleSim } from './bubbles.js'
 import { initCreate } from './create.js'
 import { createLikes } from './likes.js'
+import { initHelp } from './help.js'
 
 const $ = (id) => document.getElementById(id)
 // UV colours glow under the blacklight view; the others stay dark
@@ -1275,6 +1276,7 @@ fillThumbs()
 loadIdeas()
 setInterval(loadIdeas, 15000)
 
+initHelp()
 creator = initCreate({
   params: () => state.params.custom,
   selectCustom: () => {
