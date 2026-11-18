@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dragon Hub Forge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a workbench. Designs down the left, the hub on the turntable in the middle, the dials and the verdict on the right. */
+:root {
+  --bg: #0e0d12;
+  --panel: #17151d;
+  --raise: #201d28;
+  --line: #2d2937;
+  --fg: #ece8f2;
+  --muted: #958fa6;
+  --ember: #f0a23b;      /* fire-staff amber: the one accent */
+  --ember-dim: #6b4a1e;
+  --good: #6cd39a;
+  --warn: #f2c94c;
+  --bad: #ff6070;
+  --display: "Unbounded", "Avenir Next", "Helvetica Neue", sans-serif;
+  --body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.45 var(--body); }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+.app { display: grid; grid-template-columns: 250px minmax(0, 1fr) 340px; grid-template-rows: auto minmax(0, 1fr); height: 100%; }
+header { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; padding: 10px 18px; border-bottom: 1px solid var(--line); }
+header h1 { font: 700 17px/1 var(--display); letter-spacing: .02em; margin: 0; }
+header h1 span { color: var(--ember); }
+header .sub { color: var(--muted); font-size: 13px; }
+header .grow { flex: 1; }
+.status { font: 12px var(--mono); color: var(--muted); }
+
+/* gallery */
+.gallery { overflow-y: auto; border-right: 1px solid var(--line); padding: 14px; display: grid; gap: 10px; align-content: start; }
+.gallery h2, .side h2 { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.design { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: center; text-align: left; background: none; border: 1px solid transparent; border-radius: 8px; padding: 6px; }
+.design:hover { background: var(--raise); }
+.design[aria-pressed="true"] { border-color: var(--ember); background: var(--raise); }
+.design canvas { width: 64px; height: 64px; display: block; }
+.design b { display: block; font-weight: 600; }
+.design small { color: var(--muted); font-size: 12px; line-height: 1.3; display: block; }
+
+/* stage */
+.stage { position: relative; min-width: 0; }
+.stage canvas.gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.toolbar { position: absolute; left: 14px; top: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { background: color-mix(in srgb, var(--panel) 85%, transparent); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 13px; }
+.chip[aria-pressed="true"] { border-color: var(--ember); color: var(--ember); }
+.presets { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.blurb { position: absolute; left: 14px; bottom: 14px; right: 14px; max-width: 60ch; color: var(--muted); font-size: 13px; pointer-events: none; }
+.blurb b { color: var(--fg); font: 700 15px var(--display); display: block; margin-bottom: 2px; }
+.busy { position: absolute; right: 14px; top: 14px; font: 12px var(--mono); color: var(--ember); }
+
+.stagectl { position: absolute; right: 14px; bottom: 14px; width: min(260px, 45%); display: grid; gap: 8px; background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.stagectl .swatches { grid-column: 1 / -1; }
+.blurb { right: calc(min(260px, 45%) + 28px); }
+.gallery h3 { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ember); margin: 10px 0 0; }
+.swatch.rainbow { background: conic-gradient(#f44, #fd4, #4f8, #4df, #84f, #f4c, #f44); }
+.warnline { color: var(--bad); font-size: 12.5px; }
+
+.pip { position: absolute; border: 1px solid var(--ember-dim); border-radius: 8px; pointer-events: none; box-shadow: 0 6px 24px rgb(0 0 0 / .45); }
+.pip span { position: absolute; left: 8px; bottom: 6px; font: 11px var(--mono); color: var(--muted); }
+.ledrow { display: grid; gap: 8px; }
+.ctl .tag { justify-self: end; color: var(--muted); font-size: 11.5px; }
+.swatch.same { background: linear-gradient(135deg, var(--raise) 50%, var(--muted) 50%); }
+
+.loader { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-radius: 12px; background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--ember-dim); box-shadow: 0 10px 40px rgb(0 0 0 / .5); pointer-events: none; }
+.loader b { display: block; font: 700 15px var(--display); }
+.loader span { font: 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.spinner { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--ember); animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+canvas.gl { transition: opacity .2s; }
+canvas.gl.stale { opacity: .35; }
+.verdict { transition: opacity .2s; }
+.verdict.stale { opacity: .4; }
+.verdict .sub { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
+.verdict .sub:empty { margin: 0; border-top: 1px solid var(--line); }
+.design { position: relative; }
+.design.building::after { content: ""; position: absolute; left: 24px; top: 24px; width: 22px; height: 22px; border-radius: 50%; border: 3px solid rgb(0 0 0 / .35); border-top-color: var(--ember); animation: spin 0.8s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .spinner, .design.building::after { animation-duration: 2.4s; } }
+
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* side */
+.side { border-left: 1px solid var(--line); overflow-y: auto; padding: 14px; display: grid; gap: 18px; align-content: start; }
+section { display: grid; gap: 8px; }
+.ctl { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+.ctl label { font-size: 13px; }
+.ctl output { font: 12px var(--mono); color: var(--ember); font-variant-numeric: tabular-nums; }
+.ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--ember); margin: 0; }
+.ctl select { grid-column: 2; background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+.ctl .hint { grid-column: 1 / -1; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+details { border-top: 1px solid var(--line); padding-top: 10px; }
+details > summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); list-style: none; }
+details > summary::before { content: "+ "; color: var(--ember); }
+details[open] > summary::before { content: "– "; }
+details > div { display: grid; gap: 10px; margin-top: 10px; }
+
+.verdict { display: grid; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; font-size: 13px; }
+.row span:last-child { font: 13px var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+.pill { display: inline-block; font: 500 11px var(--mono); padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.pill.good { color: var(--good); } .pill.warn { color: var(--warn); } .pill.bad { color: var(--bad); }
+.big { font: 700 26px/1 var(--display); }
+.big small { font: 13px var(--body); color: var(--muted); margin-left: 6px; }
+
+.swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); padding: 0; }
+.swatch[aria-pressed="true"] { border-color: var(--fg); }
+
+.btn { background: var(--raise); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; text-align: center; }
+.btn.primary { background: var(--ember); border-color: var(--ember); color: #1a1206; font-weight: 600; }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btns .primary { grid-column: 1 / -1; }
+
+.guide { font-size: 13px; color: var(--muted); display: grid; gap: 6px; }
+.guide ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.guide b { color: var(--fg); font-weight: 500; }
+
+/* ideas */
+.save { display: grid; gap: 6px; }
+.save input, .save textarea { background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; width: 100%; resize: vertical; }
+.ideas { display: grid; gap: 8px; }
+.idea { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 8px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
+.idea img { width: 56px; height: 56px; display: block; }
+.idea b { font-weight: 600; display: block; overflow-wrap: anywhere; }
+.idea small { color: var(--muted); font-size: 12px; display: block; overflow-wrap: anywhere; }
+.idea .acts { display: grid; gap: 4px; }
+.idea .acts button { background: none; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; padding: 2px 8px; }
+.empty { color: var(--muted); font-size: 13px; }
+
+@media (max-width: 1000px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: auto auto 62vh auto; height: auto; }
+  .gallery { grid-auto-flow: column; grid-auto-columns: 210px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  .gallery h2, .gallery h3 { display: none; }
+  .stagectl { left: 8px; right: 8px; bottom: 8px; width: auto; }
+  .blurb { display: none; }
+  .side { border-left: 0; overflow: visible; }
+  header { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+<script src="/projects-sdk.js"></script>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Dragon Hub <span>Forge</span></h1>
+    <div class="sub">Printable hubs for 22, 16 and 13 mm dragon staffs</div>
+    <div class="grow"></div>
+    <button class="btn primary" id="headerSave">Save design</button>
+    <div class="status" id="status">loading geometry engine…</div>
+  </header>
+
+  <nav class="gallery" id="gallery" aria-label="Designs"><h2>Designs</h2></nav>
+
+  <main class="stage" id="stage">
+    <canvas class="gl" id="gl"></canvas>
+    <div class="toolbar">
+      <button class="chip" id="vDark" aria-pressed="false">Lights off</button>
+      <button class="chip" id="vUV" aria-pressed="false">Blacklight</button>
+      <button class="chip" id="vSpin" aria-pressed="false">Spin it</button>
+      <button class="chip" id="vTrails" aria-pressed="false">Light trails</button>
+      <button class="chip" id="vStrobe" aria-pressed="false" hidden>Zoetrope strobe</button>
+      <button class="chip" id="vPip" aria-pressed="true">Second view</button>
+      <button class="chip" id="vBubbles" aria-pressed="false" hidden>Bubbles</button>
+      <button class="chip" id="vWeak" aria-pressed="true">Weak spots</button>
+      <button class="chip" id="vPole" aria-pressed="true">Staff</button>
+      <button class="chip" id="vBed" aria-pressed="true">Print bed</button>
+    </div>
+    <div class="stagectl">
+      <div class="ctl"><label for="spinRate">Spin</label><output id="spinOut">1.5 rev/s</output>
+        <input type="range" id="spinRate" min="0.2" max="5" step="0.1" value="1.5"></div>
+      <div id="bubblePanel" class="ledrow" hidden>
+        <div class="pair"><button class="btn primary" id="dip">Dip in mix</button><button class="btn" id="refill">Refill dish</button></div>
+        <label class="ctl" for="autoDip"><span>Dip again when dry</span><input type="checkbox" id="autoDip"></label>
+        <div id="bubbleStats" class="ledrow"></div>
+        <div class="hint guide" id="bubbleHint"></div>
+        <div class="hint guide" id="bubbleMsg"></div>
+      </div>
+      <div id="ledRow" class="ledrow">
+        <div class="ctl"><label for="ledMode">LED mode</label><select id="ledMode"></select></div>
+        <div id="strobeCtl" class="ledrow">
+          <div class="ctl"><label for="strobeHz">Strobe rate</label><output id="strobeHzOut">12 Hz</output>
+            <input type="range" id="strobeHz" min="2" max="40" step="1" value="12"></div>
+          <div class="ctl"><label for="strobeDuty">Flash length</label><output id="strobeDutyOut">25%</output>
+            <input type="range" id="strobeDuty" min="5" max="80" step="1" value="25"></div>
+        </div>
+        <div id="blinkCtl" class="ledrow" hidden>
+          <div class="ctl"><label for="blinkHz">Blink rate</label><output id="blinkHzOut">2 per second</output>
+            <input type="range" id="blinkHz" min="0.5" max="8" step="0.5" value="2"></div>
+        </div>
+        <div id="gradCtl" class="ledrow" hidden>
+          <div class="ctl"><label for="fadeSec">Fade time</label><output id="fadeSecOut">3 s</output>
+            <input type="range" id="fadeSec" min="0.5" max="15" step="0.5" value="3"></div>
+          <div class="ctl"><label>Fades to</label><span class="tag">from the capsule colour below</span>
+            <div class="swatches" id="glow2Swatches"></div></div>
+        </div>
+        <div class="hint guide">Turn on Lights off, Spin it and Light trails to see the mode painted round the hub. Strobe modes flash.</div>
+      </div>
+      <div class="ctl" id="glowRow"><label>LED colour</label><span class="tag">solid, strobe, blink and gradient</span>
+        <div class="swatches" id="glowSwatches"></div></div>
+    </div>
+    <div class="pip" id="pip"><span id="pipLabel">Angled · click to swap</span></div>
+    <div class="busy" id="busy" hidden>rebuilding…</div>
+    <div class="loader" id="loader" hidden role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <div><b id="loaderName">Building</b><span id="loaderTime">0.0 s</span></div>
+    </div>
+    <div class="blurb"><b id="dName"></b><span id="dBlurb"></span></div>
+  </main>
+
+  <aside class="side">
+    <div class="verdict" id="verdict"></div>
+
+    <section id="savedSection">
+      <h2>Saved designs</h2>
+      <div class="save">
+        <input id="ideaName" placeholder="Name this design" maxlength="80">
+        <textarea id="ideaNote" rows="2" placeholder="Note (optional): who, why, what to change" maxlength="500"></textarea>
+        <button class="btn primary" id="saveIdea">Save design</button>
+      </div>
+      <div class="ideas" id="ideas"><div class="empty">Loading saved designs…</div></div>
+      <div class="hint guide" id="savedWhere">Saved on the Mac, so everyone on the venue Wi-Fi sees the same list. Open restores every setting.</div>
+    </section>
+
+    <section id="designParams"><h2>Design</h2></section>
+
+    <section>
+      <h2>Material</h2>
+      <div class="ctl"><label for="material">Filament</label><select id="material"></select>
+        <div class="hint" id="matNote"></div></div>
+      <div class="ctl"><label for="bed">Printer bed</label>
+        <select id="bed">
+          <option value="300">Bambu H2D, two colours (300 mm)</option>
+          <option value="320">Bambu H2D, one nozzle (320 mm)</option>
+          <option value="256">256 mm (Bambu X1 / P1 / A1)</option>
+          <option value="210">250 × 210 mm (Prusa MK4)</option>
+          <option value="220">220 mm (Ender 3)</option>
+          <option value="360">360 mm (Prusa XL)</option>
+        </select></div>
+      <div class="ctl"><label>Colour A</label><span class="tag">frame, rim, collar</span></div>
+      <div class="swatches" id="swatches" aria-label="Colour A"></div>
+      <div class="ctl"><label>Colour B</label><span class="tag">raised shapes, lanterns</span></div>
+      <div class="swatches" id="swatchesB" aria-label="Colour B"></div>
+      <div id="ringColourRow">
+        <div class="ctl"><label>Weight ring</label><span class="tag">printed separately, any colour</span></div>
+        <div class="swatches" id="swatchesRing" aria-label="Weight ring colour"></div>
+      </div>
+    </section>
+
+    <div id="commonParams"></div>
+
+    <section>
+      <h2>Export</h2>
+      <div class="btns" id="exports"></div>
+      <div class="guide" id="exportNote"></div>
+    </section>
+
+
+    <section class="guide" id="guide"></section>
+  </aside>
+</div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

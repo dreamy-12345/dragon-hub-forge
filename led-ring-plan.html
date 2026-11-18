@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LED Weight Ring</title>
+<meta name="description" content="Build plan for an LED-lit snap-on TPU weight ring for a dragon staff hub, with every electronic part sourced in Thailand.">
+<style>
+:root {
+  --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --line: #2c323d;
+  --text: #e6e8ec; --muted: #9aa3b2; --accent: #7cc4ff; --accent2: #c79bff;
+  --ok: #5fd38d; --warn: #ffb454; --bad: #ff6b6b;
+  --tpu: #d9d2b8; --tpu-fill: rgba(217,210,184,.22); --rim: #59606e; --led: #ffd36b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif; }
+main { max-width: 920px; margin: 0 auto; padding: 20px 16px 80px; }
+h1 { font-size: 1.7rem; line-height: 1.2; margin: .2em 0 .2em; }
+h2 { font-size: 1.3rem; margin: 2.2em 0 .6em; padding-top: .6em; border-top: 1px solid var(--line); }
+h3 { font-size: 1.05rem; margin: 1.6em 0 .4em; color: var(--accent); }
+p, li { color: var(--text); }
+.muted, small { color: var(--muted); }
+a { color: var(--accent); word-break: break-word; }
+code, pre, kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
+code { background: var(--panel2); padding: .1em .35em; border-radius: 4px; }
+pre { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; line-height: 1.4; }
+.lede { color: var(--muted); font-size: 1.02rem; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 14px 0; }
+.card.key { border-left: 4px solid var(--accent); }
+.card.warn { border-left: 4px solid var(--warn); }
+.card.bad { border-left: 4px solid var(--bad); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.stat { background: var(--panel2); border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font-size: 1.25rem; color: var(--accent); }
+.tbl { overflow-x: auto; margin: 10px 0; border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .92rem; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { background: var(--panel2); color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+.pill { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .02em; padding: 1px 7px; border-radius: 99px; white-space: nowrap; vertical-align: 1px; }
+.v { background: rgba(95,211,141,.16); color: var(--ok); }
+.s { background: rgba(124,196,255,.14); color: var(--accent); }
+.a { background: rgba(255,180,84,.16); color: var(--warn); }
+.th { font-family: "Noto Sans Thai", Tahoma, sans-serif; color: #f3e6c4; }
+nav.toc { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+nav.toc ol { margin: 6px 0; padding-left: 22px; columns: 2 220px; }
+nav.toc a { text-decoration: none; }
+figure { margin: 16px 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+figure svg { width: 100%; height: auto; display: block; }
+figcaption { color: var(--muted); font-size: .88rem; padding: 6px 4px 0; }
+ol.steps > li { margin: .45em 0; }
+ul.tight li, ol.tight li { margin: .2em 0; }
+.svgt { font: 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: var(--text); }
+.svgm { font: 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: var(--muted); }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 10px 0; }
+summary { cursor: pointer; color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+
+<h1>LED snap-on weight ring</h1>
+<p class="lede">A build plan for a lit version of the one-piece TPU hoop from the Dragon Hub Forge (<code>hub.js</code>, "snap-on weight"). The plan uses 5 V addressable LEDs, an ESP32-C3, and one 300 mAh LiPo, and every electronic part can be bought in Thailand. Prices were checked on 21 Oct 2026.</p>
+
+<div class="card key">
+<b>Key choices</b>
+<ul class="tight">
+<li><b>LEDs:</b> a 5 mm-wide WS2812B-2020 strip at about 100 LEDs/m, which gives about 78 LEDs round the hoop. The strip faces outward through a 1.2 mm window of natural TPU. If you can't find a 5 mm strip, the fallback is a 10 mm, 144/m WS2812B strip that is in stock in Thailand, but it only fits a deeper, heavier ring.</li>
+<li><b>Where the strip goes:</b> in the mass block under the rim, not in the outer wall. The current hoop is already Ø253.8 mm, and a channel in the outer wall would push it past a 256 mm bed.</li>
+<li><b>How it goes in:</b> drop it in loose during a print pause. The strip and two power wires go into open slots, and the printer then roofs them over. If you swap to natural TPU before the block, the whole lit zone glows.</li>
+<li><b>Electronics:</b> they sit in two flat "pod tabs" 180° apart, tucked in under the hub. Pod A holds the battery, charger and master switch. Pod B holds the ESP32-C3, the mode button and trim weight. Match the two pods' masses to within 1 g.</li>
+<li><b>Power:</b> the battery feeds the strip directly at 3.0–4.2 V, with no boost converter and no level shifter. Current is capped at 450 mA in firmware. Expect about 1–2.5 h per charge, or twice that with a second cell in pod B.</li>
+<li><b>Water:</b> treat it as splash-proof, not dip-proof. Bubble mix creeps further than water does. Seal the strip inside the print, conformal-coat every board, use a greased press-fit lid, and never charge it wet.</li>
+</ul>
+</div>
+
+<nav class="toc"><b>Contents</b>
+<ol>
+<li><a href="#forces">Spin and impact numbers</a></li>
+<li><a href="#leds">Which LEDs</a></li>
+<li><a href="#source">Sourcing in Thailand</a></li>
+<li><a href="#elec">Electrical design</a></li>
+<li><a href="#mech">Fitting it into the TPU ring</a></li>
+<li><a href="#balance">Balance, impact, water</a></li>
+<li><a href="#fw">Firmware and modes</a></li>
+<li><a href="#bom">Bill of materials</a></li>
+<li><a href="#build">Build checklist</a></li>
+<li><a href="#test">First prototype test plan</a></li>
+<li><a href="#risks">Risks</a></li>
+<li><a href="#designer">Changes for hub.js</a></li>
+</ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="forces">1. Spin and impact numbers</h2>
+<p>Centripetal acceleration is <code>a = (2πf)²·r</code>. At the strip radius (r ≈ 0.125 m) that works out to <b>a ≈ 0.50 g × f²</b>, where f is in revolutions per second.</p>
+<div class="tbl"><table>
+<tr><th>Spin</th><th class="num">rev/s</th><th class="num">Rim speed</th><th class="num">Centripetal</th><th>When</th></tr>
+<tr><td>Lazy turn</td><td class="num">1</td><td class="num">0.8 m/s</td><td class="num">0.5 g</td><td>Your quoted range</td></tr>
+<tr><td>Brisk</td><td class="num">3</td><td class="num">2.4 m/s</td><td class="num">4.5 g</td><td>Your quoted range</td></tr>
+<tr><td>Contact roll</td><td class="num">6.3</td><td class="num">4.9 m/s</td><td class="num">20 g</td><td>A 22 mm pole rolling at 0.45 m/s over an arm</td></tr>
+<tr><td>Fast roll</td><td class="num">9.4</td><td class="num">7.4 m/s</td><td class="num">45 g</td><td>Pole surface at 0.65 m/s</td></tr>
+<tr><td><b>Design load</b></td><td class="num">10</td><td class="num">7.9 m/s</td><td class="num"><b>50 g</b></td><td>Use this</td></tr>
+</table></div>
+<p class="muted">The 1–3 rev/s range only gives 0.5–4.5 g. Your 20–45 g figure corresponds to 6–9.4 rev/s, and contact rolls really do reach that. A 22 mm pole turns 14.5 times for every metre it rolls (1/(π·0.022)), so rolling at a modest 0.5 m/s already gives 7 rev/s. This plan designs for 50 g.</p>
+
+<div class="grid">
+<div class="stat">At 50 g, what does each part weigh?<b>Battery 6.5 g → 3.2 N</b><small>That pushes outward on the pod wall, which is trivial for TPU. The strip carries about 0.04 N/cm.</small></div>
+<div class="stat">Hoop stress from its own spin<b>≈ 75 kPa</b><small>That is ρv² at 7.9 m/s. Taking TPU 95A at E ≈ 30 MPa, the hoop grows about 0.25%, while it is only stretched 0.4% onto the rim. So it grips less at full speed (see the creep risk).</small></div>
+<div class="stat">Drop onto a hard floor from 1.5 m<b>≈ 150–400 g peak</b><small>The hub hits at 5.4 m/s and TPU stops it over about 4–10 mm. <b>Impacts are the design case, not spin.</b></small></div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="leds">2. Which LEDs</h2>
+
+<h3>Which way the light should point</h3>
+<p>The hub spins about the pole. When the staff lies across the body, the audience sees each hub <b>edge-on</b>, so they mostly see the outer face of the rim. That makes <b>radially outward</b> the main direction for the light. Natural TPU also scatters some light down through the block, which lights the face when the staff points toward the crowd.</p>
+<p>A normal top-emitting strip wrapped round the inside of a cylinder points outward by itself. It bends the easy way, flat-side, and needs no tricks.</p>
+
+<div class="tbl"><table>
+<tr><th>Option</th><th>Fit in this ring</th><th>Verdict</th></tr>
+<tr><td><b>WS2812B-2020, 5 mm wide, 100/m</b> (also sold at 60/120/160 per m)</td><td>5 mm tall and about 1.2 mm thick, so it fits a 6 × 2.4 mm slot in the block. About 78 LEDs at 100/m.</td><td><span class="pill v">Pick</span> A good balance of smoothness, idle current and runtime.</td></tr>
+<tr><td>Same strip at 144 or 160/m</td><td>About 112–125 LEDs.</td><td>Smoother when the hub is still, but idle current and frame time both rise by about 50%. Once the hub spins, the extra density mostly disappears in the blur.</td></tr>
+<tr><td>SK6812 4020 side-view, 4 mm, 120/m</td><td>Wrapped on a cylinder, it shines <i>axially</i>, down through the face.</td><td>Only for the two-part ring with a clear face cover (see <a href="#mech">§5</a>). It also makes a good face-glow v2.</td></tr>
+<tr><td>WS2812B-5050, 10–12 mm wide, 144/m</td><td>Needs an 11 mm slot, which means a block at least 14.5 mm deep. That ring weighs about 185 g or more.</td><td><span class="pill v">In stock in TH</span> The Plan B if no 5 mm strip turns up.</td></tr>
+<tr><td>5 V COB addressable (FCOB WS2812)</td><td>Usually 8–10 mm wide, with groups of chips per pixel.</td><td>A beautiful dot-free line, but wider and hungrier. Try it later.</td></tr>
+<tr><td>Plain single-colour 5 V strip with MOSFET PWM</td><td>Any width.</td><td>The simplest option, with <b>zero idle drain</b>, but you get one colour and no patterns. Use it if you want "just glow".</td></tr>
+</table></div>
+
+<h3>Count and current</h3>
+<ul class="tight">
+<li>The slot runs round a circle of about 785 mm, less roughly 30 mm of dark gap at pod B. That leaves <b>about 755 mm of strip, which is 75–78 LEDs at 100/m</b>. Count your own strip after you fit it and set <code>NUM_LEDS</code> to match.</li>
+<li>A 2020-size LED draws roughly <b>12–15 mA at full white</b> on a LiPo, about a third of a 5050. So 78 of them at full white would be about 1.1 A. Firmware caps the strip at <b>450 mA</b>.</li>
+<li><b>Idle current is the hidden cost.</b> Each WS2812-type chip draws about <b>0.5–1 mA even when dark</b> (measure yours, it varies by maker). For 78 LEDs that is 40–80 mA all the time the strip has power. That's why the v1 plan has a hard master switch, and why fewer LEDs gives longer runtime.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="source">3. Sourcing in Thailand</h2>
+<p><span class="pill v">verified</span> means I opened the shop's own page today and saw the price and stock. <span class="pill s">search hit</span> means a Thai shop page turned up in search with that price, but I couldn't load it myself. <span class="pill a">assumed</span> means a common part with no listing checked, so there's a search term to paste instead.</p>
+<div class="card warn"><b>Lazada and Shopee block automated reading</b>, so none of their listings are verified here. Paste the Thai or English terms below into their apps. Then filter <b>Shipped from → Thailand / ในประเทศ</b> so the order arrives in 1–3 days instead of 1–2 weeks from China. If you need to message a seller in Thai, use the <code>thai-fixer/</code> drafts. I couldn't read stock from ThaiEasyElec, Gravitech or ES (Electronic Supply). Their sites didn't return product data to my fetcher, which doesn't mean they don't stock these parts.</div>
+
+<h3>Controller</h3>
+<div class="tbl"><table>
+<tr><th>Item</th><th>Shop</th><th class="num">THB</th><th>Status</th></tr>
+<tr><td>ESP32-C3 Super Mini (22.5 × 18 mm, USB-C)</td><td><a href="https://www.mcucity.com/product/4437/esp32-c3-super-mini-wifibluetooth-5-0-module-2">MCUCity</a></td><td class="num">80</td><td><span class="pill v">verified</span> ready to ship</td></tr>
+<tr><td>ESP32-C3 Super Mini</td><td><a href="https://www.artronshop.co.th/product/601/esp32-c3-super-mini-%E0%B8%9A%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B8%94-esp32-c3-%E0%B8%88%E0%B8%B4%E0%B9%8B%E0%B8%A7">ArtronShop</a></td><td class="num">150</td><td><span class="pill v">verified</span> 11 in stock, incl. VAT</td></tr>
+<tr><td>ESP32-C3 Super Mini, soldered</td><td><a href="https://www.cybertice.com/product/5725/esp32-c3-super-mini-%E0%B8%9A%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B8%94%E0%B8%9E%E0%B8%B1%E0%B8%92%E0%B8%99%E0%B8%B2-wifi-bluetooth-flash-4mb-usb-type-c-%E0%B8%9A%E0%B8%B1%E0%B8%94%E0%B8%81%E0%B8%A3%E0%B8%B5%E0%B9%81%E0%B8%A5%E0%B9%89%E0%B8%A7">Cybertice</a> · <a href="https://www.appsofttech.com/product/699/">AppSoftTech</a> · <a href="https://www.ortech-online.com/product/2594/">ORTech CB020</a></td><td class="num">125 · 130 · 110</td><td><span class="pill s">search hit</span></td></tr>
+<tr><td>ESP32-S3 Super Mini (more power, same size)</td><td><a href="https://www.modulemore.com/en/product/2861/esp32-s3-super-mini-development-board">ModuleMore</a></td><td class="num">185</td><td><span class="pill v">verified</span> in stock</td></tr>
+<tr><td>SP002E pixel controller (no code needed)</td><td><a href="https://www.modulemore.com/en/category/138/led-หลอดไฟ-led-driver/แถบไฟ-led">ModuleMore, LED category</a></td><td class="num">59</td><td><span class="pill v">verified</span> in stock. It is rated 5–24 V and may not run at all from a 3.7 V cell.</td></tr>
+<tr><td>SP110E Bluetooth pixel controller</td><td>Search: <code>SP110E</code> / <span class="th">คอนโทรลเลอร์ไฟ LED บลูทูธ SP110E</span></td><td class="num">≈ 120–200</td><td><span class="pill a">assumed</span> Not found in Thai shops. It needs 5 V, so add a boost converter, and it can't be programmed with your own modes.</td></tr>
+</table></div>
+<p class="muted">Why the ESP32-C3: it's cheap and tiny, FastLED drives it through the RMT peripheral, it can read battery voltage, and it can sleep. It also has Bluetooth and ESP-NOW radios, so both hubs on a staff can sync later. An ATtiny85 would also work, but it has no radio, too little RAM for good palettes, and an awkward upload process.</p>
+
+<h3>Battery, charging, switch</h3>
+<div class="tbl"><table>
+<tr><th>Item</th><th>Shop</th><th class="num">THB</th><th>Status</th></tr>
+<tr><td><b>LiPo 3.7 V 300 mAh, 602030</b> (6 × 20 × 30 mm)</td><td><a href="https://www.arduitronics.com/product/6542/3-7v-300mah-lithium-battery-rechargeable-polymer-lipo-%E0%B8%A3%E0%B8%B8%E0%B9%88%E0%B8%99-602030">Arduitronics</a></td><td class="num">100</td><td><span class="pill v">verified</span> ready to ship. The page doesn't mention a protection board, so <b>treat the cell as unprotected</b>; the TP4056 board below protects it.</td></tr>
+<tr><td>LiPo 1100 mAh, 403072 (4 × 30 × 72 mm), for long sessions</td><td><a href="https://www.arduitronics.com/search?q=lipo">Arduitronics search "lipo"</a></td><td class="num">250</td><td><span class="pill v">verified</span> listed. It needs a 75 mm pod; see §5.</td></tr>
+<tr><td><b>TP4056 1 A Type-C charger with protection</b> (26 × 17 mm)</td><td><a href="https://www.arduitronics.com/product/2610/tp4056-1a-type-c-usb-battery-charger-board-with-protection-2">Arduitronics</a></td><td class="num">30</td><td><span class="pill v">verified</span> ready to ship. <b>Change R_PROG</b> to about 5.1 kΩ so it charges at about 240 mA (§4).</td></tr>
+<tr><td>Tactile switch 6×6 mm, for the mode button under the TPU membrane</td><td><a href="https://www.arduitronics.com/category/63/accessories-components-2/switches-buttons">Arduitronics switches</a> (160-piece set)</td><td class="num">185 / set</td><td><span class="pill v">verified</span>. Singles cost about 1–3 THB at Ban Mo.</td></tr>
+<tr><td>Mini slide switch SS12D00 / MSK-12C02, the master on/off</td><td>Search: <code>SS12D00</code> / <span class="th">สวิตช์เลื่อน 3 ขา จิ๋ว</span></td><td class="num">≈ 3–10</td><td><span class="pill a">assumed</span></td></tr>
+<tr><td>18650 or 14500 Li-ion</td><td>—</td><td></td><td>Not recommended. Cylinders don't fit a 10 mm-deep block, and a 14500 is 14 mm thick.</td></tr>
+</table></div>
+
+<h3>LED strip</h3>
+<div class="tbl"><table>
+<tr><th>Item</th><th>Shop</th><th class="num">THB</th><th>Status</th></tr>
+<tr><td><b>WS2812B-2020, 5 mm, 100/m (or 60/120/160), 5 V, IP30, 1 m</b></td><td>Search: <code>WS2812B 5mm 2020</code>, <code>WS2812B 5mm 100 led</code>, <span class="th">ไฟเส้น WS2812B 5mm</span>, <span class="th">ไฟเส้นเล็ก 5มม แอดเดรส</span></td><td class="num">≈ 250–450</td><td><span class="pill a">assumed</span> These exist worldwide (BTF-Lighting, Alitove), but I found no Thai shop page. Check that the width really says 5 mm; many listings don't state it.</td></tr>
+<tr><td>Plan B: WS2812B 5050, 144/m, 1 m, white or black PCB</td><td><a href="https://www.modulemore.com/en/product/2294/ws2812b-led-strip-5v-1m-144-leds-white-pcb">ModuleMore white</a> · <a href="https://www.modulemore.com/en/product/1990/ws2812b-led-strip-5v-1m-144-leds-black-pcb">black</a></td><td class="num">299 · 250</td><td><span class="pill v">verified</span> in stock. The width isn't listed; 144/m 5050 strips are normally 10–12 mm.</td></tr>
+<tr><td>WS2812B 144/m, IP65, 1 m</td><td><a href="https://www.igetled.com/product/759/">igetled</a></td><td class="num">290</td><td><span class="pill s">search hit</span></td></tr>
+<tr><td>SK6812 4020 side-view, 4 mm</td><td>Search: <code>SK6812 4020 side</code> / <span class="th">ไฟเส้นยิงข้าง SK6812</span></td><td class="num">?</td><td><span class="pill a">assumed</span> Only for the face-glow v2.</td></tr>
+</table></div>
+<p class="muted">Arduitronics and Cytron TH (<a href="https://th.cytron.io">th.cytron.io</a>) currently list rings and bars, not addressable strips by the metre.</p>
+
+<h3>Small parts and consumables <span class="pill a">assumed</span></h3>
+<div class="tbl"><table>
+<tr><th>Item</th><th>Search terms (EN / TH)</th><th class="num">≈ THB</th></tr>
+<tr><td>Silicone wire 26 AWG (power), 30 AWG (data)</td><td><code>silicone wire 26AWG</code> / <span class="th">สายไฟซิลิโคน 26AWG</span></td><td class="num">30–60 per colour</td></tr>
+<tr><td>Clear heat-shrink Ø6 mm (sleeves the strip so it slides), plus adhesive-lined heat-shrink for joints</td><td><span class="th">ท่อหดใส</span> · <span class="th">ท่อหดมีกาวใน</span></td><td class="num">20–60</td></tr>
+<tr><td>Conformal coating</td><td><code>conformal coating</code> / <span class="th">น้ำยาเคลือบแผ่นวงจร</span> / <span class="th">สเปรย์เคลือบปริ้น</span></td><td class="num">150–350</td></tr>
+<tr><td>Neutral-cure silicone (<b>not</b> the vinegar-smelling kind, which corrodes copper)</td><td><span class="th">ซิลิโคนชนิดไม่มีกรด</span></td><td class="num">90–180</td></tr>
+<tr><td>Silicone grease for the pod lid seal</td><td><span class="th">จาระบีซิลิโคน</span> / <code>silicone grease</code></td><td class="num">60–150</td></tr>
+<tr><td>Kapton tape, 1 mm EVA foam</td><td><span class="th">เทปคาปตอน</span> · <span class="th">แผ่นโฟม EVA 1มม</span></td><td class="num">50–100</td></tr>
+<tr><td>AO3401 P-MOSFET and 2N7002, SOT-23 (v2 soft power)</td><td><code>AO3401</code> · <code>2N7002</code> / <span class="th">มอสเฟต AO3401</span></td><td class="num">5–15</td></tr>
+<tr><td>Resistors 330 Ω, 100 kΩ ×3, 5.1 kΩ 0603; 100 µF 6.3 V capacitor</td><td>Any electronics shop or Ban Mo</td><td class="num">≈ 20</td></tr>
+<tr><td>Trim weights: M5/M6 steel nuts, or stick-on wheel weights</td><td>Hardware store (<span class="th">น็อตตัวเมีย M6</span>); tyre shop (<span class="th">ตะกั่วถ่วงล้อ แบบกาว</span>)</td><td class="num">5–20</td></tr>
+<tr><td>Flexible PU glue (two-part ring only)</td><td><code>E6000</code> / <span class="th">กาวซ่อมรองเท้า</span></td><td class="num">80–150</td></tr>
+<tr><td>Natural or clear TPU 95A filament</td><td><span class="th">เส้นพลาสติก TPU 95A สีธรรมชาติ</span></td><td class="num">≈ 600–900 / kg</td></tr>
+</table></div>
+
+<h3>Shopping in person</h3>
+<ul class="tight">
+<li><b>Bangkok, Ban Mo (<span class="th">บ้านหม้อ</span>)</b>, the street of electronics shops near Pak Khlong Talat and Saphan Phut. This is the place for discrete parts, wire, heat-shrink, switches and MOSFETs. Bring the part numbers written down and a photo, since English varies from shop to shop. Saphan Lek (<span class="th">สะพานเหล็ก</span>) is mostly games and gadgets now, so don't count on it for components. <span class="pill a">From general knowledge, not checked today.</span></li>
+<li><b>Chiang Mai:</b> I couldn't verify a component market there. Order from the Bangkok online shops above instead (Kerry or Flash, 1–3 days).</li>
+<li>The Thai online shops that hold their own stock and showed up in this research: Arduitronics, ModuleMore, MCUCity, ArtronShop, Cybertice, AppSoftTech, ORTech, AllNewStep and IMI Consystem.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="elec">4. Electrical design</h2>
+<p>A single cell runs everything directly. WS2812-type LEDs work from about 3.5–5.3 V, and at a 4.2 V supply their logic threshold is 0.7 × 4.2 = 2.94 V, so the ESP32's 3.3 V data signal is read correctly with no level shifter. The ESP32-C3 Super Mini takes the battery on its <b>5V pin</b>, where its onboard ME6211 LDO holds 3.3 V down to about 3.4 V.</p>
+
+<figure>
+<svg viewBox="0 0 380 640" role="img" aria-label="Wiring diagram">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9aa3b2"/></marker></defs>
+  <!-- pod A frame -->
+  <rect x="8" y="8" width="364" height="232" rx="10" fill="none" stroke="#7cc4ff" stroke-dasharray="5 4"/>
+  <text x="18" y="28" class="svgt" style="fill:#7cc4ff">POD A (0°)</text>
+  <rect x="24" y="42" width="140" height="56" rx="6" fill="#1e222b" stroke="#c79bff"/>
+  <text x="34" y="64" class="svgt">LiPo 602030</text><text x="34" y="82" class="svgm">3.7 V 300 mAh, 6.5 g</text>
+  <rect x="208" y="42" width="150" height="76" rx="6" fill="#1e222b" stroke="#c79bff"/>
+  <text x="218" y="64" class="svgt">TP4056 Type-C</text><text x="218" y="80" class="svgm">+DW01 protection</text><text x="218" y="96" class="svgm">R_PROG → 5.1 kΩ (240 mA)</text><text x="218" y="111" class="svgm">USB-C faces hub centre</text>
+  <line x1="164" y1="60" x2="208" y2="60" stroke="#ff6b6b" stroke-width="2"/><text x="170" y="54" class="svgm">B+</text>
+  <line x1="164" y1="84" x2="208" y2="84" stroke="#9aa3b2" stroke-width="2"/><text x="170" y="100" class="svgm">B−</text>
+  <rect x="208" y="150" width="150" height="40" rx="6" fill="#1e222b" stroke="#c79bff"/>
+  <text x="218" y="168" class="svgt">SW1 slide switch</text><text x="218" y="183" class="svgm">master off (under lid)</text>
+  <line x1="300" y1="118" x2="300" y2="150" stroke="#ff6b6b" stroke-width="2"/><text x="306" y="138" class="svgm">OUT+</text>
+  <line x1="230" y1="190" x2="230" y2="222" stroke="#ff6b6b" stroke-width="2"/>
+  <text x="24" y="150" class="svgm">OUT− = common GND</text>
+  <line x1="24" y1="222" x2="356" y2="222" stroke="#ff6b6b" stroke-width="3"/>
+  <text x="24" y="214" class="svgt" style="fill:#ff6b6b">VBAT 3.0–4.2 V</text>
+  <!-- groove wires -->
+  <line x1="120" y1="222" x2="120" y2="300" stroke="#ff6b6b" stroke-width="2"/>
+  <line x1="132" y1="160" x2="132" y2="300" stroke="#9aa3b2" stroke-width="2"/>
+  <text x="140" y="262" class="svgm">2 × 26 AWG in the wire groove,</text><text x="140" y="276" class="svgm">half a lap to pod B</text>
+  <line x1="300" y1="222" x2="300" y2="300" stroke="#ff6b6b" stroke-width="2"/><line x1="312" y1="160" x2="312" y2="300" stroke="#9aa3b2" stroke-width="2"/>
+  <text x="250" y="292" class="svgm">strip END</text>
+  <!-- pod B -->
+  <rect x="8" y="300" width="364" height="270" rx="10" fill="none" stroke="#7cc4ff" stroke-dasharray="5 4"/>
+  <text x="18" y="320" class="svgt" style="fill:#7cc4ff">POD B (180°)</text>
+  <rect x="24" y="334" width="170" height="150" rx="6" fill="#1e222b" stroke="#c79bff"/>
+  <text x="34" y="356" class="svgt">ESP32-C3 Super Mini</text>
+  <text x="34" y="376" class="svgm">5V ← VBAT</text><text x="34" y="392" class="svgm">GND ← GND</text>
+  <text x="34" y="408" class="svgm">GPIO7 → 330 Ω → strip DIN</text>
+  <text x="34" y="424" class="svgm">GPIO3 ← button → GND</text>
+  <text x="34" y="440" class="svgm">GPIO1 ← 100k/100k of VBAT</text>
+  <text x="34" y="456" class="svgm">(GPIO4 → v2 power FET)</text>
+  <text x="34" y="474" class="svgm">remove red power LED</text>
+  <line x1="120" y1="300" x2="120" y2="334" stroke="#ff6b6b" stroke-width="2"/><line x1="132" y1="300" x2="132" y2="334" stroke="#9aa3b2" stroke-width="2"/>
+  <rect x="222" y="334" width="136" height="54" rx="6" fill="#1e222b" stroke="#c79bff"/>
+  <text x="232" y="356" class="svgt">C1 100 µF</text><text x="232" y="374" class="svgm">at strip START, + to −</text>
+  <rect x="222" y="402" width="136" height="54" rx="6" fill="#1e222b" stroke="#c79bff"/>
+  <text x="232" y="424" class="svgt">Membrane button</text><text x="232" y="442" class="svgm">6×6 tact under 0.8 mm TPU</text>
+  <line x1="194" y1="405" x2="222" y2="365" stroke="#ffd36b" stroke-width="2" marker-end="url(#ar)"/>
+  <rect x="24" y="500" width="334" height="56" rx="6" fill="rgba(255,211,107,.10)" stroke="#ffd36b"/>
+  <text x="34" y="522" class="svgt" style="fill:#ffd36b">LED strip START: +V, DIN, GND</text>
+  <text x="34" y="540" class="svgm">→ runs ~755 mm round the slot → END back in pod A</text>
+  <line x1="290" y1="388" x2="290" y2="500" stroke="#ff6b6b" stroke-width="2"/>
+  <line x1="194" y1="470" x2="200" y2="500" stroke="#ffd36b" stroke-width="2"/>
+  <text x="18" y="600" class="svgm">The strip gets power at both ends (START from pod B, END from pod A).</text>
+  <text x="18" y="618" class="svgm">The groove wires carry VBAT/GND from A to B. All grounds are common.</text>
+</svg>
+<figcaption>Wiring. Pod A has the energy, pod B has the logic. The groove wires and the strip's own rails form a loop, so the far LEDs don't sag at full draw.</figcaption>
+</figure>
+
+<details><summary>Same wiring as plain text</summary>
+<pre>
+LiPo+ ──B+┐                       ┌──────────── VBAT rail (3.0–4.2 V) ─────────────┐
+LiPo− ──B−┤ TP4056-C (DW01) OUT+──SW1──┤                                                  │
+          └ OUT− ── GND ────────────────┼── strip END +V / GND (pod A)                     │
+                                        └── 2×26AWG in groove ──► pod B:                  │
+                                              ESP32-C3 5V, GND                             │
+                                              C1 100µF ── strip START +V / GND             │
+                                              GPIO7 ─330Ω── strip DIN                      │
+                                              GPIO3 ── button ── GND                       │
+                                              GPIO1 ── mid of 100k/100k (VBAT→GND)         │
+(v2: AO3401 high-side in strip +V, gate 100k to VBAT, pulled low by 2N7002 from GPIO4)  ──┘
+</pre></details>
+
+<h3>Limits and settings</h3>
+<ul class="tight">
+<li><b>Charge current:</b> stock TP4056 boards charge at 1 A (R_PROG = 1.2 kΩ), which is 3.3C into a 300 mAh cell and too much. <b>Swap R_PROG for 5.1 kΩ</b>, which gives I ≈ 1200/R ≈ 235 mA, or 0.8C. On these boards R_PROG is the small 0603 resistor next to the chip (usually R3 or "122"); check yours.</li>
+<li><b>Current cap:</b> set <code>FastLED.setMaxPowerInVoltsAndMilliamps(4, 450)</code>. Small pouch cells are usually rated 1–2C continuous, and short strobe peaks are fine.</li>
+<li><b>Battery cutoff:</b> the DW01 doesn't cut out until about 2.4 V, which is hard on the cell. Firmware dims to a red pulse at 3.45 V and goes dark at 3.30 V. After that, <b>slide the master switch off</b>, because the strip's idle current keeps draining the cell.</li>
+<li><b>Colour at low voltage:</b> blue and green dim a little below about 3.5 V. That's normal on a single cell.</li>
+<li><b>Divider:</b> 100k/100k puts 2.1 V on the ADC at a full 4.2 V, which is inside the C3's roughly 2.5 V range at 11 dB attenuation. It draws 21 µA.</li>
+<li><b>Pins:</b> avoid GPIO2, 8 and 9, which are strapping pins (8 is also the onboard LED). GPIO0–5 can wake the chip from deep sleep, which matters for v2.</li>
+</ul>
+
+<h3>Runtime (one 300 mAh cell, about 250 mAh usable down to 3.45 V)</h3>
+<div class="tbl"><table>
+<tr><th>Look</th><th class="num">LEDs</th><th class="num">Idle (78 × ~0.7)</th><th class="num">MCU</th><th class="num">Total</th><th class="num">Runtime</th><th class="num">×2 cells</th></tr>
+<tr><td>Airy palette, about 8% average</td><td class="num">95 mA</td><td class="num">55</td><td class="num">22</td><td class="num">≈ 170 mA</td><td class="num">≈ 1.5 h</td><td class="num">≈ 3 h</td></tr>
+<tr><td>Bright palette, about 15%</td><td class="num">175 mA</td><td class="num">55</td><td class="num">22</td><td class="num">≈ 250 mA</td><td class="num">≈ 1 h</td><td class="num">≈ 2 h</td></tr>
+<tr><td>Strobe-freeze or sparkle, about 2% duty</td><td class="num">25 mA</td><td class="num">55</td><td class="num">22</td><td class="num">≈ 100 mA</td><td class="num">≈ 2.5 h</td><td class="num">≈ 5 h</td></tr>
+<tr><td>ESP-NOW sync on (radio listening)</td><td colspan="4" class="num">add about 60–80 mA</td><td class="num">−30–40%</td><td></td></tr>
+</table></div>
+<p class="muted">Formula: hours ≈ 250 / (78 × 15 mA × duty + idle + 22 mA). Replace the idle figure with the one you measure in test T1.</p>
+
+<!-- ============================================================ -->
+<h2 id="mech">5. Fitting it into the TPU ring</h2>
+<p>The <code>hub.js</code> defaults are: rim R = 125 mm and 9 × 9 mm; hoop bore R<sub>in</sub> = 124.5 (a fit of −1 mm on the diameter); outer wall 2.4 mm, so R<sub>out</sub> = 126.9 (<b>Ø253.8 mm</b>); lip reaching 3 mm in and 1.6 mm thick; and a block that reaches 8.5 mm in under the rim, at depth 2, 6 or 12 mm, giving roughly 49, 90 or 152 g.</p>
+<div class="card bad"><b>Why the strip can't go in the outer wall:</b> <code>snapInfo.fitsBed</code> is already at its limit, with Ø253.8 against 254 allowed on a 256 mm bed. A slot plus a window in the wall would add at least 3 mm to the radius, making Ø ≈ 260. So the strip goes into the <b>mass block</b> below the rim, inside the existing outline. That also means the <b>light (2 mm) ring can't be an LED ring</b>. LED rings start at a block depth of about 10 mm.</div>
+
+<figure>
+<svg viewBox="0 0 440 600" role="img" aria-label="Cross-section of the LED ring">
+  <!-- hub rim -->
+  <rect x="140" y="80" width="180" height="180" fill="#59606e" opacity=".55"/>
+  <text x="168" y="168" class="svgt">hub rim 9 × 9</text>
+  <text x="168" y="186" class="svgm">(R 116–125)</text>
+  <!-- ring profile, drop 11 -->
+  <polygon points="358,480 358,48 278.8,48 250,76.8 250,80 310,80 310,260 140,260 140,480" fill="rgba(217,210,184,.22)" stroke="#d9d2b8" stroke-width="2"/>
+  <!-- natural TPU zone tint -->
+  <rect x="140" y="290" width="218" height="190" fill="rgba(255,211,107,.06)"/>
+  <!-- LED slot -->
+  <rect x="286" y="290" width="48" height="120" fill="#0f1115" stroke="#ffd36b" stroke-width="1.5"/>
+  <!-- strip: pcb + leds -->
+  <rect x="294" y="298" width="4" height="96" fill="#7cc4ff"/>
+  <rect x="298" y="310" width="16" height="72" fill="#ffd36b" opacity=".9"/>
+  <text x="276" y="430" class="svgm" text-anchor="end">strip in clear</text>
+  <text x="276" y="444" class="svgm" text-anchor="end">heat-shrink, loose</text>
+  <!-- wire groove -->
+  <rect x="232" y="290" width="44" height="50" fill="#0f1115" stroke="#9aa3b2"/>
+  <circle cx="244" cy="318" r="10" fill="#ff6b6b"/><circle cx="265" cy="318" r="10" fill="#9aa3b2"/>
+  <!-- light rays -->
+  <g stroke="#ffd36b" stroke-width="2" marker-end="url(#ar2)"><line x1="362" y1="320" x2="420" y2="300"/><line x1="362" y1="346" x2="424" y2="346"/><line x1="362" y1="372" x2="420" y2="392"/></g>
+  <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffd36b"/></marker></defs>
+  <!-- pause line -->
+  <line x1="40" y1="290" x2="430" y2="290" stroke="#c79bff" stroke-dasharray="6 4"/>
+  <text x="20" y="284" class="svgt" style="fill:#c79bff">PAUSE at z = −1.5</text>
+  <!-- dims -->
+  <text x="366" y="40" class="svgm">R 126.9</text>
+  <text x="250" y="40" class="svgm">lip 3</text>
+  <text x="300" y="276" class="svgm">roof 1.5</text>
+  <text x="340" y="470" class="svgm">front</text><text x="340" y="484" class="svgm">1.2</text>
+  <text x="150" y="472" class="svgm">floor 3.5 · block depth 11 · reach-in 8.5</text>
+  <text x="150" y="455" class="svgm">wire groove 2.2 × 2.5</text>
+  <text x="296" y="428" class="svgt" style="fill:#ffd36b">slot 2.4 × 6.0</text>
+  <!-- orientation -->
+  <text x="20" y="70" class="svgt">↑ collar side</text>
+  <text x="20" y="530" class="svgt">↓ face away from collar = print bed</text>
+  <text x="20" y="550" class="svgm">r runs to the right (pole axis off to the left); z runs up.</text>
+  <text x="20" y="568" class="svgm">Below the pause line: natural TPU. Above it: your colour.</text>
+  <text x="20" y="586" class="svgm">The strip PCB is blue and its LEDs face outward.</text>
+</svg>
+<figcaption>Section of the LED-H ring (block depth 11 mm) at true scale, 20 px per mm. The hub rim overlaps the bore by 0.5 mm, which is the stretch.</figcaption>
+</figure>
+
+<h3>Slot dimensions (r measured from the hub centre, z = 0 at the rim's underside)</h3>
+<div class="tbl"><table>
+<tr><th>Feature</th><th>r</th><th>z</th><th>Why</th></tr>
+<tr><td>Front window</td><td>125.7 → 126.9 (1.2 mm)</td><td>−1.5 → −7.5</td><td>Natural TPU 95A diffuses well at 1.0–1.6 mm. Use 1.6 mm if you see LED hot spots or worry about impacts.</td></tr>
+<tr><td><b>LED slot</b></td><td>123.3 → 125.7 (2.4 mm)</td><td>−1.5 → −7.5 (6.0 mm)</td><td>The strip is 5 mm, plus 0.6 mm of heat-shrink and 0.4 mm clearance. It's about 1.2 mm thick (1.6 sleeved), with about 0.8 mm of radial play.</td></tr>
+<tr><td>Wire groove</td><td>120.6 → 122.8</td><td>−1.5 → −4.0</td><td>Two 26 AWG wires (about 1.1 mm OD each) side by side. It is open at the same pause height as the slot.</td></tr>
+<tr><td>Roof</td><td></td><td>−1.5 → 0</td><td>Printed after the pause. It bridges 2.4 mm, which TPU handles easily.</td></tr>
+<tr><td>Floor</td><td></td><td>−7.5 → −D</td><td>At least 2.5 mm, which keeps the strip off the outer-bottom corner that hits the floor first. Use a 1.5 mm chamfer on that corner.</td></tr>
+</table></div>
+<div class="grid">
+<div class="stat">LED-M ring, D = 10<b>≈ 140 g</b><small>About 112 g of TPU, 8 g of pod tabs and 23 g of electronics.</small></div>
+<div class="stat">LED-H ring, D = 13<b>≈ 175 g</b><small>About 143 g of TPU, 8 g of tabs and 23 g of electronics.</small></div>
+<div class="stat">Plan B, 10 mm strip, D = 15<b>≈ 190 g</b><small>An 11 mm slot needs about 14.5 mm of depth.</small></div>
+</div>
+
+<h3>Print-pause method (recommended for v1)</h3>
+<ol class="steps">
+<li>Print the hoop as now, block-down. Add slicer pauses at z<sub>print</sub> = D − 1.5 (the top of the slot and groove) using M600 or the "pause at layer" option. The slicer should show both cavities open at the top on that layer.</li>
+<li><b>Filament swap (optional but worth it):</b> print the block in natural or clear TPU, then switch to your colour at the pause. The whole lit zone glows and the lip keeps your colour.</li>
+<li>At the pause, lay the sleeved strip into the slot. It curls into a hoop on its own, and its springiness presses it against the front wall. Press it to the slot floor with a wooden stick. Put the two groove wires in, and leave the ends coiled in the pod cavities.</li>
+<li>Check nothing stands above the layer: run a fingertip round it. Resume. Print the first two roof layers slowly (about 15 mm/s) with the fan at 100%.</li>
+<li>Pods: their cavities are open on the bed side (§ pod tabs below), so the only ceiling the printer has to bridge is the pod roof, about 24 mm. At the same pause, lay a <b>pre-cut 0.5 mm PET or acetate plate</b> (a clear blister-pack offcut works) over each pod cavity so the roof prints onto it. If you'd rather not, enable supports for the pod cavities only.</li>
+</ol>
+
+<h3>Two-part alternative</h3>
+<p>Print a coloured base hoop with the slot <b>open to the bottom face</b>, so there is no pause and no bridge. Then close it with a separately printed <b>clear TPU cover annulus</b> about 1.2 mm thick. Bond the cover with flexible PU glue (E6000 or shoe glue) or weld it with a soldering iron and TPU filament. This version is easy to service and lets you use a side-view strip shining down through the clear face.</p>
+<p><b>Downside:</b> the hoop is stretched every time you fit it, and a glue line that is flexed and stretched over and over in bubble mix is the first thing to leak or peel. Use it for v2 only if v1 proves the electronics work.</p>
+
+<h3>The strip can't stretch, so let it slide</h3>
+<ul class="tight">
+<li><b>Hoop strain when worn:</b> ΔR = 0.5 on R ≈ 125, so the slot's circumference grows <b>0.4%</b>, about 3.1 mm round the loop. Flex-PCB copper fatigues if it is repeatedly strained around 0.2–0.3%, so the strip must never be bonded to the TPU.</li>
+<li><b>Fix:</b> sleeve the strip in clear heat-shrink, shrunk just enough to grip the strip but not the slot. Make the slot 0.4 mm oversize in height and about 0.8 mm in depth, and use no glue. The strip doesn't form a closed loop: both ends finish in the pods with a 10–15 mm slack S-bend of wire, so the hoop can grow while the strip slides.</li>
+<li><b>Fitting the hoop on:</b> going over the lip ovalises and twists the hoop. Both bend the strip its easy way (flat-side), which it tolerates. What it doesn't tolerate is a <b>potato-chip</b> warp, where the hoop bends out of plane and the 5 mm strip bends edgewise; a 300 mm warp radius strains the strip's edges by about 0.8%. So fit it the bike-tyre way the designer already describes: hoop flat on the table, hub in at an angle, then work round it. Never fold the hoop.</li>
+<li>Consider loosening the fit for LED rings to −0.8 mm. If it then creeps round the rim, add 2–3 small tabs that hook behind spokes, which is better than more stretch.</li>
+</ul>
+
+<h3>Pod tabs: where the electronics go</h3>
+<p>Each pod is a <b>local tab that extends the block inward</b>, under the hub's underside (z &lt; 0, so it can't collide with the rim or web). It is as deep as the block, so it adds no extra depth, and it is about 66 mm long round the arc.</p>
+<div class="tbl"><table>
+<tr><th>Pod</th><th>Contents (lying flat, thin side in z)</th><th>Cavity</th><th class="num">Mass</th></tr>
+<tr><td>A (0°)</td><td>LiPo 602030 (30 tangential × 20 radial × 6 deep) next to the TP4056 (26 × 17 × 4), plus SW1</td><td>about 62 × 22 × 7.5 mm, cell at r 101–121</td><td class="num">≈ 9.5 g</td></tr>
+<tr><td>B (180°)</td><td>ESP32-C3 (22.5 × 18 × 3.5), C1, the button, and <b>about 7 g of trim</b> (three M6 nuts), or a second 602030 cell in v2</td><td>the same cavity, so the two tabs print the same</td><td class="num">≈ 9.5 g</td></tr>
+</table></div>
+<ul class="tight">
+<li><b>Keep the cell inboard:</b> leave at least 5 mm of TPU between the cell and the outer surface (the cell ends at r ≈ 121). Put 1 mm EVA foam on both faces and Kapton over any sharp solder points.</li>
+<li><b>Lids:</b> each pod opens to the bottom face, away from the collar, so you can reach it without removing the ring. Close it with a press-fit TPU lid that has a 0.3 mm interference bead and a thin film of silicone grease on the seal. Pod B's lid has a <b>0.8 mm membrane dome</b> over the 6×6 tactile switch, so the mode button is sealed.</li>
+<li><b>Charging:</b> mount the TP4056 so its USB-C faces the <b>inner wall</b> (toward the pole). That's the side most sheltered from floor hits and splash. Give it a tethered TPU plug. The ESP32's own USB-C, for flashing, sits under pod B's lid. After the first upload, ArduinoOTA means you rarely need it.</li>
+<li><b>Strain relief:</b> fill each strip-to-wire joint with adhesive-lined heat-shrink. Add a printed U-clip in the pod wall that the wire bundle snaps into, so any tug lands on the clip and not on the solder pads. Anchor every wire within 10 mm of a solder joint. At 300 g, a free-hanging 1 g wire pulls 3 N.</li>
+<li><b>Bigger battery option:</b> a 403072 1100 mAh cell (about 20 g) needs a 75 mm tab, and the flat cell sits 6 mm off the arc. Put it in pod A and a matching second 403072, or about 18 g of trim, in pod B.</li>
+<li><b>Check the hub design:</b> the tabs sit right under the hub's underside. Rotate the ring so the tabs land between spokes, and clear any relief or capsule pods on that face.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="balance">6. Balance, impact, water</h2>
+<h3>Balance</h3>
+<ul class="tight">
+<li>The strip is spread evenly round the ring, so it adds no imbalance. Only the pods matter. Put them 180° apart and <b>match them within 1 g</b>. One gram of mismatch at r = 0.11 m pulls 0.43 N at 10 rev/s, and moves the centre of mass of a 400 g hub about 0.3 mm. Spinners notice a few grams.</li>
+<li><b>Static balance test:</b> fit the hub on a short length of 22 mm pole and rest it on two level, parallel straight edges, such as two rulers on books. Let it roll. The heavy pod settles at the bottom. Add trim (nut fragments or stick-on wheel weight) on the light side until it stays wherever you leave it.</li>
+<li>For v2 with two cells, the pods balance themselves: A has a cell and the charger, B has a cell and the MCU, and each comes to about 9 g. The cells are wired in parallel through the groove wires. Only parallel two cells at the same voltage, and charge them through the single protected TP4056.</li>
+</ul>
+<h3>Impact</h3>
+<ul class="tight">
+<li>The outer-bottom corner of the block hits first. Chamfer it 1.5 mm, and keep the strip 2.5 mm or more above the floor and behind a 1.2–1.6 mm front window. TPU spreads a hit over several LEDs instead of one.</li>
+<li>2020 LEDs are tiny and sit flush on the flex PCB, so they survive well. What breaks are <b>solder joints with a wire levered off them</b> (strain relief above) and <b>the master switch bouncing</b>. A momentary contact break browns out the ESP. Firmware stores the current mode in flash, so a reset comes back in the same mode, and C1 bridges short bounces.</li>
+<li>Don't pot the LiPo solid in epoxy. Cells swell a little, and a rigid pot then cracks or presses on the cell. Use foam and the pod wall.</li>
+</ul>
+<h3>Water and bubble mix</h3>
+<ul class="tight">
+<li>Bubble mix is water, dish soap, and glycerin or guar. The soap's low surface tension lets it <b>wick into gaps</b> that plain water wouldn't enter. The glycerin is hygroscopic and leaves a <b>conductive, sticky residue</b>. At 4.2 V that is enough to corrode the strip's pads and the ESP over weeks.</li>
+<li><b>Layer 1, the print:</b> print the block with at least 3 perimeters, 100% infill (it's a weight anyway) and about 1.05 flow. Printed TPU is close to watertight.</li>
+<li><b>Layer 2, the strip:</b> sealed inside the print, plus heat-shrink. The only way in is through the pods.</li>
+<li><b>Layer 3, the boards:</b> conformal-coat the ESP32, the TP4056 (mask its USB-C and SW1) and every strip solder joint. Seal the joints with adhesive-lined heat-shrink and neutral-cure silicone.</li>
+<li><b>Layer 4, the lids:</b> a greased press-fit seal and a membrane button, with no holes through the TPU.</li>
+<li><b>Rules:</b> the LED ring is splash-proof, not for dipping. Keep using the separate bolt-on bubble ring for dipping, or keep the LED hub out of the bucket. After a bubble session, rinse with fresh water, shake it out, and dry it with the lids open before charging. <b>Never charge a wet pod.</b></li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="fw">7. Firmware and modes</h2>
+<h3>What looks good when it spins</h3>
+<p>Every LED on a ring that spins about its own centre travels <b>the same circle</b>. A persistence-of-vision image can't build up across the radius the way it does on a spinning bar. At speed you see the ring's <i>average colour</i>, unless you freeze it in time or move the pattern against the spin. That leads to these modes:</p>
+<div class="tbl"><table>
+<tr><th>Mode</th><th>What you see spinning</th><th>Notes</th></tr>
+<tr><td>Halo</td><td>A clean single-colour circle that slowly crossfades</td><td>Fits the soft, airy look. Lowest power.</td></tr>
+<tr><td>Palette drift</td><td>Colours mix into a shifting tint, and resolve into bands as it slows</td><td>Use your <code>dome-palettes.json</code> gradients.</td></tr>
+<tr><td><b>Strobe-freeze</b></td><td>A crisp crown of 6 coloured segments, apparently frozen and jittering, over a dark hub</td><td>The showpiece, and it needs no sensor. See the frame-time limit below.</td></tr>
+<tr><td>Comet</td><td>A head with a tail running against the spin. Near matching speeds it crawls slowly, like a wagon-wheel effect.</td><td>Speed is adjustable; long-press cycles it.</td></tr>
+<tr><td>Fireflies</td><td>Random soft sparkles sprinkled along the circle</td><td>Low duty, long runtime.</td></tr>
+<tr><td>Half and half</td><td>Two-tone when slow, blending into a third colour when fast</td><td>Simple, and readable edge-on.</td></tr>
+</table></div>
+<ul class="tight">
+<li><b>Frame time sets how short a flash can be.</b> WS2812 data takes about 30 µs per LED, so 78 LEDs take about 2.4 ms. At 6 rev/s the rim moves 11 mm in that time, so strobe segments smear by about one LED pitch. That's acceptable. If you want sharper strobes, use fewer LEDs or a clocked APA102/SK9822 strip (I couldn't verify one in Thailand).</li>
+<li><b>Turn off temporal dithering</b> with <code>FastLED.setDither(0)</code>. On a moving prop, dithering and low PWM duty (WS2812 PWM runs at about 1–2 kHz) show up as dashed trails. You can also lean into that and use it as a look on purpose.</li>
+<li><b>v2, true stationary images:</b> to keep the pattern still in space while the hub spins, you need the spin angle. Typical gyros (MPU6050, BMI270, ICM-42688) saturate at 2000 °/s, which is 5.5 rev/s, below contact-roll speeds. A ±32 g accelerometer (LSM6DSO32) on the ring reads centripetal acceleration up to about 8 rev/s. Treat this as an experiment, not v1.</li>
+<li><b>v2 sync:</b> ESP-NOW between the two hubs on a staff, or with a phone, at a cost of about 60–80 mA while it listens. Flowtoys capsules use an nRF24-style 250 kbit radio that the ESP32 can't speak; see the lighttoys hoop notes.</li>
+<li>The preview in <code>leds.js</code> already emulates the Flowtoys capsule modes as colour over time. Any mode that looks good there as a "lantern" also works as Halo or Palette drift here.</li>
+</ul>
+
+<h3>Starter sketch (Arduino IDE, board "ESP32C3 Dev Module", USB CDC On Boot: Enabled, FastLED 3.7 or later)</h3>
+<pre>#include &lt;FastLED.h&gt;
+#include &lt;Preferences.h&gt;
+
+#define NUM_LEDS  78      // count yours after fitting
+#define DATA_PIN  7
+#define BTN_PIN   3       // tact switch to GND
+#define VBAT_PIN  1       // middle of 100k/100k divider
+#define MAX_MA    450     // whole-ring current cap for a 300 mAh cell
+#define MODES     6
+
+CRGB leds[NUM_LEDS];
+Preferences prefs;
+uint8_t mode = 0, bright = 140, hue = 0, cometSpeed = 3;
+bool lowBatt = false, flat = false;
+
+float vbat() { return analogReadMilliVolts(VBAT_PIN) * 2 / 1000.0f; }
+
+void setup() {
+  pinMode(BTN_PIN, INPUT_PULLUP);
+  analogSetPinAttenuation(VBAT_PIN, ADC_11db);
+  prefs.begin("ring", false);
+  mode = prefs.getUChar("mode", 0) % MODES;       // survives a brown-out reset
+  FastLED.addLeds&lt;WS2812B, DATA_PIN, GRB&gt;(leds, NUM_LEDS);
+  FastLED.setMaxPowerInVoltsAndMilliamps(4, MAX_MA);
+  FastLED.setDither(0);
+  FastLED.setBrightness(bright);
+}
+
+void button() {                                    // short = next mode, long = alt setting
+  static uint32_t down = 0; static bool was = false;
+  bool now = digitalRead(BTN_PIN) == LOW;
+  if (now &amp;&amp; !was) down = millis();
+  if (!now &amp;&amp; was) {
+    uint32_t held = millis() - down;
+    if (held &gt; 30 &amp;&amp; held &lt; 700) { mode = (mode + 1) % MODES; prefs.putUChar("mode", mode); }
+    else if (held &gt;= 700) {
+      if (mode == 3) cometSpeed = cometSpeed % 8 + 1;
+      else { bright = bright == 140 ? 50 : 140; FastLED.setBrightness(bright); }
+    }
+  }
+  was = now;
+}
+
+void battery() {
+  float v = vbat();
+  lowBatt = v &lt; 3.45f;
+  flat = v &lt; 3.30f;
+  if (lowBatt) FastLED.setBrightness(min&lt;uint8_t&gt;(bright, 40));
+}
+
+void loop() {
+  button();
+  EVERY_N_SECONDS(5) battery();
+  EVERY_N_MILLISECONDS(60) hue++;
+  if (flat) {                                      // dark: now slide the master switch off
+    fill_solid(leds, NUM_LEDS, CRGB::Black); FastLED.show(); delay(200); return;
+  }
+  switch (mode) {
+    case 0:  // halo
+      fill_solid(leds, NUM_LEDS, CHSV(hue, 200, beatsin8(6, 120, 255)));
+      break;
+    case 1:  // palette drift
+      fill_rainbow(leds, NUM_LEDS, hue * 2, 255 / NUM_LEDS * 2);
+      break;
+    case 2: { // strobe-freeze: one frame of 6 segments every ~35 ms, dark between
+      static uint32_t t0 = 0;
+      fill_solid(leds, NUM_LEDS, CRGB::Black);
+      if (millis() - t0 &gt; 35) {
+        t0 = millis();
+        for (int i = 0; i &lt; NUM_LEDS; i++) leds[i] = CHSV(hue + (i * 6 / NUM_LEDS) * 43, 255, 255);
+        FastLED.show();                           // lit for about one frame time
+        fill_solid(leds, NUM_LEDS, CRGB::Black);
+      }
+      break; }
+    case 3: { // comet against the spin
+      static uint16_t pos = 0;
+      fadeToBlackBy(leds, NUM_LEDS, 40);
+      pos = (pos + NUM_LEDS - 1) % NUM_LEDS;
+      for (uint8_t k = 1; k &lt; cometSpeed; k++) pos = (pos + NUM_LEDS - 1) % NUM_LEDS;
+      leds[pos] = CHSV(hue, 180, 255);
+      break; }
+    case 4:  // fireflies
+      fadeToBlackBy(leds, NUM_LEDS, 12);
+      if (random8() &lt; 40) leds[random16(NUM_LEDS)] = CHSV(hue + random8(40), 160, 255);
+      break;
+    case 5:  // half and half
+      for (int i = 0; i &lt; NUM_LEDS; i++) leds[i] = CHSV(i &lt; NUM_LEDS / 2 ? hue : hue + 128, 230, 220);
+      break;
+  }
+  if (lowBatt &amp;&amp; (millis() / 1000) % 10 == 0) leds[0] = CRGB::Red;   // red blip every 10 s
+  FastLED.show();
+  delay(4);
+}</pre>
+<p class="muted">I haven't compiled this sketch. It is written against FastLED 3.7's API for ESP32-C3 (RMT), so expect to fix small details on the first build. v2 additions: a long hold of more than 3 s pulls GPIO4 low to cut the strip's power through the AO3401, then the ESP calls <code>esp_deep_sleep_enable_gpio_wakeup(1ULL&lt;&lt;3, ESP_GPIO_WAKEUP_GPIO_LOW)</code> and sleeps. That draws about 50 µA (LDO plus chip, with the red LED removed), so the master switch is then only needed for storage and flights.</p>
+
+<!-- ============================================================ -->
+<h2 id="bom">8. Bill of materials (one ring, v1)</h2>
+<div class="tbl"><table>
+<tr><th>Part</th><th>Choice</th><th class="num">Qty</th><th class="num">THB</th><th>Source</th></tr>
+<tr><td>Controller</td><td>ESP32-C3 Super Mini</td><td class="num">1</td><td class="num">80</td><td><span class="pill v">MCUCity</span></td></tr>
+<tr><td>Charger + protection</td><td>TP4056 Type-C with protection</td><td class="num">1</td><td class="num">30</td><td><span class="pill v">Arduitronics</span></td></tr>
+<tr><td>Battery</td><td>LiPo 602030 300 mAh</td><td class="num">1</td><td class="num">100</td><td><span class="pill v">Arduitronics</span></td></tr>
+<tr><td>LED strip</td><td>WS2812B-2020, 5 mm, 100/m, 1 m</td><td class="num">1</td><td class="num">≈ 350</td><td><span class="pill a">Shopee/Lazada</span> (Plan B 250–299 <span class="pill v">ModuleMore</span>)</td></tr>
+<tr><td>Master switch</td><td>SS12D00 / MSK-12C02</td><td class="num">1</td><td class="num">≈ 5</td><td><span class="pill a">Ban Mo / online</span></td></tr>
+<tr><td>Mode button</td><td>6×6 tactile switch</td><td class="num">1</td><td class="num">≈ 2</td><td><span class="pill a">singles</span> (set of 160 for 185 <span class="pill v">Arduitronics</span>)</td></tr>
+<tr><td>Passives</td><td>330 Ω, 100k ×2, 5.1k 0603, 100 µF</td><td class="num">1 set</td><td class="num">≈ 20</td><td><span class="pill a">any</span></td></tr>
+<tr><td>Wire</td><td>Silicone 26 AWG red/black, 30 AWG</td><td class="num">about 1.5 m</td><td class="num">≈ 60</td><td><span class="pill a">online</span></td></tr>
+<tr><td>Sleeving</td><td>Clear heat-shrink Ø6, adhesive-lined pieces</td><td class="num">1 m + pieces</td><td class="num">≈ 50</td><td><span class="pill a">online</span></td></tr>
+<tr><td>Sealing</td><td>Conformal coat, neutral silicone, silicone grease</td><td class="num">1 each</td><td class="num">≈ 450</td><td><span class="pill a">online / hardware store</span> (enough for many rings)</td></tr>
+<tr><td>Protection</td><td>Kapton tape, 1 mm EVA</td><td class="num"></td><td class="num">≈ 80</td><td><span class="pill a">online</span></td></tr>
+<tr><td>Trim</td><td>M6 nuts</td><td class="num">3</td><td class="num">≈ 5</td><td><span class="pill a">hardware store</span></td></tr>
+<tr><td>Filament</td><td>Natural TPU 95A, about 150 g including lids</td><td class="num"></td><td class="num">≈ 120</td><td><span class="pill a">online</span></td></tr>
+<tr><th colspan="3">First ring, including consumables you'll have left over</th><th class="num">≈ 1,350</th><th></th></tr>
+<tr><th colspan="3">Each further ring (electronics, strip, filament)</th><th class="num">≈ 750</th><th></th></tr>
+<tr><td colspan="3">v2 adds: second 602030 cell, AO3401 + 2N7002 + 100k</td><td class="num">+ 115</td><td></td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="build">9. Build checklist</h2>
+<ol class="steps">
+<li><b>Order:</b> the controller, charger and battery from the verified shops, two strips (one spare), and the consumables. Do steps 2–4 while the strip ships.</li>
+<li><b>Bench electronics:</b> swap R_PROG to 5.1 kΩ and check a charge at about 240 mA with a USB meter. Remove the Super Mini's red power LED. Wire everything on the bench with the strip laid out flat. Flash the sketch.</li>
+<li><b>Measure (T1):</b> current with all LEDs dark, at Halo, and at full white. Put the real idle figure into the runtime table. Count the LEDs that fit in 755 mm.</li>
+<li><b>Designer:</b> add the LED variant to <code>hub.js</code> (§12). Export it. Slice with 3+ perimeters, 100% infill, and a pause at the top of the slot. If you're swapping filament, put the change at the same pause.</li>
+<li><b>Dry run (T2):</b> print a 60 mm arc segment of the ring's cross-section first. Test the pause, the strip fit, the roof bridge, and how a pod lid snaps.</li>
+<li><b>Prepare the strip:</b> cut it to length at the copper pads. Solder 26 AWG to +V and GND at both ends and 30 AWG to DIN at the start. Use adhesive heat-shrink on each joint, slide the strip into clear heat-shrink and shrink it lightly. Conformal-coat the joints.</li>
+<li><b>Print and pause:</b> lay in the strip and groove wires, put the acetate plates over the pods, and resume. Don't touch the hot bed area with the wire ends; tape them up out of the way.</li>
+<li><b>Fit out the pods:</b> foam, cell and TP4056 in A; ESP32, C1, button and trim in B. Clip the wires into the strain-relief U-clips. Conformal-coat the boards (mask the USB-C ports and the switch). Fill the remaining voids with small foam pieces so nothing can rattle.</li>
+<li><b>Light test</b> before closing the lids. Then grease and close the lids.</li>
+<li><b>Balance:</b> do the static roll test and trim pod B.</li>
+<li><b>Fit it on the hub</b> the bike-tyre way, flat on the table without folding it. Light test again.</li>
+<li>Run the <b>test plan</b> below before taking it to a jam.</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 id="test">10. First prototype test plan</h2>
+<div class="tbl"><table>
+<tr><th>#</th><th>Test</th><th>How</th><th>Pass</th></tr>
+<tr><td>T1</td><td>Current</td><td>USB power meter or multimeter in series: dark, Halo, full white</td><td>Idle under 90 mA, cap holds at 450 mA</td></tr>
+<tr><td>T2</td><td>Arc coupon</td><td>60 mm section print with pause, strip, roof and lid</td><td>Roof flat, strip slides by hand, lid seals</td></tr>
+<tr><td>T3</td><td>Fit cycling</td><td>Fit and peel the ring 20 times; check every LED after every 5</td><td>No dead or flickering LEDs</td></tr>
+<tr><td>T4</td><td>Spin</td><td>Hub on a 22 mm dowel in a cordless drill. Measure rpm with phone slow-motion. Steps of 3, 6, 10 rev/s (600 rpm), 2 min each</td><td>No creep marks, no resets, no rattle</td></tr>
+<tr><td>T5</td><td>Balance</td><td>Static roll on straight edges, then a feel test on the staff</td><td>No preferred resting position</td></tr>
+<tr><td>T6</td><td>Drops</td><td>From 1 m onto wood, then tile or concrete, 10 times per orientation (rim edge, face, pod over the impact point)</td><td>Still lit, mode retained, no cell bulge, lids in</td></tr>
+<tr><td>T7</td><td>Splash</td><td>Spray bubble mix all over, spin for 1 min, rinse, dry for 1 h, open the pods</td><td>Pods dry inside, no residue on boards</td></tr>
+<tr><td>T8</td><td>Runtime</td><td>Halo at default brightness from 4.2 V to the 3.45 V warning</td><td>Matches the table within ±20%</td></tr>
+<tr><td>T9</td><td>Charge</td><td>Charge from flat; touch the TP4056 and cell</td><td>Warm, not hot; stops at 4.2 V</td></tr>
+<tr><td>T10</td><td>Jam</td><td>One real session with contact rolls</td><td>The performer can't feel the pods</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="risks">11. Risks</h2>
+<div class="tbl"><table>
+<tr><th>Risk</th><th>Likelihood</th><th>Mitigation</th></tr>
+<tr><td>No 5 mm strip available from Thai stock</td><td>Medium</td><td>Plan B: a 10 mm 144/m strip in a 15 mm-deep ring (about 190 g), or wait about 2 weeks for AliExpress</td></tr>
+<tr><td>Strip traces crack from stretch and flex</td><td>Medium</td><td>Loose, sleeved strip with slack loops; no folding when fitting; T3</td></tr>
+<tr><td>Ring creeps round the rim at speed (hoop grows about 0.25% at 10 rev/s)</td><td>Medium</td><td>Spoke-hook tabs, or −1.2 mm fit only if the strip passes T3</td></tr>
+<tr><td>Bubble mix gets into a pod and corrodes the boards</td><td>Medium</td><td>Conformal coat, greased lids, membrane button, rinse-and-dry rule, separate bubble ring</td></tr>
+<tr><td>LiPo damaged by impact</td><td>Low–medium</td><td>Cell sits 5 mm or more inboard, foam on both faces, no sharp parts; inspect for swelling after T6 and every month</td></tr>
+<tr><td>Master switch bounces and resets the ESP</td><td>Medium</td><td>C1, mode stored in flash, v2 soft power</td></tr>
+<tr><td>Idle drain empties the cell if the switch is left on</td><td>High if forgotten</td><td>Firmware goes dark at 3.30 V; v2 MOSFET cut-off; a habit of switching off</td></tr>
+<tr><td>Charging at 1 A (R_PROG not changed)</td><td>High if skipped</td><td>Checklist step 2, check with a USB meter</td></tr>
+<tr><td>Print pause shifts layers or the nozzle drags the strip</td><td>Low</td><td>Slot 0.4 mm oversize, finger check before resuming, T2 coupon</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="designer">12. Changes for hub.js</h2>
+<ul class="tight">
+<li>Add a <code>snapLed</code> option to the "Snap weight" group, with these parameters: slot height (6.0), slot depth (2.4), front window (1.2), roof (1.5), wire groove (on), pod tabs (2 at 180°), pod reach (r 101), pod length (66 mm), and a minimum block depth of 10.</li>
+<li>Subtract the slot and groove from <code>profile(drop)</code> as a second revolved section. Add the pod tabs as extruded arc sectors, then subtract the pod cavities, which open to the bottom.</li>
+<li>Report the pause height <code>D − 1.5</code> in the build notes, like the existing snap instructions in <code>app.js</code>.</li>
+<li>Feed the pod contents (cell, boards, trim) into the existing <code>massProps</code> balance as point masses, so the panel shows the pod mismatch in grams and the trim needed.</li>
+<li>Keep the <code>fitsBed</code> check. The LED variant must not grow R<sub>out</sub>.</li>
+</ul>
+
+<p class="muted" style="margin-top:2em">Sources checked on 21 Oct 2026: arduitronics.com (TP4056 Type-C, 602030 LiPo, switch category, search results), modulemore.com (WS2812B strips and controllers, ESP32-S3 Super Mini), mcucity.com and artronshop.co.th (ESP32-C3 Super Mini). Cybertice, AppSoftTech, ORTech and igetled prices come from search results only. Lazada and Shopee refused automated access, so treat every "assumed" price as a rough estimate.</p>
+
+</main>
+</body>
+</html>
