@@ -1135,11 +1135,11 @@ $('strobeDuty').oninput = (e) => { view.duty = Number(e.target.value) / 100; $('
 showStrobeCtl()
 
 // ------------------------------------------------------------------ ideas --
-// Saved designs: on dream.sc they live in the project's dreamDB (one key per
-// design); run locally with server.mjs they go through api/ideas; the portable
-// single-file build keeps them in this browser, seeded with the designs saved so far.
+// Saved designs: on dream.sc (members) and in the portable/public copy they stay
+// on the person's own device (this browser), with a backup file to keep or move
+// them; run locally with server.mjs they go through api/ideas (shared on the Mac).
 const DB = !!(window.dreamDB && window.dreamDB.available)
-const LOCAL = !DB && !!window.__PORTABLE
+const LOCAL = DB || !!window.__PORTABLE
 const localIdeas = {
   read: () => { try { const s = localStorage.getItem('dragonhub-ideas'); return s ? JSON.parse(s) : window.__SEED_IDEAS || [] } catch { return window.__SEED_IDEAS || [] } },
   write: (list) => { try { localStorage.setItem('dragonhub-ideas', JSON.stringify(list)) } catch {} },
@@ -1150,19 +1150,6 @@ const ideasApi = LOCAL
       add: async (body) => localIdeas.write([...localIdeas.read(), { ...body, id: crypto.randomUUID(), time: new Date().toISOString(), votes: 0 }]),
       vote: async (idea) => localIdeas.write(localIdeas.read().map((x) => (x.id === idea.id ? { ...x, votes: (x.votes || 0) + 1 } : x))),
       remove: async (idea) => localIdeas.write(localIdeas.read().filter((x) => x.id !== idea.id)),
-    }
-  : DB
-  ? {
-      list: async () => (await dreamDB.list('ideas/')).map((r) => r.value),
-      add: async (body) => {
-        const idea = { ...body, id: crypto.randomUUID(), time: new Date().toISOString(), votes: 0 }
-        await dreamDB.set('ideas/' + idea.id, idea)
-      },
-      vote: async (idea) => {
-        const cur = (await dreamDB.get('ideas/' + idea.id)) || idea
-        await dreamDB.set('ideas/' + idea.id, { ...cur, votes: (cur.votes || 0) + 1 })
-      },
-      remove: (idea) => dreamDB.remove('ideas/' + idea.id),
     }
   : {
       list: async () => (await fetch('api/ideas')).json(),
@@ -1204,8 +1191,37 @@ function renderIdeaHearts() {
   }
 }
 
-if (LOCAL && $('savedWhere')) $('savedWhere').textContent = 'Portable copy: designs save in this browser only. Starts with the designs saved so far.'
-if (DB && $('savedWhere')) $('savedWhere').textContent = 'Shared with everyone who can open this project. Open restores every setting.'
+if (!DB && window.__PORTABLE && $('savedWhere')) $('savedWhere').textContent = 'Portable copy: designs save in this browser only. Starts with the designs saved so far.'
+if (DB && $('savedWhere')) $('savedWhere').textContent = 'Saved on this device only (private to you). Open restores every setting. Back them up to a file to keep them safe or move them to another device.'
+if (LOCAL && $('savedWhere')) {
+  // backup / restore, since browser storage can be cleared
+  const row = document.createElement('div')
+  row.className = 'backupRow'
+  row.innerHTML = '<button class="btn" type="button" id="ideasBackup">💾 Back up my designs</button><button class="btn" type="button" id="ideasRestore">📂 Load a backup</button>'
+  $('savedWhere').after(row)
+  $('ideasBackup').onclick = () => {
+    const list = localIdeas.read()
+    const url = URL.createObjectURL(new Blob([JSON.stringify({ app: 'dragon-hub-forge', saved: list }, null, 1)], { type: 'application/json' }))
+    Object.assign(document.createElement('a'), { href: url, download: `my-dragon-hubs-${new Date().toISOString().slice(0, 10)}.json` }).click()
+    setTimeout(() => URL.revokeObjectURL(url), 5000)
+  }
+  $('ideasRestore').onclick = () => {
+    const inp = Object.assign(document.createElement('input'), { type: 'file', accept: '.json,application/json' })
+    inp.onchange = async () => {
+      try {
+        const data = JSON.parse(await inp.files[0].text())
+        const incoming = Array.isArray(data) ? data : data.saved
+        if (!Array.isArray(incoming)) throw new Error()
+        const have = localIdeas.read(), ids = new Set(have.map((x) => x.id))
+        const add = incoming.filter((x) => x && x.id && x.design && !ids.has(x.id))
+        localIdeas.write([...have, ...add])
+        status(`Loaded ${add.length} saved design${add.length === 1 ? '' : 's'} from the backup`)
+        loadIdeas()
+      } catch { status('That file is not a Dragon Hub Forge backup') }
+    }
+    inp.click()
+  }
+}
 
 async function loadIdeas() {
   let list = []
