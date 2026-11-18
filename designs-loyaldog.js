@@ -188,7 +188,7 @@ export const LOYALDOG_DESIGNS = [
     group: 'LoyalDog',
     name: 'Howling at the Moon',
     colors: DOG_COLOURS,
-    blurb: "The dog sits and sings, nose to the sky. Each white the dog sits on a ring round the staff with her orange ear back and her medium coat feathering her chest, tail and back legs; her howl rises in orange arcs to an orange moon on the rim. Spun, the moons and ears make an orange halo and the howls ripple.",
+    blurb: "The dog sits and sings, nose to the sky. Each white dog sits on a ring round the staff with her orange ear back and her medium coat feathering her chest, tail and back legs; her howl rises in orange arcs to an orange moon on the rim. Spun, the moons and ears make an orange halo and the howls ripple.",
     overrides: { strutW: 3, frameH: 3.5 },
     params: [
       { key: 'n', label: 'Dogs', unit: '', min: 2, max: 5, step: 1, value: 3 },
