@@ -243,13 +243,14 @@ const adaptorParams = (small, style) => [
 ]
 
 export const DESIGNS = [
-  ...CUSTOM_DESIGNS,
+  ...CUSTOM_DESIGNS.map((d) => Object.assign(d, { added: '2026-11-18' })),
   // ================================================================== ADAPTORS
   {
     id: 'adapt13',
     name: 'Pole adaptor 13 → 22',
     group: 'Adaptors',
     adaptor: true,
+    added: '2026-11-17',
     blurb: 'Slides onto a 13 mm pole and makes it 22 mm, so any standard hub fits. Push the adaptor on, then the hub, collar against the lip.',
     params: adaptorParams(13, 'solid'),
   },
@@ -258,6 +259,7 @@ export const DESIGNS = [
     name: 'Pole adaptor 16 → 22',
     group: 'Adaptors',
     adaptor: true,
+    added: '2026-11-17',
     blurb: 'Slides onto a 16 mm pole and makes it 22 mm, so any standard hub fits. Push the adaptor on, then the hub, collar against the lip.',
     params: adaptorParams(16, 'solid'),
   },
@@ -266,6 +268,7 @@ export const DESIGNS = [
     name: 'Collet adaptor',
     group: 'Adaptors',
     adaptor: true,
+    added: '2026-11-17',
     blurb: 'A split adaptor: the slit lets the hub squeeze it tight onto the pole. Grips poles that are a little over or under size.',
     params: adaptorParams(13, 'collet'),
   },
@@ -3269,11 +3272,12 @@ export const DESIGNS = [
       return { relief: { contours: rc.contours, holes, thicken: 0, gap: 0, slits: false } }
     },
   },
-  ...VEINS_DESIGNS,
-  ...DOGS_DESIGNS,
-  ...LOYALDOG_DESIGNS,
-  ...SIGNATURE_DESIGNS,
-  ...MELT_DESIGNS,
+  // `added` feeds the New filter in the design list
+  ...VEINS_DESIGNS.map((d) => Object.assign(d, { added: '2026-11-17' })),
+  ...DOGS_DESIGNS.map((d) => Object.assign(d, { added: '2026-11-17' })),
+  ...LOYALDOG_DESIGNS.map((d) => Object.assign(d, { added: '2026-11-17' })),
+  ...SIGNATURE_DESIGNS.map((d) => Object.assign(d, { added: '2026-11-17' })),
+  ...MELT_DESIGNS.map((d) => Object.assign(d, { added: '2026-11-18' })),
 ]
 
 const polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)]

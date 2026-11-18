@@ -11,7 +11,8 @@ import { randomUUID } from 'node:crypto'
 const ROOT = path.dirname(fileURLToPath(import.meta.url))
 const PORT = Number(process.argv[2] || process.env.PORT || 9560)
 const IDEAS = path.join(ROOT, 'ideas.json')
-const SERVE = new Set(['index.html', 'app.js', 'hub.js', 'geom.js', 'designs.js', 'worker.js', 'leds.js', 'bubbles.js', 'dome.js', 'dragonfly.js', 'designs-dogs.js', 'designs-veins.js', 'designs-signature.js', 'designs-loyaldog.js', 'designs-melt.js', 'designs-custom.js', 'create.js', 'led-ring-plan.html'])
+const LIKES = path.join(ROOT, 'likes.json') // [{ key, name, liked: [target] }], one record per person
+const SERVE = new Set(['index.html', 'app.js', 'hub.js', 'geom.js', 'designs.js', 'worker.js', 'leds.js', 'bubbles.js', 'dome.js', 'dragonfly.js', 'designs-dogs.js', 'designs-veins.js', 'designs-signature.js', 'designs-loyaldog.js', 'designs-melt.js', 'designs-custom.js', 'create.js', 'likes.js', 'led-ring-plan.html'])
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.wasm': 'application/wasm', '.svg': 'image/svg+xml' }
 
 const loadIdeas = () => {
@@ -50,6 +51,21 @@ http
     const url = new URL(req.url, 'http://x')
     const p = decodeURIComponent(url.pathname)
     try {
+      if (p === '/api/likes' && req.method === 'GET') {
+        try { return json(res, 200, JSON.parse(fs.readFileSync(LIKES, 'utf8'))) } catch { return json(res, 200, []) }
+      }
+      const lk = p.match(/^\/api\/likes\/([a-z0-9-]{1,40})$/)
+      if (lk && req.method === 'PUT') {
+        const body = JSON.parse(await readBody(req, 2e5))
+        let all = []
+        try { all = JSON.parse(fs.readFileSync(LIKES, 'utf8')) } catch {}
+        const rec = { key: lk[1], name: String(body.name || lk[1]).slice(0, 40), liked: (Array.isArray(body.liked) ? body.liked : []).map(String).filter((t) => /^[di]:[\w-]{1,80}$/.test(t)).slice(0, 2000) }
+        const i = all.findIndex((r) => r.key === rec.key)
+        if (i < 0) all.push(rec); else all[i] = rec
+        fs.writeFileSync(LIKES + '.tmp', JSON.stringify(all, null, 1))
+        fs.renameSync(LIKES + '.tmp', LIKES)
+        return json(res, 200, rec)
+      }
       if (p === '/api/ideas' && req.method === 'GET') return json(res, 200, loadIdeas())
       if (p === '/api/ideas' && req.method === 'POST') {
         const idea = JSON.parse(await readBody(req))

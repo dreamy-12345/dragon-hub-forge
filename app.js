@@ -4,6 +4,7 @@ import { DESIGNS, COMMON_PARAMS, MATERIALS, defaults, toSTL, toSVG, to3MF } from
 import { LED_MODES, PAGE_NAMES } from './leds.js'
 import { BubbleSim } from './bubbles.js'
 import { initCreate } from './create.js'
+import { createLikes } from './likes.js'
 
 const $ = (id) => document.getElementById(id)
 // UV colours glow under the blacklight view; the others stay dark
@@ -473,61 +474,197 @@ function drawThumb(cv, polys, R, glow = '#ffae2a') {
   fill(polys.pods, glow === 'rainbow' ? '#ff3d7f' : glow)
 }
 
-function renderGallery() {
+// ---------------------------------------------------------------- gallery --
+// One list for everything: built-in designs, your creations and saved designs.
+// Search, a few filter chips, a sort, collapsible groups (remembered) and a
+// heart on every card. Entries are { key: 'd:id' | 'i:id', design?, idea? }.
+const LIST_KEY = 'dragonhub-list'
+const listUI = (() => { try { return { filter: 'all', sort: 'groups', q: '', collapsed: [], ...JSON.parse(localStorage.getItem(LIST_KEY) || '{}') } } catch { return { filter: 'all', sort: 'groups', q: '', collapsed: [] } } })()
+const keepList = () => { try { localStorage.setItem(LIST_KEY, JSON.stringify(listUI)) } catch {} }
+const FILTERS = [['all', 'All'], ['liked', '♥ Mine'], ['top', 'Most liked'], ['creations', 'Creations'], ['saved', 'Saved'], ['new', 'New']]
+let ideaList = [], ideaSig = ''
+const NEW_DAYS = 30
+const isNew = (e) => {
+  const t = e.design ? e.design.added : e.idea.time
+  return !!t && Date.now() - new Date(t).getTime() < NEW_DAYS * 864e5
+}
+const when = (e) => (e.design ? e.design.added || '' : e.idea.time || '')
+const titleOf = (e) => (e.design ? e.design.name : e.idea.name || 'Untitled')
+const likeCount = (e) => likes.count(e.key) + (e.idea?.votes || 0) // older anonymous +1s still count
+
+function galleryTools() {
   const g = $('gallery')
-  g.querySelectorAll('.design, h3').forEach((n) => n.remove())
-  let group = null
-  const order = [...new Set(DESIGNS.map((d) => d.group))] // each group once, in first-seen order
-  for (const d of [...DESIGNS].sort((x, y) => order.indexOf(x.group) - order.indexOf(y.group))) {
-    if (d.group !== group) {
-      group = d.group
-      g.insertAdjacentHTML('beforeend', `<h3>${GROUPS[group] || group}</h3>`)
-    }
+  if ($('listTools')) return
+  g.querySelector('h2').insertAdjacentHTML('afterend', `<div class="listtools" id="listTools">
+    <input type="search" id="listQ" placeholder="Search designs" aria-label="Search designs" autocomplete="off">
+    <div class="chips" id="listChips" role="group" aria-label="Show"></div>
+    <label class="sortby">Sort <select id="listSort"><option value="groups">by group</option><option value="liked">most liked</option><option value="new">newest</option><option value="az">A to Z</option></select></label>
+    <div class="who" id="whoBox" hidden><span>Your name, so hearts are yours:</span><input id="whoName" maxlength="40" placeholder="Name"><button class="btn primary" id="whoOk">OK</button></div>
+  </div>`)
+  $('listQ').value = listUI.q
+  $('listQ').oninput = (e) => { listUI.q = e.target.value; keepList(); renderGallery() }
+  $('listSort').value = listUI.sort
+  $('listSort').onchange = (e) => { listUI.sort = e.target.value; keepList(); renderGallery() }
+  for (const [v, label] of FILTERS) {
     const b = document.createElement('button')
-    b.className = 'design'
-    b.setAttribute('aria-pressed', d.id === state.design)
-    b.innerHTML = `<canvas width="128" height="128"></canvas><div><b>${d.name}</b><small>${d.blurb.split('. ')[0].replace(/\.$/, '')}.</small></div>`
-    b.onclick = () => {
-      state.design = d.id
-      g.querySelectorAll('.design').forEach((n) => n.setAttribute('aria-pressed', n === b))
-      if (d.colors) {
-        // designs that only work in particular colours set them
-        state.color = d.colors.A
-        state.colorB = d.colors.B
-        for (const [box, hex] of [['swatches', d.colors.A], ['swatchesB', d.colors.B]])
-          $(box).querySelectorAll('.swatch').forEach((s) => s.setAttribute('aria-pressed', s.style.background && new THREE.Color(s.style.background).getHexString() === hex.slice(1)))
-      }
-      renderParams()
-      applyLook()
-      schedule(0)
-    }
-    g.append(b)
-    d._btn = b
-    d._thumb = b.querySelector('canvas')
+    b.className = 'chip'
+    b.textContent = label
+    b.dataset.f = v
+    b.onclick = () => { listUI.filter = v; keepList(); renderGallery() }
+    $('listChips').append(b)
   }
-  renderCreationButtons()
+  $('whoOk').onclick = () => {
+    if (!likes.setName($('whoName').value)) return $('whoName').focus()
+    $('whoBox').hidden = true
+    if (pendingLike) { const t = pendingLike; pendingLike = null; likes.toggle(t) }
+  }
+  $('whoName').onkeydown = (e) => e.key === 'Enter' && $('whoOk').click()
 }
 
-// saved creations sit right under "My creation" in the list; a click opens them in Create
-const builtHooks = []
-let creationList = [], creator = null
-function renderCreationButtons() {
-  const anchor = DESIGNS.find((d) => d.custom)?._btn
-  if (!anchor) return
-  document.querySelectorAll('.design.creation').forEach((n) => n.remove())
-  let after = anchor
-  for (const idea of creationList) {
-    const b = document.createElement('button')
-    b.className = 'design creation'
-    b.innerHTML = `<img alt="" width="64" height="64" style="width:64px;height:64px"><div><b></b><small></small></div>`
-    if (idea.thumb) b.querySelector('img').src = idea.thumb
-    b.querySelector('b').textContent = idea.name || 'Untitled'
-    b.querySelector('small').textContent = [idea.note, `${Number(idea.grams || 0).toFixed(0)} g`].filter(Boolean).join(' · ')
-    b.onclick = () => creator?.openCreation(idea)
-    after.after(b)
-    after = b
+let pendingLike = null
+async function tapHeart(key) {
+  await likes.ready
+  if (!likes.me()) {
+    pendingLike = key
+    $('whoBox').hidden = false
+    $('whoName').focus()
+    return
+  }
+  likes.toggle(key)
+}
+
+function heartHTML(e) {
+  const n = likeCount(e), on = likes.likedByMe(e.key)
+  const who = likes.names(e.key)
+  const tip = who.length ? `Liked by ${who.join(', ')}` + (e.idea?.votes ? ` and ${e.idea.votes} earlier` : '') : 'Like it'
+  return `<span class="heart" role="button" tabindex="0" aria-pressed="${on}" title="${tip.replace(/"/g, '&quot;')}" aria-label="${tip.replace(/"/g, '&quot;')}">${on ? '♥' : '♡'}${n ? ' ' + n : ''}</span>`
+}
+
+function entries() {
+  const designs = DESIGNS.map((d) => ({ key: 'd:' + d.id, design: d, group: d.group }))
+  const ideas = ideaList.map((i) => ({ key: 'i:' + i.id, idea: i, group: i.design === 'custom' ? 'Creations' : 'Saved' }))
+  const q = listUI.q.trim().toLowerCase()
+  const match = (e) => !q || [titleOf(e), e.design?.blurb, e.idea?.note, GROUPS[e.group] || e.group, e.idea && (DESIGNS.find((d) => d.id === e.idea.design)?.name)].join(' ').toLowerCase().includes(q)
+  const mine = likes.myLikes()
+  let list
+  switch (listUI.filter) {
+    case 'liked': list = [...designs, ...ideas].filter((e) => mine.has(e.key)); break
+    case 'top': list = [...designs, ...ideas].filter((e) => likeCount(e) > 0); break
+    case 'creations': list = [...designs.filter((e) => e.design.custom), ...ideas.filter((e) => e.group === 'Creations')]; break
+    case 'saved': list = ideas; break
+    case 'new': list = [...designs, ...ideas].filter(isNew); break
+    default: list = [...designs, ...ideas.filter((e) => e.group === 'Creations')] // saved designs have their own filter
+  }
+  if (q) list = [...designs, ...ideas].filter(match) // search looks everywhere
+  const sort = listUI.filter === 'top' && listUI.sort === 'groups' ? 'liked' : listUI.filter === 'new' && listUI.sort === 'groups' ? 'new' : listUI.sort
+  if (sort === 'liked') list.sort((a, b) => likeCount(b) - likeCount(a) || titleOf(a).localeCompare(titleOf(b)))
+  else if (sort === 'new') list.sort((a, b) => String(when(b)).localeCompare(String(when(a))))
+  else if (sort === 'az') list.sort((a, b) => titleOf(a).localeCompare(titleOf(b)))
+  return { list, all: [...designs, ...ideas], grouped: sort === 'groups' && !q, mine }
+}
+
+function renderGallery() {
+  galleryTools()
+  const g = $('gallery')
+  g.querySelectorAll('.design, h3, .empty').forEach((n) => n.remove())
+  for (const b of $('listChips').children) b.setAttribute('aria-pressed', b.dataset.f === listUI.filter)
+  const { list, all, grouped, mine } = entries()
+  const order = [...new Set(DESIGNS.map((d) => d.group))]
+  const groupOf = (e) => e.group
+  let rows = list
+  if (grouped) {
+    rows = [...list].sort((a, b) => order.indexOf(groupOf(a)) - order.indexOf(groupOf(b)))
+    // pin what you like near the top of the full list
+    if (listUI.filter === 'all' && mine.size) {
+      const pinned = all.filter((e) => mine.has(e.key)).map((e) => ({ ...e, group: '__liked' }))
+      rows = [...pinned, ...rows]
+    }
+  }
+  if (!rows.length) {
+    g.insertAdjacentHTML('beforeend', `<div class="empty">${listUI.filter === 'liked' ? 'No hearts yet. Tap ♡ on any design you love.' : listUI.filter === 'top' ? 'Nothing has a heart yet. Be the first!' : listUI.q ? 'Nothing matches. Try a shorter word.' : 'Nothing here yet.'}</div>`)
+  }
+  const counts = {}
+  for (const e of rows) counts[e.group] = (counts[e.group] || 0) + 1
+  let group = null
+  for (const e of rows) {
+    if (grouped && e.group !== group) {
+      group = e.group
+      const closed = listUI.collapsed.includes(group)
+      const h = document.createElement('h3')
+      h.innerHTML = `<button class="grouphead" aria-expanded="${!closed}"><span>${closed ? '▸' : '▾'} ${group === '__liked' ? '♥ Liked by me' : GROUPS[group] || group}</span><small>${counts[group]}</small></button>`
+      const name = group // the loop moves on; the click needs this heading's group
+      h.firstChild.onclick = () => {
+        listUI.collapsed = closed ? listUI.collapsed.filter((x) => x !== name) : [...new Set([...listUI.collapsed, name])]
+        keepList()
+        renderGallery()
+      }
+      g.append(h)
+    }
+    if (grouped && listUI.collapsed.includes(e.group)) continue
+    g.append(e.design ? designCard(e) : ideaCard(e))
   }
 }
+
+function designCard(e) {
+  const d = e.design, g = $('gallery')
+  const b = document.createElement('button')
+  b.className = 'design'
+  b.setAttribute('aria-pressed', d.id === state.design)
+  b.innerHTML = `<canvas width="128" height="128"></canvas><div><b>${d.name}</b><small>${d.blurb.split('. ')[0].replace(/\.$/, '')}.</small></div>${heartHTML(e)}`
+  b.onclick = (ev) => {
+    if (ev.target.closest('.heart')) return tapHeart(e.key)
+    state.design = d.id
+    g.querySelectorAll('.design').forEach((n) => n.setAttribute('aria-pressed', n === b))
+    if (d.colors) {
+      // designs that only work in particular colours set them
+      state.color = d.colors.A
+      state.colorB = d.colors.B
+      for (const [box, hex] of [['swatches', d.colors.A], ['swatchesB', d.colors.B]])
+        $(box).querySelectorAll('.swatch').forEach((s) => s.setAttribute('aria-pressed', s.style.background && new THREE.Color(s.style.background).getHexString() === hex.slice(1)))
+    }
+    renderParams()
+    applyLook()
+    schedule(0)
+  }
+  heartKeys(b, e.key)
+  // a design can show twice (also pinned under Liked by me): every card gets its thumbnail
+  d._btn = b
+  d._thumb = b.querySelector('canvas')
+  d._thumb.dataset.thumb = d.id
+  if (d._thumbData) drawThumb(d._thumb, ...d._thumbData, d.glow)
+  return b
+}
+
+function ideaCard(e) {
+  const idea = e.idea
+  const d = DESIGNS.find((x) => x.id === idea.design)
+  const b = document.createElement('button')
+  b.className = 'design creation'
+  b.innerHTML = `<img alt="" width="64" height="64" style="width:64px;height:64px"><div><b></b><small></small></div>${heartHTML(e)}`
+  if (idea.thumb) b.querySelector('img').src = idea.thumb
+  b.querySelector('b').textContent = idea.name || 'Untitled'
+  b.querySelector('small').textContent = [idea.design === 'custom' ? idea.note : d?.name, `${Number(idea.grams || 0).toFixed(0)} g`].filter(Boolean).join(' · ')
+  b.onclick = (ev) => {
+    if (ev.target.closest('.heart')) return tapHeart(e.key)
+    openIdea(idea)
+  }
+  heartKeys(b, e.key)
+  return b
+}
+
+function heartKeys(card, key) {
+  const h = card.querySelector('.heart')
+  h.onkeydown = (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); tapHeart(key) } }
+}
+
+/** Every design's thumbnail is drawn into whichever card shows it, now and after the list re-renders. */
+function setThumb(d, polys, R) {
+  d._thumbData = [polys, R]
+  for (const c of document.querySelectorAll(`canvas[data-thumb="${d.id}"]`)) drawThumb(c, polys, R, d.glow)
+}
+
+const builtHooks = []
+let creator = null
 
 async function fillThumbs() {
   for (const d of DESIGNS) {
@@ -535,7 +672,7 @@ async function fillThumbs() {
       const p = { ...state.params[d.id] }
       const k = keyOf(d.id, p)
       if (!cache.has(k)) remember(k, await thumbWork('build', { design: d.id, params: p, material: state.material, bed: Number(state.bed) }))
-      drawThumb(d._thumb, cache.get(k).polygons, cache.get(k).viewR || p.diameter / 2, d.glow)
+      setThumb(d, cache.get(k).polygons, cache.get(k).viewR || p.diameter / 2)
       // someone is waiting on exactly this hub: show it now
       if (k === keyOf(state.design, params())) rebuild()
     } catch {}
@@ -682,7 +819,7 @@ function show(hub, d, p, t0) {
   const poleD = hub.adaptor ? p.small : p.poleOD // an adaptor shows its thin pole running through it
   frameView(hub.viewR || p.diameter / 2)
   pole.scale.set(poleD / 22, 1, poleD / 22)
-  if (d._thumb) drawThumb(d._thumb, hub.polygons, hub.viewR || p.diameter / 2, d.glow)
+  setThumb(d, hub.polygons, hub.viewR || p.diameter / 2)
   applyLook()
   renderVerdict(hub, p)
   renderExports()
@@ -1019,6 +1156,36 @@ const ideasApi = LOCAL
       remove: (idea) => fetch(`api/ideas/${idea.id}`, { method: 'DELETE' }),
     }
 
+const likes = createLikes({ db: DB, local: LOCAL })
+likes.onChange(() => { renderGallery(); renderIdeaHearts() })
+likes.ready.then(likes.refresh)
+setInterval(likes.refresh, 20000)
+
+/** Open a saved design or creation (creations open in Create, ready to remix). */
+function openIdea(idea) {
+  const d = DESIGNS.find((x) => x.id === idea.design)
+  if (!d) return status('that saved design needs a newer forge')
+  if (d.custom) return creator?.openCreation(idea)
+  state.design = d.id
+  state.params[d.id] = { ...defaults(d), ...idea.params }
+  if (idea.material in MATERIALS) { state.material = idea.material; matSel.value = idea.material; renderGuide() }
+  if (idea.color?.startsWith?.('glow:')) state.glow = idea.color.slice(5)
+  renderGallery(); renderParams(); schedule(0); fillThumbs()
+}
+
+/** Hearts on the saved list (right side) follow the same likes. */
+function renderIdeaHearts() {
+  for (const el of document.querySelectorAll('#ideas .idea')) {
+    const b = el.querySelector('[data-a="vote"]'), idea = el._idea
+    if (!b || !idea) continue
+    const e = { key: 'i:' + idea.id, idea }
+    const n = likeCount(e), on = likes.likedByMe(e.key), who = likes.names(e.key)
+    b.textContent = `${on ? '♥' : '♡'} ${n || ''}`.trim()
+    b.setAttribute('aria-pressed', on)
+    b.title = who.length ? `Liked by ${who.join(', ')}` + (idea.votes ? ` and ${idea.votes} earlier` : '') : 'Like it'
+  }
+}
+
 if (LOCAL && $('savedWhere')) $('savedWhere').textContent = 'Portable copy: designs save in this browser only. Starts with the designs saved so far.'
 if (DB && $('savedWhere')) $('savedWhere').textContent = 'Shared with everyone who can open this project. Open restores every setting.'
 
@@ -1030,42 +1197,38 @@ async function loadIdeas() {
     $('ideas').innerHTML = '<div class="empty">Shortlist server not reachable.</div>'
     return
   }
-  creationList = list.filter((x) => x.design === 'custom').sort((a, b) => String(b.time || '').localeCompare(String(a.time || '')))
-  renderCreationButtons()
+  // re-draw the list only when something changed (this runs every 15 s)
+  const sig = JSON.stringify(list.map((i) => [i.id, i.name, i.votes, i.thumb?.length]))
+  if (sig !== ideaSig) { ideaSig = sig; ideaList = list; renderGallery() }
   const box = $('ideas')
   if (!list.length) {
     box.innerHTML = '<div class="empty">Nothing saved yet. Tune a hub you like, name it and press Save design.</div>'
     return
   }
-  list.sort((a, b) => (b.votes || 0) - (a.votes || 0) || String(b.time || '').localeCompare(String(a.time || '')))
+  list = [...list].sort((a, b) => likeCount({ key: 'i:' + b.id, idea: b }) - likeCount({ key: 'i:' + a.id, idea: a }) || String(b.time || '').localeCompare(String(a.time || '')))
   box.innerHTML = ''
   for (const idea of list) {
     const d = DESIGNS.find((x) => x.id === idea.design)
     const el = document.createElement('div')
     el.className = 'idea'
     el.innerHTML = `<img alt=""><div><b></b><small></small></div>
-      <div class="acts"><button data-a="load">Open</button><button data-a="vote">+1 · ${idea.votes || 0}</button><button data-a="del">Delete</button></div>`
+      <div class="acts"><button data-a="load">Open</button><button data-a="vote">♡</button><button data-a="del">Delete</button></div>`
     if (idea.thumb) el.querySelector('img').src = idea.thumb
     el.querySelector('b').textContent = idea.name || 'Untitled'
     el.querySelector('small').textContent = `${d ? d.name : idea.design || '?'} · ${Number(idea.grams || 0).toFixed(0)} g${idea.note ? ' · ' + idea.note : ''}`
+    el._idea = idea
     el.onclick = async (e) => {
       const a = e.target.dataset?.a
-      if (a === 'load' && d?.custom) creator?.openCreation(idea)
-      else if (a === 'load' && d) {
-        state.design = d.id
-        state.params[d.id] = { ...defaults(d), ...idea.params }
-        if (idea.material in MATERIALS) { state.material = idea.material; matSel.value = idea.material; renderGuide() }
-        if (idea.color?.startsWith?.('glow:')) state.glow = idea.color.slice(5)
-        renderGallery(); renderParams(); schedule(0); fillThumbs()
-      } else if (a === 'vote') {
-        await ideasApi.vote(idea); loadIdeas()
-      } else if (a === 'del') {
+      if (a === 'load') openIdea(idea)
+      else if (a === 'vote') tapHeart('i:' + idea.id)
+      else if (a === 'del') {
         if (e.target.dataset.armed) { await ideasApi.remove(idea); loadIdeas() }
         else { e.target.dataset.armed = 1; e.target.textContent = 'Sure?' }
       }
     }
     box.append(el)
   }
+  renderIdeaHearts()
 }
 
 $('headerSave').onclick = () => {
