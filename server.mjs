@@ -11,7 +11,7 @@ import { randomUUID } from 'node:crypto'
 const ROOT = path.dirname(fileURLToPath(import.meta.url))
 const PORT = Number(process.argv[2] || process.env.PORT || 9560)
 const IDEAS = path.join(ROOT, 'ideas.json')
-const SERVE = new Set(['index.html', 'app.js', 'hub.js', 'geom.js', 'designs.js', 'worker.js', 'leds.js', 'bubbles.js', 'dome.js', 'dragonfly.js', 'designs-dogs.js', 'designs-veins.js', 'designs-signature.js', 'designs-loyaldog.js', 'designs-melt.js', 'led-ring-plan.html'])
+const SERVE = new Set(['index.html', 'app.js', 'hub.js', 'geom.js', 'designs.js', 'worker.js', 'leds.js', 'bubbles.js', 'dome.js', 'dragonfly.js', 'designs-dogs.js', 'designs-veins.js', 'designs-signature.js', 'designs-loyaldog.js', 'designs-melt.js', 'designs-custom.js', 'create.js', 'led-ring-plan.html'])
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.wasm': 'application/wasm', '.svg': 'image/svg+xml' }
 
 const loadIdeas = () => {

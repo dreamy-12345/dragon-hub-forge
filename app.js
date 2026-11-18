@@ -3,6 +3,7 @@ import { OrbitControls } from './vendor/OrbitControls.js'
 import { DESIGNS, COMMON_PARAMS, MATERIALS, defaults, toSTL, toSVG, to3MF } from './hub.js'
 import { LED_MODES, PAGE_NAMES } from './leds.js'
 import { BubbleSim } from './bubbles.js'
+import { initCreate } from './create.js'
 
 const $ = (id) => document.getElementById(id)
 // UV colours glow under the blacklight view; the others stay dark
@@ -15,14 +16,14 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Thai mythology', Maori: 'Māori-inspired (moko & whakairo)', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Thai mythology', Maori: 'Māori-inspired (moko & whakairo)', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
   try { return JSON.parse(localStorage.getItem('dragonhub2') || '{}') } catch { return {} }
 })()
 const state = {
-  design: DESIGNS.find((d) => d.id === saved.design) ? saved.design : DESIGNS.find((d) => !d.adaptor).id,
+  design: DESIGNS.find((d) => d.id === saved.design) ? saved.design : DESIGNS.find((d) => !d.adaptor && !d.custom).id,
   params: {},
   material: saved.material in MATERIALS ? saved.material : 'tpu95',
   color: saved.color || FILAMENTS[0][1], // colour A: the frame
@@ -504,6 +505,28 @@ function renderGallery() {
     d._btn = b
     d._thumb = b.querySelector('canvas')
   }
+  renderCreationButtons()
+}
+
+// saved creations sit right under "My creation" in the list; a click opens them in Create
+const builtHooks = []
+let creationList = [], creator = null
+function renderCreationButtons() {
+  const anchor = DESIGNS.find((d) => d.custom)?._btn
+  if (!anchor) return
+  document.querySelectorAll('.design.creation').forEach((n) => n.remove())
+  let after = anchor
+  for (const idea of creationList) {
+    const b = document.createElement('button')
+    b.className = 'design creation'
+    b.innerHTML = `<img alt="" width="64" height="64" style="width:64px;height:64px"><div><b></b><small></small></div>`
+    if (idea.thumb) b.querySelector('img').src = idea.thumb
+    b.querySelector('b').textContent = idea.name || 'Untitled'
+    b.querySelector('small').textContent = [idea.note, `${Number(idea.grams || 0).toFixed(0)} g`].filter(Boolean).join(' · ')
+    b.onclick = () => creator?.openCreation(idea)
+    after.after(b)
+    after = b
+  }
 }
 
 async function fillThumbs() {
@@ -667,6 +690,7 @@ function show(hub, d, p, t0) {
   hideLoader()
   status(`built in ${Math.round(performance.now() - t0)} ms · ${hub.stats.tris.toLocaleString()} triangles`)
   persist()
+  for (const f of builtHooks) f(hub, d, p)
 }
 
 const status = (s) => ($('status').textContent = s)
@@ -1006,6 +1030,8 @@ async function loadIdeas() {
     $('ideas').innerHTML = '<div class="empty">Shortlist server not reachable.</div>'
     return
   }
+  creationList = list.filter((x) => x.design === 'custom').sort((a, b) => String(b.time || '').localeCompare(String(a.time || '')))
+  renderCreationButtons()
   const box = $('ideas')
   if (!list.length) {
     box.innerHTML = '<div class="empty">Nothing saved yet. Tune a hub you like, name it and press Save design.</div>'
@@ -1024,7 +1050,8 @@ async function loadIdeas() {
     el.querySelector('small').textContent = `${d ? d.name : idea.design || '?'} · ${Number(idea.grams || 0).toFixed(0)} g${idea.note ? ' · ' + idea.note : ''}`
     el.onclick = async (e) => {
       const a = e.target.dataset?.a
-      if (a === 'load' && d) {
+      if (a === 'load' && d?.custom) creator?.openCreation(idea)
+      else if (a === 'load' && d) {
         state.design = d.id
         state.params[d.id] = { ...defaults(d), ...idea.params }
         if (idea.material in MATERIALS) { state.material = idea.material; matSel.value = idea.material; renderGuide() }
@@ -1084,3 +1111,44 @@ rebuild()
 fillThumbs()
 loadIdeas()
 setInterval(loadIdeas, 15000)
+
+creator = initCreate({
+  params: () => state.params.custom,
+  selectCustom: () => {
+    if (state.design === 'custom') return
+    state.design = 'custom'
+    document.querySelectorAll('#gallery .design').forEach((n) => n.setAttribute('aria-pressed', n === DESIGNS.find((d) => d.custom)._btn))
+    renderParams()
+  },
+  schedule: (ms) => { if (state.design === 'custom') schedule(ms) },
+  renderParams: () => { if (state.design === 'custom') renderParams() },
+  current: () => current,
+  onBuilt: (fn) => builtHooks.push(fn),
+  ideasApi,
+  refreshIdeas: loadIdeas,
+  material: () => state.material,
+  loadParams: (p) => {
+    const d = DESIGNS.find((x) => x.custom)
+    state.params.custom = { ...defaults(d), ...p }
+    state.design = 'custom'
+    renderGallery(); renderParams(); schedule(0)
+  },
+  balance: async () => {
+    if (state.design !== 'custom') return
+    Object.assign(params(), await work('balance', { design: 'custom', params: params(), key: 'cw', material: state.material }))
+    renderParams()
+    schedule(0)
+  },
+  thumb: () => {
+    const cv = document.createElement('canvas')
+    cv.width = cv.height = 160
+    drawThumb(cv, current.hub.polygons, current.hub.viewR || current.params.diameter / 2, glowColor())
+    return cv.toDataURL('image/png')
+  },
+  download: (kind) => {
+    if (!current || current.design.id !== 'custom') return status('still building…')
+    const m = current.hub.meshes, name = 'my-creation-' + current.params.diameter + 'mm'
+    if (kind === '3mf' && m.glow) download(to3MF([['frame (colour A)', m.frame], ['shapes (colour B)', m.glow]], 'My creation'), name + '-2colour.3mf', 'model/3mf')
+    else download(toSTL(m.combined, 'My creation'), name + '.stl')
+  },
+})

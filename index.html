@@ -149,6 +149,46 @@ details > div { display: grid; gap: 10px; margin-top: 10px; }
   .side { border-left: 0; overflow: visible; }
   header { flex-wrap: wrap; }
 }
+
+/* create: draw or drop a picture, the forge makes it a hub */
+.createBtn { font-weight: 600; }
+.createBtn[aria-pressed="true"] { border-color: var(--ember); color: var(--ember); }
+body.creating .app { grid-template-columns: 380px minmax(0, 1fr) 340px; }
+body.creating .gallery { display: none; }
+.create { grid-column: 1; grid-row: 2; overflow-y: auto; border-right: 1px solid var(--line); padding: 14px; display: grid; gap: 14px; align-content: start; position: relative; }
+.create.drop { outline: 3px dashed var(--ember); outline-offset: -6px; }
+.create .top { display: flex; align-items: center; gap: 8px; }
+.create .top h2 { font: 700 15px var(--display); margin: 0; flex: 1; }
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px; }
+.step h3 { margin: 0; display: flex; align-items: center; gap: 10px; font: 600 15px var(--body); }
+.step h3 .n { width: 28px; height: 28px; border-radius: 50%; background: var(--ember); color: #1a1206; display: grid; place-items: center; font: 700 14px var(--display); flex: none; }
+.pad { width: 100%; aspect-ratio: 1; background: #fff; border-radius: 10px; touch-action: none; cursor: crosshair; display: block; }
+.tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.tools .btn { padding: 8px 10px; min-height: 40px; }
+.tools .btn[aria-pressed="true"] { border-color: var(--ember); color: var(--ember); }
+.tools .dot { display: inline-block; border-radius: 50%; background: currentColor; vertical-align: middle; }
+.big { font-size: 15px; padding: 12px 14px; min-height: 48px; border-radius: 10px; }
+.levels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.levels .btn { padding: 8px 4px; min-height: 44px; font-size: 13px; }
+.levels .btn[aria-pressed="true"] { border-color: var(--ember); color: var(--ember); background: color-mix(in srgb, var(--ember) 12%, var(--raise)); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.cmsg { font-size: 14px; line-height: 1.35; padding: 8px 10px; border-radius: 8px; background: var(--raise); }
+.cmsg.good { color: var(--good); } .cmsg.bad { color: var(--warn); }
+.fixes { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 13px; color: var(--muted); }
+.checks { display: flex; flex-wrap: wrap; gap: 6px; }
+.create details summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 4px 0; }
+.create details[open] { display: grid; gap: 10px; }
+.create input[type=text] { background: var(--raise); border: 1px solid var(--line); border-radius: 8px; padding: 10px; width: 100%; font-size: 15px; }
+.create .ctl input[type=range] { height: 28px; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; min-height: 36px; }
+.check input { width: 20px; height: 20px; accent-color: var(--ember); }
+.party { position: absolute; left: 50%; top: 40%; width: 0; height: 0; pointer-events: none; z-index: 5; }
+.party i { position: absolute; width: 9px; height: 9px; border-radius: 2px; animation: pop 1.2s cubic-bezier(.2,.7,.3,1) forwards; }
+@keyframes pop { from { transform: translate(0, 0) rotate(0); opacity: 1; } to { transform: translate(var(--x), var(--y)) rotate(var(--r)); opacity: 0; } }
+@media (max-width: 1000px) {
+  body.creating .app { grid-template-columns: 1fr; }
+  .create { grid-column: 1; grid-row: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+}
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
@@ -160,11 +200,69 @@ details > div { display: grid; gap: 10px; margin-top: 10px; }
     <h1>Dragon Hub <span>Forge</span></h1>
     <div class="sub">Printable hubs for 22, 16 and 13 mm dragon staffs</div>
     <div class="grow"></div>
+    <button class="btn createBtn" id="createBtn" aria-pressed="false">✏️ Create your own</button>
     <button class="btn primary" id="headerSave">Save design</button>
     <div class="status" id="status">loading geometry engine…</div>
   </header>
 
   <nav class="gallery" id="gallery" aria-label="Designs"><h2>Designs</h2></nav>
+
+  <aside class="create" id="createPanel" hidden aria-label="Create your own hub">
+    <div class="top"><h2>Create your own</h2><button class="btn" id="cClose">Back to designs</button></div>
+    <div class="cmsg" id="cMsg" role="status" aria-live="polite">Draw something or drop a picture in.</div>
+    <div class="party" id="cParty" aria-hidden="true"></div>
+
+    <section class="step">
+      <h3><span class="n">1</span>Draw it or add a picture</h3>
+      <canvas class="pad" id="cPad" width="480" height="480" aria-label="Drawing pad: draw in black"></canvas>
+      <div class="tools">
+        <button class="btn" id="cBrush" aria-pressed="true" title="Brush (B)">✏️ Draw</button>
+        <button class="btn" id="cEraser" aria-pressed="false" title="Eraser (E)">🧽 Erase</button>
+        <button class="btn" data-size="6" title="Thin ( [ )" aria-label="Thin brush"><span class="dot" style="width:6px;height:6px"></span></button>
+        <button class="btn" data-size="14" title="Medium" aria-label="Medium brush"><span class="dot" style="width:11px;height:11px"></span></button>
+        <button class="btn" data-size="28" title="Thick ( ] )" aria-label="Thick brush"><span class="dot" style="width:17px;height:17px"></span></button>
+        <button class="btn" id="cUndo" title="Undo (⌘Z)" aria-label="Undo drawing">↶</button>
+        <button class="btn" id="cRedo" title="Redo (⇧⌘Z)" aria-label="Redo drawing">↷</button>
+        <button class="btn" id="cClear">Clear</button>
+      </div>
+      <button class="btn primary big" id="cPick">🖼️ Add a picture (or drop / paste one)</button>
+      <input type="file" id="cFile" accept="image/*,.svg" hidden>
+    </section>
+
+    <section class="step">
+      <h3><span class="n">2</span>Make it a hub</h3>
+      <div class="ctl"><label for="cCopies">Copies</label><output id="cCopiesOut"></output><input type="range" id="cCopies" min="1" max="12" step="1"></div>
+      <div class="ctl"><label for="cSize">Size</label><output id="cSizeOut"></output><input type="range" id="cSize" min="30" max="100" step="1"></div>
+      <div class="levels" role="group" aria-label="Prints as">
+        <button class="btn" data-level="raised">Raised</button><button class="btn" data-level="flat">Flat</button>
+        <button class="btn" data-level="outline">Outline</button><button class="btn" data-level="outline on flat">Both</button>
+      </div>
+      <div class="row2"><button class="btn big" id="cSurprise">🎲 Surprise me</button><button class="btn big" id="cBalance">⚖️ Balance it</button></div>
+      <div class="row2"><button class="btn" id="cSetUndo">↶ Undo setting</button><button class="btn" id="cSetRedo">↷ Redo</button></div>
+      <div class="checks" id="cChecks"></div>
+      <ul class="fixes" id="cFixes" aria-label="What the forge fixed"></ul>
+      <details>
+        <summary>Fine-tune</summary>
+        <div class="ctl"><label for="cTurn">Turn</label><output id="cTurnOut"></output><input type="range" id="cTurn" min="-180" max="180" step="1"></div>
+        <div class="ctl"><label for="cPush">In or out</label><output id="cPushOut"></output><input type="range" id="cPush" min="-100" max="100" step="1"></div>
+        <div class="ctl"><label for="cLine">Outline width</label><output id="cLineOut"></output><input type="range" id="cLine" min="2" max="8" step="0.1"></div>
+        <label class="check"><input type="checkbox" id="cMirror"> Flip every other copy</label>
+        <div class="ctl"><label for="cDark">Darkness that counts as ink</label><output id="cDarkOut"></output><input type="range" id="cDark" min="20" max="240" step="1"></div>
+        <div class="ctl"><label for="cSoft">Edges</label><output id="cSoftOut"></output><input type="range" id="cSoft" min="0" max="3" step="1"></div>
+        <label class="check"><input type="checkbox" id="cInvert"> Swap dark and light</label>
+      </details>
+    </section>
+
+    <section class="step">
+      <h3><span class="n">3</span>Save it or print it <span class="pill good" id="cWeight" style="margin-left:auto"></span></h3>
+      <input type="text" id="cName" placeholder="Name it" maxlength="80">
+      <input type="text" id="cAuthor" placeholder="Made by (your name)" maxlength="60">
+      <button class="btn primary big" id="cSave">💾 Save to Your creations</button>
+      <div class="row2"><button class="btn big" id="cStl">⬇️ STL</button><button class="btn big" id="c3mf">⬇️ 2-colour 3MF</button></div>
+      <h3 style="font-size:13px;color:var(--muted)">Your creations</h3>
+      <div class="ideas" id="cList"></div>
+    </section>
+  </aside>
 
   <main class="stage" id="stage">
     <canvas class="gl" id="gl"></canvas>

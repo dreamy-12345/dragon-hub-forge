@@ -253,8 +253,10 @@ export function buildHub(wasm, design, p, opts = {}) {
           sec = k(sec.add(k(k(CrossSection.union(bits)).offset(minW * 0.45, 'Round', 2, 16))))
         }
       }
-      if (thinN) fixes.push(`thickened ${thinN} thin bit${thinN > 1 ? 's' : ''}`)
-      if (speckN) fixes.push(`removed ${speckN} tiny speck${speckN > 1 ? 's' : ''}`)
+      // a shape repeated N times: say it per copy
+      const per = Math.max(1, out.copies || 1), t = Math.ceil(thinN / per), sp = Math.ceil(speckN / per), each = per > 1 ? ' in each copy' : ''
+      if (t) fixes.push(`thickened ${t} thin bit${t > 1 ? 's' : ''}${each}`)
+      if (sp) fixes.push(`removed ${sp} tiny speck${sp > 1 ? 's' : ''}${each}`)
       return sec
     }
     if (out.frameFix) frame = fixUp(frame, out.frameFix.minW, out.frameFix.minArea)

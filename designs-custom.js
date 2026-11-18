@@ -128,7 +128,7 @@ export const CUSTOM_DESIGNS = [
       if (joined) fixes.push(`joined ${joined} floating piece${joined > 1 ? 's' : ''} to the collar and rim with low struts`)
 
       const fix = { minW: Math.max(2.4, g.w * 0.75), minArea: 6 }
-      const out = { fixes, frameFix: fix }
+      const out = { fixes, frameFix: fix, copies: N }
       const outline = () => {
         const rc2 = new Canvas(p.lineW)
         for (const l of placed) rc2.line(l, p.lineW, true)
