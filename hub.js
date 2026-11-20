@@ -17,13 +17,15 @@
 
 import { DESIGNS } from './designs.js'
 import { TAU, rot, ccw, capsuleRect, Canvas } from './geom.js'
+import { buildSpokeHub } from './cnc.js'
+import { buildBallEnd } from './balls.js'
 
 export { DESIGNS }
 
 // density g/cm3
 export const MATERIALS = {
   tpu95: { name: 'TPU 95A', density: 1.21, verdict: 'best', note: 'Flexes on impact and springs back. What commercial flow hubs use. Clear/natural 95A makes the best glowing pods.' },
-  tpuuv: { name: 'TPU 95A, UV / neon', density: 1.21, verdict: 'best', note: 'What flowforge sells: their hubs are "flexible polyurethane filament" (TPU; they do not state the hardness) in UV green, pink, yellow and orange. Neon TPU 95A exists (e.g. Genmitsu neon yellow, green, cyan) but UV-reactive TPU is rarer than UV PLA: check the listing says fluorescent or UV-reactive, or test a sample with a UV torch.' },
+  tpuuv: { name: 'TPU 95A, UV / neon', density: 1.21, verdict: 'best', note: 'Neon TPU 95A exists (e.g. Genmitsu neon yellow, green, cyan) but UV-reactive TPU is rarer than UV PLA: check the listing says fluorescent or UV-reactive, or test a sample with a UV torch.' },
   tpu98: { name: 'TPU 98A / 64D', density: 1.23, verdict: 'best', note: 'Stiffer TPU. Pick this if 95A feels floppy at 250 mm or the low frame sags.' },
   pa: { name: 'Nylon (PA / PA-CF)', density: 1.14, verdict: 'good', note: 'Very tough, but rigid. Must be dried; warps on big flat parts. Not for the glowing pods.' },
   petg: { name: 'PETG', density: 1.27, verdict: 'ok', note: 'Fine for testing. Clear PETG glows beautifully but cracks at struts after hard drops.' },
@@ -218,6 +220,8 @@ export function buildHub(wasm, design, p, opts = {}) {
     return xs.length ? k(CrossSection.union(xs)) : null // manifold has no empty CrossSection
   }
   if (design.adaptor) return buildAdaptor(wasm, p, opts)
+  if (design.ballEnd) return buildBallEnd(wasm, p, { style: design.style, density: opts.material?.density })
+  if (design.spokeHub) return buildSpokeHub(wasm, p, { mode: 'print', shape: design.shape, density: opts.material?.density || 1.2 })
   try {
     const R = p.diameter / 2
     const Ri = R - p.rimW

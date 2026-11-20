@@ -136,6 +136,19 @@ const TOPICS = [
     page: 'print',
   },
   {
+    id: 'cnc', icon: '⚙️', title: 'Cut it in metal, Perspex or plastic (CNC)',
+    steps: [
+      ['Press **⚙️ CNC cut** at the top right. Every design turns into a flat plate a cutting shop can make.', null],
+      ['Designs marked **⚙️ CNC · metal · fire** were drawn for metal and fire. They sit at the top of the list in CNC mode.', null],
+      ['Pick the **material** and what cuts it (**laser**, **waterjet**, **plasma** or **CNC router**). The forge fills gaps the cutter cannot make and thickens bars that are too thin.', null],
+      ['**Ends**: fire (Kevlar tape bolted on tabs, or a Kevlar rope ring) on metal only. Or practice bumpers that weigh like a wet wick.', null],
+      ['**Spoke hubs** are small machined hubs that take 8 mm fire spokes. Print one in PETG to practise first.', null],
+      ['Download the **Cut file (DXF)** and send it to a cutting shop. They quote from it.', T.exports],
+      ['How to wick and tie Kevlar knots: **Wicking and knots guide** under Export.', T.exports],
+      ['Fire safety: only Kevlar and bare stainless near the flame. Never nylon paracord. Never light a printed or plastic hub.', null],
+    ],
+  },
+  {
     id: 'support', icon: '💛', title: 'Support Dreamscape',
     steps: [
       ['The forge is free. You never have to pay.', null],

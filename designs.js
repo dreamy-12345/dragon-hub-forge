@@ -19,6 +19,8 @@ import { SIGNATURE_DESIGNS } from './designs-signature.js'
 import { LOYALDOG_DESIGNS } from './designs-loyaldog.js'
 import { MELT_DESIGNS } from './designs-melt.js'
 import { CUSTOM_DESIGNS } from './designs-custom.js'
+import { fireDesigns } from './designs-fire.js'
+import { ballDesigns } from './balls.js'
 import { TAU, rot, place, ccw, cw, rng, voronoi, pointInPoly, circlePts, HEART, wingPoly, logoDragonfly, Canvas } from './geom.js'
 
 const deg = (d) => (d * Math.PI) / 180
@@ -689,7 +691,7 @@ export const DESIGNS = [
   {
     id: 'koru',
     group: 'Organic',
-    name: 'Koru',
+    name: 'Fern Fronds',
     blurb: 'Unfurling fern fronds rising from the staff, each curling into a tight spiral with a bud at its heart. The outer coil of every frond runs into the rim.',
     overrides: { strutW: 3, frameH: 4, reliefH: 9 },
     params: [
@@ -699,7 +701,7 @@ export const DESIGNS = [
       { key: 'sweep', label: 'Lean', unit: '°', min: 0, max: 80, step: 1, value: 40, hint: 'How far each stem leans round before it curls. More lean makes it look like it is spinning.' },
       { key: 'stemW', label: 'Stem width', unit: 'mm', min: 4, max: 18, step: 0.5, value: 10 },
       { key: 'bud', label: 'Bud size', unit: 'mm', min: 0, max: 16, step: 0.5, value: 8 },
-      { key: 'babies', label: 'Baby koru', options: ['on', 'off'], value: 'on', hint: 'A small frond budding off each stem, curling the other way, as in kowhaiwhai.' },
+      { key: 'babies', label: 'Baby fronds', options: ['on', 'off'], value: 'on', hint: 'A small frond budding off each stem, curling the other way.' },
       { key: 'frame', label: 'Frame', options: ['spokes', 'ring', 'fronds only'], value: 'spokes', hint: 'Low supports between the fronds. Fronds only is lightest, but every frond then hangs on its own stem and curl.' },
     ],
     draw(c, g, p) {
@@ -742,7 +744,7 @@ export const DESIGNS = [
         draw(curl, wCurl, wEnd)
         if (budR > 0) { const E = curl.at(-1); rc.disc(E[0], E[1], budR); c.disc(E[0], E[1], budR) }
         if (p.babies === 'on') {
-          // a small koru off the outside of the bend, curling the other way (clockwise)
+          // a small curl off the outside of the bend, curling the other way (clockwise)
           const i = Math.round(stem.length * 0.45)
           const Q = stem[i], [ux, uy] = tangent(stem, i - 1, i + 1)
           const h = [ux * Math.cos(-0.8) - uy * Math.sin(-0.8), ux * Math.sin(-0.8) + uy * Math.cos(-0.8)] // 45° to the right
@@ -1937,7 +1939,7 @@ export const DESIGNS = [
           if (p.fill === 'solid') (rc.solid(ccw(flame)), c.solid(ccw(flame)))
           else (rc.line(flame, 2.6, true), c.line(flame, 2.6, true))
           if (p.curlK === 'on') {
-            // a little koru curl in the flame's root
+            // a little curl curl in the flame's root
             const cr = Math.min(Wd * 0.24, L * 0.16), curl = []
             for (let s = 0; s <= 30; s++) { const t = (s / 30) * TAU * 1.1, r = cr * Math.exp(-0.28 * t); curl.push([L * 0.2 + r * Math.cos(t + Math.PI), r * Math.sin(t + Math.PI) * Math.sign(p.flick || 1)]) }
             const pc = place([[0, 0], ...curl], a, rIn * Math.cos(a), rIn * Math.sin(a))
@@ -2142,9 +2144,9 @@ export const DESIGNS = [
   },
   {
     id: 'takarangi',
-    group: 'Maori',
-    name: 'Takarangi',
-    blurb: 'Inspired by the takarangi of carved waka prows: two spirals wound together and joined by small bridges, so the pattern seems to keep moving inward. Each medallion spans from collar to rim.',
+    group: 'Thai',
+    name: 'Twin Spiral',
+    blurb: 'Two spirals wound together and joined by small bridges, so the pattern seems to keep moving inward. Each medallion spans from collar to rim.',
     overrides: { strutW: 2.6, frameH: 3.5, reliefH: 9 },
     params: [
       { key: 'count', label: 'Spirals', unit: '', min: 2, max: 5, step: 1, value: 4 },
@@ -2181,9 +2183,9 @@ export const DESIGNS = [
   },
   {
     id: 'mangopare',
-    group: 'Maori',
-    name: 'Mangopare',
-    blurb: 'Inspired by the mangopare, the hammerhead shark of kōwhaiwhai rafter painting, a figure of strength and persistence: stems ending in paired curling hooks, in two tiers, the outer one twice as many.',
+    group: 'Thai',
+    name: 'Hammerhead Hooks',
+    blurb: 'Stems ending in paired curling hooks, like a hammerhead shark, in two tiers, the outer one twice as many.',
     overrides: { strutW: 2.6, frameH: 3.5, reliefH: 9 },
     params: [
       { key: 'count', label: 'Inner hammerheads', unit: '', min: 3, max: 9, step: 1, value: 6 },
@@ -2216,9 +2218,9 @@ export const DESIGNS = [
   },
   {
     id: 'rauponga',
-    group: 'Maori',
-    name: 'Rauponga',
-    blurb: 'Inspired by whakairo surface carving: parallel ridges (haehae) and notched dog-tooth rows (pākati) together make the rauponga pattern. The bands undulate against each other, and the teeth shimmer as the hub spins.',
+    group: 'Thai',
+    name: 'Ridge and Tooth',
+    blurb: 'Parallel ridges and notched dog-tooth rows, carved-style. The bands undulate against each other, and the teeth shimmer as the hub spins.',
     overrides: { strutW: 2.6, frameH: 3.5, reliefH: 8 },
     params: [
       { key: 'bands', label: 'Bands', unit: '', min: 2, max: 6, step: 1, value: 4 },
@@ -2263,9 +2265,9 @@ export const DESIGNS = [
   },
   {
     id: 'unaunahi',
-    group: 'Maori',
-    name: 'Unaunahi',
-    blurb: 'Inspired by unaunahi, the fish-scale pattern of carving and tattoo, linked with abundance: overlapping scales in rows that grow toward the rim, so the whole hub reads as one shoal turning.',
+    group: 'Thai',
+    name: 'Fish Scales',
+    blurb: 'Overlapping fish scales in rows that grow toward the rim, so the whole hub reads as one shoal turning.',
     overrides: { strutW: 2.6, frameH: 3.5, reliefH: 8 },
     params: [
       { key: 'count', label: 'Scales per row', unit: '', min: 8, max: 26, step: 1, value: 14 },
@@ -2306,9 +2308,9 @@ export const DESIGNS = [
   },
   {
     id: 'manaia',
-    group: 'Maori',
-    name: 'Manaia',
-    blurb: 'Inspired by the manaia of carving, a beaked guardian figure seen in profile: sinuous notched bodies rising from the collar, hands reaching to the rim, each with a koru at the shoulder. An original drawing, not a copy of any carved figure.',
+    group: 'Thai',
+    name: 'Guardian',
+    blurb: 'Beaked guardian figures seen in profile: sinuous notched bodies rising from the collar, hands reaching to the rim, each with a curl at the shoulder.',
     overrides: { strutW: 2.6, frameH: 3.5, reliefH: 9 },
     params: [
       { key: 'count', label: 'Figures', unit: '', min: 2, max: 5, step: 1, value: 3 },
@@ -2347,7 +2349,7 @@ export const DESIGNS = [
         rc.taper(bez(Q, [Q[0] + 12 * Math.cos(nOut), Q[1] + 12 * Math.sin(nOut)], [palm[0] * 0.94, palm[1] * 0.94], palm, 14), W * 0.5, 7)
         rc.disc(palm[0], palm[1], 6)
         for (const d of [-0.14, 0, 0.14]) rc.taper(bez(palm, polar(g.Ri - 15, rimA + d * 0.7), polar(g.Ri - 7, rimA + d), polar(g.Ri + 0.5, rimA + d * 1.1), 10), 6, 3.4)
-        // koru at the shoulder, curling toward the collar side
+        // curl at the shoulder, curling toward the collar side
         const sK = 34, K = path[sK]
         const koru = curlPts(K[0], K[1], headingAt(sK) + deg(72), W * 1.05, 1.45, 1, 0.24)
         rc.taper(koru, W * 0.42, 3)
@@ -2368,15 +2370,15 @@ export const DESIGNS = [
   },
   {
     id: 'puhoro',
-    group: 'Maori',
-    name: 'Puhoro',
-    blurb: 'Inspired by puhoro, the swift swirling forms painted on war canoes and tattooed on the thigh, tied to speed: tapering blades sweep from collar to rim, each with a thin line and a koru riding its wake. Fittingly, made to spin.',
+    group: 'Thai',
+    name: 'Swift Wake',
+    blurb: 'Swift swirling forms made for speed: tapering blades sweep from collar to rim, each with a thin line and a curl riding its wake. Made to spin.',
     overrides: { strutW: 2.6, frameH: 3.5, reliefH: 9 },
     params: [
       { key: 'count', label: 'Blades', unit: '', min: 3, max: 8, step: 1, value: 5 },
       { key: 'bladeW', label: 'Blade width', unit: 'mm', min: 7, max: 24, step: 0.5, value: 15 },
       { key: 'sweep', label: 'Sweep', unit: '°', min: 30, max: 140, step: 1, value: 85 },
-      { key: 'wake', label: 'Wake line + koru', options: ['on', 'off'], value: 'on' },
+      { key: 'wake', label: 'Wake line + curl', options: ['on', 'off'], value: 'on' },
       { key: 'notches', label: 'Blade notches', options: ['on', 'off'], value: 'on' },
     ],
     draw(c, g, p) {
@@ -3279,6 +3281,10 @@ export const DESIGNS = [
   ...SIGNATURE_DESIGNS.map((d) => Object.assign(d, { added: '2026-11-17' })),
   ...MELT_DESIGNS.map((d) => Object.assign(d, { added: '2026-11-18' })),
 ]
+// CNC and fire: new ones, favourites re-cut, and hubs for 8 mm fire spokes
+DESIGNS.push(...fireDesigns(DESIGNS, { drawSpokes, drawVortex }))
+// contact staff ball ends: printed, push onto the pole
+DESIGNS.push(...ballDesigns())
 
 const polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)]
 

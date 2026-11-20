@@ -17,6 +17,15 @@ browser; saved designs stay in that browser).
 - Snap-on weight rings (no tools), bubble loops, LED ring variant, capsule lanterns
   for Flowtoys capsules.
 - Live checks: balance on the staff, thin spots, weight and filament use, bed fit.
+- **CNC mode**: any design as a flat plate for a laser, waterjet, plasma or CNC
+  router, in aluminium, stainless, steel, Perspex, polycarbonate, HDPE or POM. It
+  fixes the design to what the cutter can do and exports DXF / SVG. Fire ends on
+  metal (Kevlar tape on bolt-on tabs, or a laced Kevlar rope ring) or TPU practice
+  bumpers weighted like a wet wick.
+- **Fire spoke hubs**: machined hubs for 8 mm fire spokes, with a drawing for the
+  machine shop, a printable practice version, practice ends and a step-by-step guide.
+- **Contact staff ball ends**: push-on balls in three flat parts, weightable.
+- A wicking and knots guide (Kevlar tape, monkey's fist, Turk's head, cobra).
 - Previews: spinning, light trails, strobe/zoetrope, blacklight, bubbles.
 
 Standard hub: 280 mm wide, 15 mm rim, 10 mm raised shapes, for 22 mm poles.
@@ -39,6 +48,7 @@ Any static server works too (saved designs then use the browser).
 - `designs*.js` the designs (2D drawing per design: frame strokes, relief, lanterns)
 - `geom.js` 2D helpers · `hub.js` design → solids, checks, STL/3MF/SVG
 - `worker.js` geometry off the main thread · `app.js` + `index.html` the UI
+- `cnc.js` CNC plates, fire/practice ends, spoke hubs, DXF · `balls.js` contact ball ends
 - `bubbles.js` bubble-loop simulator · `leds.js` capsule light modes for the preview
 - `vendor/` three.js and manifold-3d, so it works offline
 

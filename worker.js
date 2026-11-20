@@ -1,6 +1,7 @@
 // Geometry runs here so the sliders stay smooth while a hub rebuilds.
 import Module from './vendor/manifold.js'
 import { DESIGNS, MATERIALS, buildHub, buildFitTest, buildCapsuleTest } from './hub.js'
+import { buildPlate, buildSpokeHub, matOf } from './cnc.js'
 
 const ready = Module(self.__MANIFOLD_OPTS || {}).then((w) => (w.setup(), w))
 const design = (id) => DESIGNS.find((d) => d.id === id)
@@ -46,6 +47,12 @@ self.onmessage = async ({ data }) => {
         c1 = cyAt(y1)
       }
       result = { [key]: Math.round(y1 / def.step) * def.step, ...(aim ? { [aim.key]: p[aim.key] } : {}) }
+    } else if (op === 'cnc') {
+      // CNC: the design as drawn for print, flattened and fixed for the cutter
+      const d = design(data.design), c = data.cnc
+      result = d.ballEnd ? buildHub(wasm, d, data.params, { material: MATERIALS.tpu95 }) : d.spokeHub
+        ? buildSpokeHub(wasm, data.params, { mode: 'cnc', shape: d.shape, density: matOf(c).density })
+        : buildPlate(wasm, buildHub(wasm, d, { ...data.params, ring: 'off', snap: 'off' }), data.params, c)
     } else if (op === 'fit') result = buildFitTest(wasm, data.params)
     else if (op === 'captest') result = buildCapsuleTest(wasm, data.params)
     self.postMessage({ id, result }, buffers(result))

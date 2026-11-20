@@ -110,6 +110,12 @@ section { display: grid; gap: 8px; }
 .ctl select { grid-column: 2; background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
 .ctl .hint { grid-column: 1 / -1; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
 details { border-top: 1px solid var(--line); padding-top: 10px; }
+.cutTag { display: block; width: fit-content; margin: 3px 0 4px; padding: 1px 6px; border-radius: 5px; line-height: 1.5; font: 500 10.5px var(--mono); letter-spacing: .02em; border: 1px solid #8a93a0; color: #c9d1dc; }
+.cutTag.plastic { border-color: #5fb8e6; color: #8fd8ff; }
+.modeSwitch { display: flex; gap: 6px; flex-wrap: wrap; }
+.modeSwitch .chip { flex: 1 1 140px; min-width: 0; white-space: normal; font-size: 13px; padding: 8px 10px; }
+.howto ol { margin: 4px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+.howto h3 { margin: 10px 0 2px; font-size: 13px; color: var(--fg); }
 details > summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); list-style: none; }
 details > summary::before { content: "+ "; color: var(--ember); }
 details[open] > summary::before { content: "– "; }
@@ -358,6 +364,7 @@ kbd { font: 13px var(--mono); border: 1px solid var(--line); border-radius: 5px;
       <button class="chip" id="vSpin" aria-pressed="false">Spin it</button>
       <button class="chip" id="vTrails" aria-pressed="false">Light trails</button>
       <button class="chip" id="vStrobe" aria-pressed="false" hidden>Zoetrope strobe</button>
+      <button class="chip" id="v360" aria-pressed="false" title="Drag to turn it any way, scroll or pinch to zoom, right-drag or two fingers to move">🔄 360°</button>
       <button class="chip" id="vPip" aria-pressed="true">Second view</button>
       <button class="chip" id="vBubbles" aria-pressed="false" hidden>Bubbles</button>
       <button class="chip" id="vWeak" aria-pressed="true">Weak spots</button>
@@ -407,6 +414,10 @@ kbd { font: 13px var(--mono); border: 1px solid var(--line); border-radius: 5px;
   </main>
 
   <aside class="side">
+    <div class="modeSwitch" role="group" aria-label="How it is made">
+      <button class="chip" id="modePrint" aria-pressed="true">🖨️ 3D print</button>
+      <button class="chip" id="modeCnc" aria-pressed="false">⚙️ CNC cut: metal, Perspex, plastic</button>
+    </div>
     <div class="verdict" id="verdict"></div>
 
     <section id="savedSection">
@@ -422,7 +433,7 @@ kbd { font: 13px var(--mono); border: 1px solid var(--line); border-radius: 5px;
 
     <section id="designParams"><h2>Design</h2></section>
 
-    <section>
+    <section id="matSection">
       <h2>Material</h2>
       <div class="ctl"><label for="material">Filament</label><select id="material"></select>
         <div class="hint" id="matNote"></div></div>

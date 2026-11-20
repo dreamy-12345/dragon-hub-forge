@@ -6,6 +6,7 @@ import { BubbleSim } from './bubbles.js'
 import { initCreate } from './create.js'
 import { createLikes } from './likes.js'
 import { initHelp } from './help.js'
+import { CNC_PARAMS, PROCESSES, cncDefaults, matOf, matKey, procKey, endsKey, ENDS, SPOKE_ENDS, toDXF, toCutSVG, spokeDrawingSVG } from './cnc.js'
 
 const $ = (id) => document.getElementById(id)
 // UV colours glow under the blacklight view; the others stay dark
@@ -18,7 +19,7 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Thai mythology', Maori: 'Māori-inspired (moko & whakairo)', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', Contact: 'Contact staff ball ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
@@ -42,6 +43,14 @@ if ((saved.v || 1) < 2) for (const sp of Object.values(saved.params || {})) { de
 if ((saved.v || 1) < 3) for (const sp of Object.values(saved.params || {})) if (sp.ringPlace === 'edge') delete sp.ringPlace
 for (const d of DESIGNS) state.params[d.id] = { ...defaults(d), ...(saved.params?.[d.id] || {}) }
 state.v = 3
+// How it is made: 3D print (everything above) or CNC cut. CNC settings are per design
+// and live apart from the print settings, so switching never changes a print design.
+state.mode = saved.mode === 'cnc' ? 'cnc' : 'print'
+state.cncp = {}
+for (const d of DESIGNS) state.cncp[d.id] = { ...cncDefaults(d), ...(saved.cncp?.[d.id] || {}) }
+const isCnc = () => state.mode === 'cnc'
+const printOnly = (d) => !!(d.adaptor || d.ballEnd) // always 3D printed, in either mode
+const cncp = () => state.cncp[state.design]
 const design = () => DESIGNS.find((d) => d.id === state.design)
 const params = () => state.params[state.design]
 const glowColor = () => state.glow || design().glow || '#ffae2a'
@@ -99,7 +108,7 @@ ctlAngle.target.set(0, 0, 8)
 // cameras were placed for a ~140 mm radius hub; scale them for much smaller parts
 let framedR = 140
 function frameView(R) {
-  const want = R < 60 ? R * 1.9 : 140 // a small part fills about the same share of the view as a hub
+  const want = R < 60 ? R * 1.9 : Math.max(140, R) // a small part fills about the same share of the view as a hub
   if (Math.abs(want - framedR) / framedR < 0.25) return
   const f = want / framedR
   framedR = want
@@ -142,6 +151,14 @@ const ringMesh = new THREE.Mesh(new THREE.BufferGeometry(), ringMat)
 const snapMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35, emissive: 0x000000 }) // snap-on weight: colour B, or lit if it has the LED strip
 const snapMesh = new THREE.Mesh(new THREE.BufferGeometry(), snapMat)
 spinner.add(frameMesh, glowMesh, lidMesh, ringMesh, snapMesh)
+// fire spokes, Kevlar wicks and practice ends
+const rodMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a8, roughness: 0.3, metalness: 0.9 })
+const kevMat = new THREE.MeshStandardMaterial({ color: 0xd8a93a, roughness: 0.95, emissive: 0x000000 })
+const pracMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.45 })
+const rodMesh = new THREE.Mesh(new THREE.BufferGeometry(), rodMat)
+const kevMesh = new THREE.Mesh(new THREE.BufferGeometry(), kevMat)
+const pracMesh = new THREE.Mesh(new THREE.BufferGeometry(), pracMat)
+spinner.add(rodMesh, kevMesh, pracMesh)
 
 // halo: the lantern outlines, blurred, drawn additively above and below the disc
 const haloCanvas = document.createElement('canvas')
@@ -281,8 +298,24 @@ function applyLook() {
     lidMat.color.set('#ffffff')
     haloTop.visible = haloBot.visible = false
   }
+  const cut = isCnc() && current && (current.hub.cnc || current.hub.spoke)
+  if (cut) {
+    const m = matOf(cncp()), metal = m.kind === 'metal'
+    frameMat.color.set(dark ? (metal ? '#2a2a30' : '#141318') : m.colour)
+    frameMat.metalness = metal ? 0.85 : 0.05
+    frameMat.roughness = metal ? 0.32 : 0.22
+    frameMat.transparent = !!m.clear
+    frameMat.opacity = m.clear ? 0.7 : 1
+  } else {
+    frameMat.metalness = 0.05; frameMat.roughness = 0.6; frameMat.transparent = false; frameMat.opacity = 1
+  }
+  if (current?.hub.spoke && !isCnc()) { frameMat.color.set(dark ? '#141318' : state.color) }
+  kevMat.color.set(dark ? '#ffb347' : '#d8a93a')
+  kevMat.emissive.set(dark ? '#ff5a0a' : '#000000')
+  if (!dark) kevMat.emissiveIntensity = 0
+  pracMat.color.set(dark ? '#1a191f' : state.colorB)
   pole.material.color.set(dark ? 0x050506 : 0x1b1b1f)
-  bed.visible = !dark && $('vBed').getAttribute('aria-pressed') === 'true'
+  bed.visible = !dark && !isCnc() && $('vBed').getAttribute('aria-pressed') === 'true'
   weakGroup.visible = !dark && $('vWeak').getAttribute('aria-pressed') === 'true'
 }
 
@@ -300,6 +333,7 @@ renderer.setAnimationLoop((t) => {
   const dt = Math.min(0.1, (t - last) / 1000)
   last = t
   frameNo++
+  if (view.dark && kevMesh.visible) kevMat.emissiveIntensity = 1.4 + Math.random() * 0.9 // the wicks are burning
   ctlFace.update()
   ctlAngle.update()
   bubbles.update(dt, view.rate, view.spin)
@@ -411,6 +445,43 @@ function control(def, get, set) {
   return wrap
 }
 
+// CNC mode: cutting settings, fire or practice ends, then the size of the design
+function renderCncParams(d, cp, set) {
+  const c = cncp(), pk = procKey(c), ek = endsKey(c.ends)
+  const setC = (key) => (v) => {
+    c[key] = v
+    if (key === 'material') { c.thick = matOf(c).def; if (matOf(c).kind !== 'metal' && ['tape', 'rope'].includes(endsKey(c.ends))) c.ends = ENDS.bumper }
+    if (['material', 'process', 'ends', 'flangeN'].includes(key)) renderParams()
+    renderGuide()
+    schedule()
+  }
+  const sec = (title, rows, open) => {
+    const det = document.createElement('details')
+    det.open = open
+    det.innerHTML = `<summary>${title}</summary><div></div>`
+    for (const [def, get, s] of rows) det.lastChild.append(control(def, get, s))
+    cp.append(det)
+  }
+  const P = (keys) => keys.map((k) => COMMON_PARAMS.find((x) => x.key === k)).map((def) => [def, () => params()[def.key], set(def.key)])
+  const C = (keys) => keys.map((k) => CNC_PARAMS.find((x) => x.key === k)).map((def) => {
+    let dd = def.presetsFrom ? { ...def, presets: matOf(c).thick } : def
+    if (def.key === 'ends' && matOf(c).kind !== 'metal') dd = { ...def, options: def.options.filter((o) => !o.startsWith('fire')) }
+    return [dd, () => c[def.key], setC(def.key)]
+  })
+  if (d.spokeHub) {
+    sec('Material', C(['material']), true)
+    sec('Pole size', P(['poleOD']), true)
+    return
+  }
+  sec('Cut', C(['material', 'process', 'thick', ...(pk === 'router' ? ['tool'] : []), 'clear', 'flangeN', ...(c.flangeN > 0 ? ['flangePCD', 'flangeHole'] : []), 'engrave']), true)
+  const endKeys = ek === 'tape' ? ['tabs', 'tabAngle', 'tabW', 'neck', 'wickW', 'tapeLen', 'tapeT', 'tabBolt']
+    : ek === 'bumper' ? ['tabs', 'tabAngle', 'tabW', 'neck', 'wickW', 'tabBolt']
+    : ek === 'rope' ? ['ropeD', 'ropePlace', 'laceStep'] : []
+  sec('Ends: fire or practice', C(['ends', ...endKeys]), true)
+  sec('Size and shape', P(['diameter', 'rimW', 'rotate', 'strutW', 'fillet']), false)
+  sec('Pole size', P(['poleOD']), false)
+}
+
 function renderParams() {
   const d = design()
   const dp = $('designParams')
@@ -432,7 +503,9 @@ function renderParams() {
   }
   const cp = $('commonParams')
   cp.innerHTML = ''
-  const groups = d.adaptor ? [] : [...new Set(COMMON_PARAMS.map((p) => p.group))].filter((g) => g !== 'Glow' || d.pods)
+  $('matSection').hidden = isCnc() && !printOnly(d)
+  if (isCnc() && !printOnly(d)) renderCncParams(d, cp, set)
+  const groups = d.adaptor || (isCnc() && !printOnly(d)) ? [] : d.spokeHub || d.ballEnd ? ['Fit'] : [...new Set(COMMON_PARAMS.map((p) => p.group))].filter((g) => g !== 'Glow' || d.pods)
   const label = { Fit: 'Pole size and fit', Glow: 'Lanterns and capsules', 'Weight ring': 'Bubble weight ring', 'Snap weight': 'Snap-on weight ring' }
   for (const g of groups) {
     const det = document.createElement('details')
@@ -444,7 +517,7 @@ function renderParams() {
   const reset = document.createElement('button')
   reset.className = 'btn'
   reset.textContent = `Reset ${d.name} to defaults`
-  reset.onclick = () => { state.params[d.id] = defaults(d); renderParams(); schedule() }
+  reset.onclick = () => { state.params[d.id] = defaults(d); if (isCnc()) state.cncp[d.id] = cncDefaults(d); renderParams(); schedule() }
   cp.append(reset)
   $('dName').textContent = d.name
   $('dBlurb').textContent = d.blurb
@@ -570,7 +643,9 @@ function renderGallery() {
   g.querySelectorAll('.design, h3, .empty').forEach((n) => n.remove())
   for (const b of $('listChips').children) b.setAttribute('aria-pressed', b.dataset.f === listUI.filter)
   const { list, all, grouped, mine } = entries()
-  const order = [...new Set(DESIGNS.map((d) => d.group))]
+  const cutFirst = ['Fire', 'SpokeHubs'] // in CNC mode the metal designs come first
+  const order0 = [...new Set(DESIGNS.map((d) => d.group))]
+  const order = isCnc() ? [...cutFirst, ...order0.filter((g) => !cutFirst.includes(g))] : order0
   const groupOf = (e) => e.group
   let rows = list
   if (grouped) {
@@ -611,7 +686,9 @@ function designCard(e) {
   const b = document.createElement('button')
   b.className = 'design'
   b.setAttribute('aria-pressed', d.id === state.design)
-  b.innerHTML = `<canvas width="128" height="128"></canvas><div><b>${d.name}</b><small>${d.blurb.split('. ')[0].replace(/\.$/, '')}.</small></div>${heartHTML(e)}`
+  const cm = d.cnc ? matOf(cncDefaults(d)) : null
+  const tag = !cm ? '' : `<span class="cutTag ${cm.kind}">⚙️ ${d.spokeHub ? 'machined metal · fire spokes' : cm.kind === 'metal' ? `CNC · ${cm.name.split(' ')[0].toLowerCase()} · fire` : `CNC · ${cm.name.split(' ')[0]} · practice`}</span>`
+  b.innerHTML = `<canvas width="128" height="128"></canvas><div><b>${d.name}</b>${tag}<small>${d.blurb.split('. ')[0].replace(/\.$/, '')}.</small></div>${heartHTML(e)}`
   b.onclick = (ev) => {
     if (ev.target.closest('.heart')) return tapHeart(e.key)
     state.design = d.id
@@ -688,7 +765,7 @@ let ticket = 0
 // Built hubs, most recent last. The gallery thumbnails build every design in
 // the background, so most clicks on a design are answered from here at once.
 const cache = new Map()
-const keyOf = (id, p) => JSON.stringify([id, p, state.material, state.bed])
+const keyOf = (id, p, mode = 'print') => JSON.stringify([id, p, state.material, state.bed, mode === 'cnc' ? state.cncp[id] : 0])
 function remember(k, hub) {
   cache.delete(k)
   cache.set(k, hub)
@@ -771,7 +848,8 @@ function drawHalo(hub, p) {
 let inflight = false, queued = false
 async function rebuild() {
   const d = design(), p = { ...params() }
-  const k = keyOf(d.id, p)
+  const cncNow = isCnc() && !printOnly(d)
+  const k = keyOf(d.id, p, cncNow ? 'cnc' : 'print')
   const mine = ++ticket
   const t0 = performance.now()
   if (cache.has(k)) return show(cache.get(k), d, p, t0)
@@ -782,7 +860,9 @@ async function rebuild() {
   inflight = true
   let hub
   try {
-    hub = await work('build', { design: d.id, params: p, material: state.material, bed: Number(state.bed) })
+    hub = cncNow
+      ? await work('cnc', { design: d.id, params: p, cnc: { ...cncp() } })
+      : await work('build', { design: d.id, params: p, material: state.material, bed: Number(state.bed) })
     remember(k, hub)
   } catch (e) {
     inflight = false
@@ -808,6 +888,9 @@ function show(hub, d, p, t0) {
   setGeo(lidMesh, m.lids)
   setGeo(ringMesh, m.ring)
   setGeo(snapMesh, m.snap)
+  setGeo(rodMesh, m.rods)
+  setGeo(kevMesh, m.kevlar)
+  setGeo(pracMesh, m.practice)
   $('ringColourRow').hidden = !(m.ring || m.snap)
   $('glowRow').hidden = $('ledRow').hidden = !hasLeds() // the LED ring can switch them on for any design
   weakGroup.clear()
@@ -817,11 +900,13 @@ function show(hub, d, p, t0) {
     weakGroup.add(w)
   }
   drawHalo(hub, p)
+  pole.visible = !hub.ball && $('vPole').getAttribute('aria-pressed') === 'true' // a ball end sits on the pole's tip
   const poleD = hub.adaptor ? p.small : p.poleOD // an adaptor shows its thin pole running through it
   frameView(hub.viewR || p.diameter / 2)
   pole.scale.set(poleD / 22, 1, poleD / 22)
-  setThumb(d, hub.polygons, hub.viewR || p.diameter / 2)
+  if (!hub.cnc && !(hub.spoke && hub.spoke.mode === 'cnc')) setThumb(d, hub.polygons, hub.viewR || p.diameter / 2)
   applyLook()
+  renderGuide()
   renderVerdict(hub, p)
   renderExports()
   $('busy').hidden = true
@@ -873,10 +958,80 @@ function renderAdaptorVerdict(hub, p, mat) {
     ${s.parts > 1 ? `<div class="row"><span>Separate solids</span><span>${pill('bad', String(s.parts))}</span></div>` : ''}`
 }
 
+const kg = (g) => (g >= 1000 ? `${(g / 1000).toFixed(2)} kg` : `${g.toFixed(0)} g`)
+function renderCncVerdict(hub, p) {
+  const s = hub.stats, c = cncp(), m = matOf(c), ek = hub.ends
+  const fire = m.kind === 'metal'
+  const bal = s.offset < 0.2 ? pill('good', 'balanced') : s.offset < 1 ? pill('warn', `${s.offset.toFixed(2)} mm off`) : pill('bad', `${s.offset.toFixed(1)} mm off`)
+  const endsTxt = { tape: `${s.tabs} Kevlar wicks`, rope: 'a Kevlar rope ring', bumper: `${s.tabs} practice bumpers`, none: 'no ends' }[ek]
+  $('verdict').innerHTML = `
+    <div class="big">${kg(s.gTotal)}<small>each, with ${endsTxt}${ek === 'tape' || ek === 'rope' ? ' (fuelled)' : ''} · ${kg(s.gTotal * 2)} a pair</small></div>
+    <div class="row"><span>Plate</span><span>${m.name}, ${s.thick} mm · ${kg(s.gPlate)}</span></div>
+    ${ek === 'tape' ? `<div class="row"><span>Wicks</span><span>${s.tabs} × ${c.wickW} mm tape, ${c.tapeLen} mm each</span></div>
+    <div class="row"><span>Kevlar tape to buy</span><span>${((c.tapeLen * s.tabs) / 1000 * 1.1).toFixed(1)} m of ${c.wickW} mm</span></div>
+    <div class="row"><span>Wick head</span><span>about Ø${s.headD.toFixed(0)} mm · ${(s.kevG / s.tabs).toFixed(0)} g dry, ${((s.kevG * s.wet) / s.tabs).toFixed(0)} g fuelled</span></div>
+    <div class="row"><span>Bolts</span><span>${s.tabs * 2} stainless, Ø${c.tabBolt} holes, all-metal lock nuts</span></div>` : ''}
+    ${ek === 'rope' ? `<div class="row"><span>Rope to buy</span><span>${((s.ropeLen / 1000) * 1.15).toFixed(2)} m of ${c.ropeD} mm Kevlar</span></div>
+    <div class="row"><span>Lacing holes</span><span>${s.laceHoles} · stainless wire or Kevlar thread</span></div>
+    ${s.pocketDepth ? `<div class="row"><span>Rope groove</span><span>${s.pocketDepth.toFixed(1)} mm deep (milled)</span></div>` : ''}` : ''}
+    ${ek === 'bumper' ? `<div class="row"><span>Practice bumpers</span><span>${s.tabs} × ${s.bumper.g.toFixed(0)} g TPU</span></div>
+    <div class="row"><span>A wet wick would be</span><span>${s.bumper.target.toFixed(0)} g ${pill(Math.abs(s.bumper.g - s.bumper.target) < 5 ? 'good' : 'warn', Math.abs(s.bumper.g - s.bumper.target) < 5 ? 'matched' : 'close')}</span></div>` : ''}
+    <div class="row"><span>Across the ends</span><span>Ø${s.overD.toFixed(0)} mm</span></div>
+    <div class="row"><span>Balance on the staff</span><span>${bal}</span></div>
+    <div class="row"><span>Cut length · pierces</span><span>${(s.cutLen / 1000).toFixed(1)} m · ${s.pierces}</span></div>
+    <div class="row"><span>Thinnest bar · smallest gap</span><span>${s.lim.web.toFixed(1)} mm · ${s.lim.gap.toFixed(1)} mm</span></div>
+    <div class="row"><span>Fire</span><span>${fire ? pill('good', 'yes, with Kevlar only') : pill('bad', 'never: practice only')}</span></div>
+    ${s.fixes.length ? `<div class="sub">The forge fixed it for cutting</div>${s.fixes.map((f) => `<div class="row"><span>✓ ${f}</span><span></span></div>`).join('')}` : ''}
+    ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+}
+
+function renderBallVerdict(hub, p, mat) {
+  const s = hub.stats, b = hub.ball
+  const bedMax = Number(state.bed)
+  $('verdict').innerHTML = `
+    <div class="big">${kg(s.gramsTotal)}<small>each · ${kg(s.gramsTotal * 2)} a pair</small></div>
+    <div class="row"><span>Printed ball</span><span>${s.gShell.toFixed(0)} g ${mat.name}</span></div>
+    ${b.fill !== 'hollow' ? `<div class="row"><span>${b.fill} inside</span><span>${b.gFill.toFixed(0)} g (${p.fillPct}% full)</span></div>` : ''}
+    <div class="row"><span>Chamber holds</span><span>${b.cavityCm3.toFixed(0)} cm³ · up to ${b.fullShot.toFixed(0)} g of steel shot</span></div>
+    <div class="row"><span>Ball · socket</span><span>Ø${p.ballD} mm · ${b.depth.toFixed(0)} mm deep</span></div>
+    <div class="row"><span>Grip on Ø${p.poleOD} pole</span><span>${b.squeeze > 0 ? b.squeeze.toFixed(2) + ' mm squeeze' : pill('bad', 'loose')}</span></div>
+    <div class="row"><span>Prints as</span><span>3 parts, no supports</span></div>
+    <div class="row"><span>Material</span><span>${pill(mat.verdict === 'avoid' ? 'bad' : state.material.startsWith('tpu') ? 'good' : 'warn', mat.name)}</span></div>
+    <div class="row"><span>Fits ${bedMax} mm bed</span><span>${p.ballD <= bedMax - 2 ? pill('good', 'yes') : pill('bad', 'too big')}</span></div>
+    ${!state.material.startsWith('tpu') ? '<div class="warnline">Contact balls hit your body and the floor: TPU 95A is strongly recommended.</div>' : ''}
+    ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+}
+
+function renderSpokeVerdict(hub, p) {
+  const s = hub.stats, sp = hub.spoke
+  const cnc = sp.mode === 'cnc'
+  const mName = cnc ? matOf(cncp()).name : MATERIALS[state.material].name
+  const endName = SPOKE_ENDS[sp.ends]
+  const tpu = !cnc && state.material.startsWith('tpu')
+  $('verdict').innerHTML = `
+    <div class="big">${kg(s.gTotal)}<small>one end of the staff: hub + ${sp.n} spokes · ${kg(s.gTotal * 2)} both ends</small></div>
+    <div class="row"><span>Hub</span><span>${mName} · ${kg(s.gHub)}</span></div>
+    <div class="row"><span>Each spoke</span><span>${sp.ends === 'none' ? '—' : `${s.gSpoke.toFixed(0)} g · ${endName}`}</span></div>
+    ${sp.endInfo?.kind === 'tpu' ? `<div class="row"><span>Practice weight</span><span>Ø${sp.endInfo.D.toFixed(0)} × ${sp.endInfo.L} mm · ${sp.endInfo.g.toFixed(0)} g TPU</span></div>` : ''}
+    ${sp.endInfo?.kind === 'led' ? `<div class="row"><span>LED end</span><span>holds a Ø${p.capD} × ${p.capL} capsule · ${sp.endInfo.g.toFixed(0)} g with it</span></div>` : ''}
+    <div class="row"><span>Sockets</span><span>${sp.n} × Ø${sp.socketD.toFixed(2)} × ${p.depth} mm</span></div>
+    <div class="row"><span>Clamp screws</span><span>${sp.n + 2} × ${sp.grub} ${cnc ? `(tap drill Ø${sp.tap})` : 'grub screws + nuts in the traps'}</span></div>
+    <div class="row"><span>Pole bore</span><span>Ø${sp.boreD.toFixed(2)} mm</span></div>
+    <div class="row"><span>Across the spoke tips</span><span>Ø${s.overD.toFixed(0)} mm</span></div>
+    <div class="row"><span>Thinnest wall</span><span>${sp.minWall < 4 ? pill('warn', sp.minWall.toFixed(1) + ' mm') : sp.minWall.toFixed(1) + ' mm'}</span></div>
+    <div class="row"><span>Fire</span><span>${cnc && matOf(cncp()).kind === 'metal' ? pill('good', 'yes') : pill('bad', 'practice only')}</span></div>
+    ${tpu ? '<div class="warnline">TPU is too soft to hold 185 mm spokes straight: print the practice spoke hub in PETG or nylon (PA), 100% infill.</div>' : ''}
+    ${!cnc && sp.ends !== 'tpu' && sp.ends !== 'led' && sp.ends !== 'none' ? '<div class="warnline">A printed hub must never carry fire spokes that are lit. Use it to practise with the spokes unlit, or pick practice ends.</div>' : ''}
+    ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+}
+
 function renderVerdict(hub, p) {
   const s = hub.stats
   const mat = MATERIALS[state.material]
   if (hub.adaptor) return renderAdaptorVerdict(hub, p, mat)
+  if (hub.cnc) return renderCncVerdict(hub, p)
+  if (hub.spoke) return renderSpokeVerdict(hub, p)
+  if (hub.ball) return renderBallVerdict(hub, p, mat)
   const bedMax = Number(state.bed)
   const bal = s.centroidOffset < 0.1 ? pill('good', 'balanced') : s.centroidOffset < 1 ? pill('warn', `${s.centroidOffset.toFixed(2)} mm off`) : pill('bad', `${s.centroidOffset.toFixed(1)} mm off`)
   const weak = s.weakArea < 1 ? pill('good', 'none') : s.weakArea < 150 ? pill('warn', `${s.weakArea.toFixed(0)} mm²`) : pill('bad', `${s.weakArea.toFixed(0)} mm²`)
@@ -918,10 +1073,77 @@ function openLedPlan() {
   w.document.open(); w.document.write(window.__LED_PLAN_HTML); w.document.close()
 }
 
+function openWickGuide() {
+  if (!window.__WICK_GUIDE_HTML) return window.open('wicking-guide.html', '_blank')
+  const w = window.open('', '_blank')
+  if (!w) return status('Allow pop-ups to open the wicking guide.')
+  w.document.open(); w.document.write(window.__WICK_GUIDE_HTML); w.document.close()
+}
+
+function exportButtons(list) {
+  const box = $('exports')
+  box.innerHTML = ''
+  for (const [label, cls, fn, off] of list) {
+    const b = document.createElement('button')
+    b.className = 'btn ' + cls
+    b.textContent = label
+    b.disabled = !!off
+    b.onclick = fn
+    box.append(b)
+  }
+}
+
+function renderCutExports(d) {
+  const hub0 = current && current.design === d ? current.hub : null
+  const hub = hub0 && (hub0.cnc || hub0.spoke) ? hub0 : null // a print build still on screen does not count
+  const ready = !!hub
+  const c = cncp(), p = params()
+  const name = `hub-${d.id}-${matKey(c)}`
+  const txt = (data, file, type) => () => download(data(), file, type)
+  if (d.spokeHub) {
+    const cnc = hub?.spoke?.mode === 'cnc'
+    exportButtons([
+      [cnc ? '3D model for the machinist (STL)' : 'Practice hub STL', 'primary', () => download(toSTL(hub.meshes.combined, d.name), `${name}-spoke-hub.stl`), !ready],
+      ...(cnc ? [
+        ['Drawing for the machine shop (SVG)', '', txt(() => spokeDrawingSVG(hub, p, matOf(c).name), `${name}-drawing.svg`, 'image/svg+xml'), !ready],
+        ['Top profile (DXF)', '', txt(() => toDXF(hub.layers, d.name), `${name}-profile.dxf`, 'application/dxf'), !ready],
+      ] : []),
+      ...(hub?.meshes.practiceFlat ? [[`Practice end STL (print ${hub.spoke.n})`, '', () => download(toSTL(hub.meshes.practiceFlat, 'practice end'), `${name}-practice-end.stl`), !ready]] : []),
+      ['How to make it work ↓', '', () => $('guide').scrollIntoView({ behavior: 'smooth' })],
+      ['Wicking and knots guide', '', openWickGuide],
+    ])
+    $('exportNote').innerHTML = cnc
+      ? 'Send the STL and the drawing to a machine shop (CNC mill, or a lathe plus a drill press with a jig). Ask for the sockets on the mid-plane and the grub-screw holes tapped. Fit the spokes, tighten one grub screw per spoke onto the rod, and check every screw before each burn.'
+      : 'Print the practice hub flat, 100% infill, in PETG or nylon. Push a nut into each trap, thread the grub screws in from the face, and clamp each spoke. For practice spokes use 8 mm aluminium rod with the practice ends pushed on.'
+    return
+  }
+  const t = c.thick
+  exportButtons([
+    ['Cut file (DXF)', 'primary', txt(() => toDXF(hub.layers, d.name), `${name}-${t}mm.dxf`, 'application/dxf'), !ready],
+    ['Cut file (SVG, true size)', '', txt(() => toCutSVG(hub.layers, hub.viewR), `${name}-${t}mm.svg`, 'image/svg+xml'), !ready],
+    ['3D model (STL)', '', () => download(toSTL(hub.meshes.combined, d.name), `${name}-${t}mm.stl`), !ready],
+    ...(hub?.meshes.bumperFlat ? [[`Practice bumper STL (print ${hub.stats.tabs})`, '', () => download(toSTL(hub.meshes.bumperFlat, 'practice bumper'), `${name}-bumper.stl`), !ready]] : []),
+    ['Wicking and knots guide', '', openWickGuide],
+  ])
+  $('exportNote').innerHTML = `<b>Send the DXF</b> to any laser, waterjet, plasma or CNC cutting shop: it is in millimetres, and they quote from it. Layers: <b>CUT</b> cut through, <b>HOLES</b> cut through, <b>DRILL</b> drill after cutting${hub?.layers.pocket.length ? `, <b>POCKET</b> mill ${hub.layers.pocketDepth.toFixed(1)} mm deep from the face (the rope groove)` : ''}${hub?.layers.engrave.length ? ', <b>ENGRAVE</b> light engrave or scribe' : ''}. Ask for ${t} mm ${matOf(c).name} and deburred edges. The SVG is the same at true size: print it at 100% as a drilling template.`
+}
+
 function renderExports() {
   const d = design()
   const box = $('exports')
   const m = current && current.design === d ? current.hub.meshes : null
+  if ((isCnc() && !printOnly(d)) || d.spokeHub) return renderCutExports(d)
+  if (d.ballEnd) {
+    const ready = m?.lowerFlat, p = params(), nm = `contact-ball-${d.id}-${p.ballD}mm-${p.poleOD}pole`
+    exportButtons([
+      ['Lower half STL (socket)', 'primary', () => download(toSTL(m.lowerFlat, d.name + ' lower'), nm + '-lower.stl'), !ready],
+      ['Upper half STL', 'primary', () => download(toSTL(m.upperFlat, d.name + ' upper'), nm + '-upper.stl'), !ready],
+      ['Joiner ring STL', '', () => download(toSTL(m.joinerFlat, d.name + ' joiner'), nm + '-joiner.stl'), !ready],
+      ['Fit-test ring', '', async () => download(toSTL(await work('fit', { params: params() }), 'fit test'), `fit-test-${params().poleOD}pole-${params().fit}clear.stl`)],
+    ])
+    $('exportNote').innerHTML = 'Print all three flat as they come, no supports, TPU 95A, 3+ walls. Print the fit-test ring first and push it on your pole. Press the joiner ring into the lower half, pour in any sand or steel shot, then press the upper half on. A drop of TPU-safe glue (or a hot soldering iron run round the seam) makes it permanent. Push the ball onto the staff end; the ribs grip it.'
+    return
+  }
   if (d.adaptor) {
     const p = params()
     box.innerHTML = ''
@@ -976,15 +1198,75 @@ function renderExports() {
     (d.pods ? 'Print the capsule test cup and the fit-test ring first; they take minutes, the hub takes hours.' : 'Print the 12 mm fit-test ring first and push it onto the real staff. It takes 10 minutes, the hub takes hours.')
 }
 
+// Step-by-step for the spoke hubs: what to buy, how to get it made, how to put it together
+function spokeHowTo(d, cnc) {
+  const p = params(), ek = endsKeyOf(p.ends), g = p.grub, n = p.spokes
+  const fire = ek === 'store' || ek === 'fist'
+  const buy = [
+    `${n} fire spokes with an ${p.rodD} mm rod, about ${p.spokeLen} mm long (the common 2" dragon fire spoke), or ${p.rodD} mm rod to make your own`,
+    `${n + 2} × ${g} stainless grub screws, cup point, ${Math.round(p.hubT / 2)} mm long, and the hex key for them`,
+    `a staff that is Ø${p.poleOD} mm (two hubs for a dragon staff: one each end, or both near the middle)`,
+    ...(ek === 'tpu' || ek === 'led' ? [`${p.rodD} mm aluminium rod for practice spokes: ${n} pieces ${p.spokeLen - 30} mm long`] : []),
+    ...(ek === 'fist' ? ['10 mm braided Kevlar rope (about 1.2 m per monkey fist) and a steel ball or rod core'] : []),
+  ]
+  const make = cnc ? [
+    'Download the <b>3D model (STL)</b> and the <b>drawing</b> below.',
+    'Send both to a machine shop or a CNC service and ask for a quote in aluminium 6061 (or stainless for heavy fire use). Say: “sockets on the mid-plane, grub-screw holes tapped ' + g + '”.',
+    'When it arrives, run each spoke into its socket to check the fit before anything else.',
+  ] : [
+    'Download the <b>Practice hub STL</b>. Print it flat, 100% infill, in PETG or nylon (TPU is too soft).',
+    `Push an ${g} nut into each hexagon trap on the face (tap it in with a hot soldering iron if it is tight).`,
+    'A printed hub is for practice only: never light spokes in it.',
+  ]
+  const fit = [
+    `Slide the hub onto the staff and tighten the two pole grub screws.`,
+    `Push each spoke in until it stops, then tighten its grub screw onto the rod. Snug, not crushing.`,
+    ...(ek === 'tpu' ? ['Print the practice ends (download below), push one onto each rod end, and weigh them: all within 2 g.'] : []),
+    ...(ek === 'led' ? ['Print the LED ends, push one onto each rod, switch the capsules on and push them in.'] : []),
+    ...(ek === 'fist' ? ['Tie a monkey fist in Kevlar round a steel core on each rod end (see the wicking and knots guide), and lock it with stainless wire.'] : []),
+    'Spin it gently first. If it wobbles, a spoke is not fully in or one end is heavier.',
+    ...(fire ? ['Before every burn: check every grub screw and wick, dip, spin off the fuel away from people, safety person with a damp towel ready.'] : []),
+  ]
+  const ol = (list) => `<ol>${list.map((x) => `<li>${x}</li>`).join('')}</ol>`
+  return `<div class="howto"><h2>How to make it work</h2>
+    <h3>1. What you need</h3>${ol(buy)}
+    <h3>2. ${cnc ? 'Get the hub made' : 'Print the practice hub'}</h3>${ol(make)}
+    <h3>3. Put it together</h3>${ol(fit)}
+    <p><a href="#" class="wickLink">Wicking and knots guide</a> · fire spokes can be re-wicked with Kevlar tape, or given rope heads.</p></div>`
+}
+const endsKeyOf = (label) => Object.keys(SPOKE_ENDS).find((k) => SPOKE_ENDS[k] === label) || 'store'
+
+function renderCutGuide() {
+  const d = design(), c = cncp(), m = matOf(c), proc = PROCESSES[procKey(c)]
+  const metal = m.kind === 'metal'
+  $('guide').innerHTML = `<h2>${d.spokeHub ? 'Making the spoke hub' : 'Cutting it'}</h2>
+    <ul>
+      <li><b>${m.name}:</b> ${m.note}</li>
+      ${d.spokeHub ? '' : `<li><b>${proc.name}:</b> ${proc.note}</li>`}
+      ${d.spokeHub ? '' : `<li><b>Collar:</b> a flat plate needs a collar to stay square on the pole. Bolt on a flanged shaft collar for your pole size and set its bolt circle under Cut; for practice hubs you can print the forge collar instead.</li>`}
+      ${metal ? `<li><b>Fire:</b> only 100% Kevlar tape, rope and thread, and bare stainless bolts and wire, near the flame. Never nylon paracord, cotton or polyester: nylon melts and drips. Check every bolt, screw and lacing before each burn. Step-by-step wicking, and knots taken from paracord work (monkey's fist, Turk's head, cobra) tied in Kevlar: <a href="#" id="wickLink">wicking and knots guide</a>.</li>
+      <li><b>Balance:</b> wrap every wick with the same length of tape, and weigh them. A heavy wick makes the staff wobble.</li>` : `<li><b>No fire, ever:</b> ${m.name} burns or melts. This is a practice hub: drop it on grass or mats.</li>`}
+      <li><b>Practice ends</b> weigh about the same as a fuelled wick, so what you learn with them carries over to fire.</li>
+    </ul>`
+  if (d.spokeHub) $('guide').innerHTML = spokeHowTo(d, true) + $('guide').innerHTML
+  for (const l of document.querySelectorAll('#wickLink, .wickLink')) l.onclick = (e) => { e.preventDefault(); openWickGuide() }
+}
+
 function renderGuide() {
+  if (isCnc() && !printOnly(design())) return renderCutGuide()
+  if (design().spokeHub) {
+    $('guide').innerHTML = spokeHowTo(design(), false)
+    for (const l of document.querySelectorAll('.wickLink')) l.onclick = (e) => { e.preventDefault(); openWickGuide() }
+    return
+  }
   const m = MATERIALS[state.material]
   $('matNote').textContent = m.note
   const tpu = state.material.startsWith('tpu')
   $('guide').innerHTML = `<h2>Printing it tough</h2>
     <ul>
+      ${design().spokeHub ? '<li><b>Practice spoke hub:</b> PETG or nylon, 100% infill, flat as shown. Push an M5 nut into each trap and thread the grub screws in from the face; they clamp the spokes and the pole. Never light spokes in a printed hub.</li>' : ''}
       <li><b>Flat on the bed</b>, as shown. Layer lines run round the disc, so a hit on the rim loads the strong direction.</li>
       <li><b>${tpu ? '100% infill, or 5+ walls with 40% gyroid.' : '6 walls, 50% gyroid.'}</b> In thin struts the walls carry the load.</li>
-      <li><b>Flowforge's filament:</b> "flexible polyurethane", which is TPU. They do not give the hardness; 95A is the common, safe choice. Their UV colours are green, pink, yellow and orange. For UV, buy TPU sold as fluorescent or UV-reactive and check it under a UV torch.</li>
       ${tpu ? `<li><b>Slow: 20–35 mm/s</b>, direct drive, little retraction. Dry TPU first (50 °C, 6 h); wet TPU prints stringy and weak.</li>
       <li><b>Glowing lanterns:</b> clear or natural TPU at 100% infill glows evenly. Infill patterns show up as shadows when lit.</li>
       <li><b>Bed:</b> TPU welds to PEI. Use glue stick as a release layer on smooth PEI.</li>` : ''}
@@ -1046,6 +1328,16 @@ toggle('vStrobe', false, (on) => {
   if (on) setMain(true)
 })
 toggle('vPip', true, (on) => ($('pip').hidden = !on))
+// 360°: the angled view takes the stage and turns slowly; drag to look from anywhere
+ctlAngle.autoRotateSpeed = 1.2
+ctlAngle.addEventListener('start', () => (ctlAngle.autoRotate = false))
+toggle('v360', false, (on) => {
+  ctlAngle.autoRotate = on
+  if (on) {
+    setMain(false)
+    status('360°: drag to turn · pinch or scroll to zoom')
+  } else setMain(framedR >= 140)
+})
 toggle('vBubbles', false, (on) => {
   bubbles.enabled = on
   $('bubblePanel').hidden = !on
@@ -1081,10 +1373,24 @@ toggle('vPole', true, (on) => (pole.visible = on))
 toggle('vBed', true, () => applyLook())
 $('spinRate').oninput = (e) => { view.rate = Number(e.target.value); $('spinOut').textContent = `${view.rate} rev/s` }
 
+function setMode(m, quiet) {
+  state.mode = m
+  $('modePrint').setAttribute('aria-pressed', String(m === 'print'))
+  $('modeCnc').setAttribute('aria-pressed', String(m === 'cnc'))
+  document.body.classList.toggle('cncMode', m === 'cnc')
+  $('vBed').hidden = m === 'cnc'
+  if (quiet) return
+  renderParams(); renderGuide(); renderGallery(); schedule(0); persist()
+}
+$('modePrint').onclick = () => setMode('print')
+$('modeCnc').onclick = () => setMode('cnc')
+setMode(state.mode, true)
+
 const matSel = $('material')
 for (const [k, m] of Object.entries(MATERIALS)) matSel.add(new Option(`${m.name}${m.verdict === 'avoid' ? ' (looks only)' : ''}`, k))
+matSel.add(new Option('⚙️ Metal or Perspex: cut it on a CNC instead…', '__cnc'))
 matSel.value = state.material
-matSel.onchange = () => { state.material = matSel.value; renderGuide(); schedule(0) }
+matSel.onchange = () => { if (matSel.value === '__cnc') { matSel.value = state.material; return setMode('cnc') } state.material = matSel.value; renderGuide(); schedule(0) }
 const bedSel = $('bed')
 bedSel.value = state.bed
 bedSel.onchange = () => { state.bed = bedSel.value; drawBed(); schedule(0) }
@@ -1175,6 +1481,8 @@ function openIdea(idea) {
   state.params[d.id] = { ...defaults(d), ...idea.params }
   if (idea.material in MATERIALS) { state.material = idea.material; matSel.value = idea.material; renderGuide() }
   if (idea.color?.startsWith?.('glow:')) state.glow = idea.color.slice(5)
+  if (idea.mode === 'cnc' && idea.cnc) state.cncp[d.id] = { ...cncDefaults(d), ...idea.cnc }
+  if ((idea.mode || 'print') !== state.mode) setMode(idea.mode === 'cnc' ? 'cnc' : 'print', true)
   renderGallery(); renderParams(); schedule(0); fillThumbs()
 }
 
@@ -1281,6 +1589,8 @@ $('saveIdea').onclick = async () => {
     design: current.design.id,
     params: current.params,
     material: state.material,
+    mode: state.mode,
+    cnc: isCnc() ? { ...cncp() } : undefined,
     color: 'glow:' + glowColor(),
     thumb: cv.toDataURL('image/png'),
     grams: current.hub.stats.gramsTotal,

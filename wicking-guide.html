@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wicking Guide</title>
+<meta name="description" content="How to wick dragon-staff fire spokes and Dragon Hub Forge hubs with Kevlar tape, Kevlar rope knots and stainless hardware, with a safety checklist.">
+<style>
+:root {
+  --bg: #0e0d12; --panel: #17151d; --raise: #201d28; --line: #2d2937;
+  --fg: #ece8f2; --muted: #958fa6;
+  --ember: #f0a23b; --ember-dim: #6b4a1e;
+  --good: #6cd39a; --warn: #f2c94c; --bad: #ff6070;
+  --steel: #9aa6b8; --kev: #e8c46a;
+  --display: "Unbounded", "Avenir Next", "Helvetica Neue", sans-serif;
+  --body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.6 var(--body); }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 90px; }
+h1 { font: 700 1.9rem/1.15 var(--display); margin: .2em 0 .3em; letter-spacing: .01em; }
+h1 span { color: var(--ember); }
+h2 { font: 700 1.4rem/1.2 var(--display); margin: 2.4em 0 .6em; padding-top: .8em; border-top: 1px solid var(--line); }
+h3 { font: 600 1.15rem/1.3 var(--body); margin: 1.4em 0 .4em; color: var(--ember); }
+a { color: var(--ember); word-break: break-word; }
+code { font: .88em var(--mono); background: var(--raise); padding: .1em .35em; border-radius: 4px; }
+.lede { color: var(--muted); font-size: 1.05rem; }
+.why { font-size: 1.02rem; margin: .3em 0 .8em; }
+.why b { color: var(--ember); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin: 14px 0; }
+.card > :first-child { margin-top: 0; }
+.card > :last-child { margin-bottom: 0; }
+.need { border-left: 4px solid var(--good); }
+.need b.t, .warn b.t, .safety b.t { display: block; font: 700 .8rem var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .3em; }
+.need b.t { color: var(--good); }
+.warn { border-left: 4px solid var(--warn); }
+.warn b.t { color: var(--warn); }
+.safety { border: 2px solid var(--bad); background: #24141a; }
+.safety b.t { color: var(--bad); font-size: .95rem; }
+.safety h2 { border: 0; margin-top: .2em; padding-top: 0; color: var(--bad); }
+ul, ol { padding-left: 1.4em; }
+li { margin: .3em 0; }
+ol.steps { counter-reset: s; list-style: none; padding-left: 0; }
+ol.steps > li { counter-increment: s; position: relative; padding: .45em .6em .45em 3em; margin: .35em 0; background: var(--panel); border-radius: 8px; }
+ol.steps > li::before { content: counter(s); position: absolute; left: .55em; top: .4em; width: 1.75em; height: 1.75em; border-radius: 50%; background: var(--ember-dim); color: var(--ember); font: 700 .95rem/1.75em var(--mono); text-align: center; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+.stat { background: var(--raise); border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font: 700 1.2rem var(--display); color: var(--ember); }
+.stat small { color: var(--muted); }
+nav.toc { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+nav.toc ol { margin: 6px 0; padding-left: 22px; columns: 2 230px; }
+nav.toc a { text-decoration: none; }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px 14px; margin: 12px 0; }
+details[open] { padding-bottom: 12px; }
+summary { cursor: pointer; font: 600 1.12rem/1.4 var(--body); padding: 10px 0; color: var(--fg); }
+summary::marker { color: var(--ember); }
+summary small { color: var(--muted); font-weight: 400; font-size: .9rem; }
+details .card { background: var(--raise); }
+details ol.steps > li { background: var(--raise); }
+figure { margin: 14px 0; background: var(--raise); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+figure svg { width: 100%; height: auto; display: block; max-height: 340px; }
+figcaption { color: var(--muted); font-size: .9rem; padding: 6px 4px 0; }
+.svt { font: 13px var(--body); fill: var(--fg); }
+.svm { font: 12px var(--body); fill: var(--muted); }
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+th, td { text-align: left; vertical-align: top; padding: 7px 9px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; }
+.pill { display: inline-block; font: 700 .72rem var(--mono); padding: 1px 8px; border-radius: 99px; vertical-align: 2px; }
+.pill.d { background: rgba(108,211,154,.15); color: var(--good); }
+.pill.l { background: rgba(240,162,59,.15); color: var(--ember); }
+.sources li { font-size: .92rem; }
+.muted { color: var(--muted); }
+@media print { body { background: #fff; color: #000; } details { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Wicking <span>guide</span></h1>
+<p class="lede">How to put Kevlar wicks on fire spokes and Dragon Hub Forge hubs. Short steps, one job each. Open a section, do the steps, close it.</p>
+
+<nav class="toc" aria-label="Contents">
+<b>On this page</b>
+<ol>
+<li><a href="#safety">Safety first (read this)</a></li>
+<li><a href="#spoke">Know your spoke</a></li>
+<li><a href="#tape">Method A: re-wick a spoke with tape</a></li>
+<li><a href="#secure">Ways to hold the wick on</a></li>
+<li><a href="#tab">Method B: bolt-on tab wicks</a></li>
+<li><a href="#knots">Rope wick heads and knots</a></li>
+<li><a href="#lock">Locking any knot</a></li>
+<li><a href="#fit">Fitting fire spokes to a forge hub</a></li>
+<li><a href="#check">Before every burn</a></li>
+<li><a href="#sources">Sources</a></li>
+</ol>
+</nav>
+
+<!-- ============ SAFETY ============ -->
+<section class="card safety" id="safety">
+<b class="t">Read this before you start</b>
+<h2>Safety first</h2>
+<h3>Only these go in or near the flame</h3>
+<ul>
+<li><b>100% Kevlar</b> tape, rope and thread.</li>
+<li><b>Stainless steel</b> wire, bolts, nuts and screws. Use bare wire. Don't use galvanised or plastic-coated wire.</li>
+</ul>
+<h3>Never these</h3>
+<ul>
+<li><b>Nylon paracord.</b> It melts and drips burning goo onto skin.</li>
+<li><b>Cotton.</b> It burns away and throws burning bits.</li>
+<li><b>Polyester or any "mystery" cord.</b> It melts like nylon.</li>
+<li><b>Ordinary glue.</b> Only use a glue that is rated for fire, or no glue at all.</li>
+</ul>
+<h3>Fuelling</h3>
+<ol>
+<li>Set up a <b>fuel dump</b> well away from the spinning area. Several metres is good, and 6&nbsp;m (20&nbsp;ft) is a common rule.</li>
+<li>Dip in a <b>metal</b> pot with a lid. Don't use plastic or glass.</li>
+<li>Remove the extra fuel. Squeeze it back into the pot, or spin it off <b>at the dump, pointed away from people</b>.</li>
+<li>Close the fuel. Light up <b>away</b> from the fuel.</li>
+<li>Never use petrol, gasoline or diesel.</li>
+</ol>
+<h3>People and kit</h3>
+<ul>
+<li><b>Never spin alone.</b> Have a safety person who knows how to use the kit.</li>
+<li>Keep a <b>damp cotton towel or fire blanket</b> at hand.</li>
+<li>Keep a <b>CO₂ or foam extinguisher</b> nearby. Water extinguishers are no good on fuel fires.</li>
+<li>Keep burn first aid at hand.</li>
+<li>Tie your hair back. Wear cotton, not synthetics.</li>
+</ul>
+<h3>The wick itself</h3>
+<ul>
+<li><b>Check every knot, wire and bolt before every burn.</b></li>
+<li><b>Before the first burn</b>, soak a new wick for about 10 minutes until it is soaked right through. After the first burn, check that the wraps are still tight.</li>
+<li>Put the flame out <b>before</b> it runs dry. Dry Kevlar smoulders and breaks down.</li>
+<li><b>Wire ends and bolt heads get very hot.</b> Don't touch them after a burn, and cover them with a Kevlar flap.</li>
+<li><b>Store wicks dry, covered and out of sunlight.</b> UV slowly weakens Kevlar.</li>
+</ul>
+</section>
+
+<!-- ============ SPOKE ============ -->
+<h2 id="spoke">Know your spoke</h2>
+<p>The forge's CNC hubs take common 2-inch "dragon" fire spokes. A typical one looks like this:</p>
+<div class="grid">
+<div class="stat"><b>8 mm</b><small>rod that goes into the hub</small></div>
+<div class="stat"><b>~185 mm</b><small>long</small></div>
+<div class="stat"><b>50 mm</b><small>wide Kevlar wick</small></div>
+<div class="stat"><b>~450 mm</b><small>of Kevlar tape per wick</small></div>
+<div class="stat"><b>~88 g</b><small>each</small></div>
+<div class="stat"><b>Steel cable</b><small>core, which soaks up knocks</small></div>
+</div>
+<p class="muted">Sellers warn that size and weight vary between batches, so buy a full set at once.</p>
+
+<!-- ============ METHOD A ============ -->
+<h2 id="tape">Method A: re-wick a spoke with Kevlar tape</h2>
+<p class="why"><b>Why:</b> a tight roll of tape is the simplest, cheapest wick, and it matches what came on the spoke.</p>
+
+<div class="card need">
+<b class="t">You need</b>
+<ul>
+<li>About 450 mm of <b>50 mm Kevlar tape</b>. The 3 mm thick kind is standard.</li>
+<li><b>Kevlar thread</b> and a strong needle, <b>or</b> about 1 m of <b>bare stainless wire</b> 1.0 to 1.5 mm thick (about 16 gauge).</li>
+<li>Sharp scissors. Kevlar blunts cheap ones.</li>
+<li>Pliers with a wire cutter, a pointed awl, and chalk.</li>
+<li>Optional: two short stainless screws or a rivet, if the spoke has a hole for them.</li>
+</ul>
+</div>
+
+<figure>
+<svg viewBox="0 0 520 200" role="img" aria-label="End view of a tape wick: the tape spirals round the rod about five and a half times, the start is folded under, the tail trails, and a wire or stitch goes through all layers">
+<g transform="translate(130 100)">
+<circle r="10" fill="var(--steel)"/>
+<path d="M11 0 11 3 10 6 8 8 6 11 3 12 0 13 -3 13 -7 12 -10 10 -12 7 -14 4 -15 0 -15 -4 -14 -8 -11 -11 -8 -14 -4 -16 -0 -17 4 -17 9 -15 13 -13 16 -9 18 -5 19 -0 19 5 17 10 14 14 10 18 5 20 0 21 -6 21 -11 19 -16 16 -19 11 -22 6 -23 0 -23 -6 -20 -12 -17 -17 -12 -21 -6 -24 -0 -25 7 -24 13 -22 18 -18 23 -13 26 -7 27 -0 26 7 24 14 20 20 14 25 7 28 0 29 -8 28 -15 26 -21 21 -26 15 -30 8 -31 0 -30 -8 -27 -16 -23 -23 -16 -28 -8 -32 -0 -33 9 -32 17 -29 24 -24 30 -17 33 -9 35 -0 34 9 31 18 25 25 18 31 9 35 -0 37 -10 36 -19 33 -27 27 -33 19 -37 10 -39 0 -38 -10 -34 -20 -28 -28 -20 -35 -11 -39 -0 -41 11 -40 21 -36 30 -30 37 -21 41 -11 43 -0 42 11 38 22 31 31 22 38 12 43 -0 45 -12 44 -23 40 -33 33 -40 23 -45 12 -47 0 -46 -12 -41 -24 -34 -34 -24 -42 -13 -47 -0 -49 13 -48 25 -43 35 -35 44 -25 49 -13 51 -0 50 13 45 26 37 37 26 45 14 51 -0 53 -14 52 -27 46 -38 38 -47 27 -53 14 -55 0" fill="none" stroke="var(--kev)" stroke-width="6" stroke-linejoin="round"/>
+<path d="M11 0 L16 -6" stroke="var(--kev)" stroke-width="6" stroke-linecap="round"/>
+<line x1="0" y1="-62" x2="0" y2="62" stroke="var(--fg)" stroke-width="2" stroke-dasharray="5 4"/>
+<circle cx="-55" cy="0" r="4" fill="var(--ember)"/>
+</g>
+<text class="svt" x="230" y="40">grey: 8 mm rod (end view)</text>
+<text class="svt" x="230" y="64">gold: tape, about 5½ turns, pulled tight</text>
+<text class="svt" x="230" y="88">white dashes: wire or stitches through every layer</text>
+<text class="svt" x="230" y="112">orange dot: tape end, stitched flat</text>
+<text class="svm" x="230" y="140">450 mm of 3 mm tape on an 8 mm rod</text>
+<text class="svm" x="230" y="158">gives a wick about 40 to 45 mm across.</text>
+<text class="svm" x="230" y="182">Not to scale.</text>
+</svg>
+<figcaption>End view of a tape wick. Fold the start under, wrap tight, and stitch or wire through every layer.</figcaption>
+</figure>
+
+<details open>
+<summary>Steps: tape wick on a spoke</summary>
+<ol class="steps">
+<li>Take the old wick off. Undo the wire or cut the stitches. Keep the old tape so you can measure from it.</li>
+<li>Check the rod. Look for cracks, a frayed cable or a loose end cap. If you find damage, replace the spoke.</li>
+<li>Cut 450 mm of new tape, about the same length as the old tape.</li>
+<li>Chalk the wick's start line on the rod, so the new wick sits in the same place as the old one.</li>
+<li>Fold the first 10 to 15 mm of tape back on itself.</li>
+<li>Lay the fold on the rod, with the folded side down against the metal.</li>
+<li>Pin the start. Push one stitch or a short wire through both layers and round the rod, then twist it tight.</li>
+<li>Wrap one turn, pulling <b>hard</b> the whole time. The tighter it is, the longer it lasts.</li>
+<li>Keep wrapping, and keep the edges lined up so it doesn't spiral off sideways.</li>
+<li>Stop with the tail end on the <b>trailing</b> side, so it points away from the way the staff spins.</li>
+<li>Hold the tail tight with a clamp or a helper's thumb.</li>
+<li>Secure it with one of the methods below.</li>
+<li>Trim any loose threads with sharp scissors. Loose threads catch and pull the wick apart.</li>
+<li>Weigh it. Every spoke in the set should weigh about the same.</li>
+</ol>
+</details>
+
+<!-- ============ SECURING ============ -->
+<h2 id="secure">Ways to hold the wick on</h2>
+<p>Pick one, or use stitching plus one other. Every method has to go through <b>all the layers</b>.</p>
+
+<details>
+<summary>1. Kevlar thread stitching <small>(neatest, and the flame stays full size)</small></summary>
+<div class="card need"><b class="t">You need</b>Kevlar thread (you can pull single threads out of spare tape), a strong needle, and a thimble or pliers.</div>
+<p class="why"><b>Why:</b> it holds without anything metal outside the wick, so there are no hot spots.</p>
+<ol class="steps">
+<li>Thread about 60 cm of Kevlar thread. Leave a 20 cm tail.</li>
+<li>Anchor it. Push the needle into the tape but don't pull it all the way through. Split the tail strands, pass the needle between them, and pull tight. This makes a cow hitch that locks.</li>
+<li>Stitch straight down through the tail and the layers under it.</li>
+<li>Come back up about 5 mm along.</li>
+<li>Repeat along the whole tail end and across both edges of the wick.</li>
+<li>Pull each stitch firm, but not so hard it cuts the tape.</li>
+<li>Finish with three or four stitches on top of each other, then bury the end inside the wick.</li>
+</ol>
+</details>
+
+<details>
+<summary>2. Stainless wire through the wick <small>(strong and quick)</small></summary>
+<div class="card need"><b class="t">You need</b>Bare stainless wire 1.0 to 1.5 mm thick, pliers, and an awl.</div>
+<p class="why"><b>Why:</b> wire can't come untied. Thin wire goes brittle after many burns, so use a thick one.</p>
+<ol class="steps">
+<li>Cut 20 to 25 cm of wire. Snip the end at an angle so it makes a point.</li>
+<li>Make a path with the awl through all the layers, near one edge of the wick.</li>
+<li>Push the wire through the layers. If the rod has a cross-hole, go through that too.</li>
+<li>Bring the wire round the outside and back through the same path.</li>
+<li>Twist the two ends together tightly with pliers.</li>
+<li>Do the same near the other edge.</li>
+<li>Trim the twist to about 8 mm.</li>
+<li>Press the twist <b>flat and into the wick</b>, pointing backwards. A sticking-out end can cut you.</li>
+</ol>
+<p class="muted">On a bare steel-cable core, don't drill the cable. Wrap the wire round the core inside the first layer instead.</p>
+</details>
+
+<details>
+<summary>3. Screws, bolts or rivets with a Kevlar flap <small>(for rods with holes)</small></summary>
+<div class="card need"><b class="t">You need</b>Short stainless screws, or rivets that suit the rod's holes, a scrap of Kevlar tape for the flap, and Kevlar thread.</div>
+<p class="why"><b>Why:</b> very solid. Screw heads get hot enough to brand skin, so they must be covered.</p>
+<ol class="steps">
+<li>Push the awl through all the layers where the hole in the rod is.</li>
+<li>Drive the screw through the layers into the rod. It should be snug, not crushing.</li>
+<li>Cut a flap of tape about 30 mm bigger than the head on every side.</li>
+<li>Lay the flap over the head.</li>
+<li>Stitch the flap down all round with Kevlar thread.</li>
+<li>Check that no metal shows.</li>
+</ol>
+</details>
+
+<!-- ============ METHOD B ============ -->
+<h2 id="tab">Method B: bolt-on tab wicks on a CNC hub</h2>
+<p class="why"><b>Why:</b> a flat metal tab cut into the hub carries its own wick, so you don't need any spokes. Tape is wrapped round the tab and bolted right through.</p>
+
+<div class="card need">
+<b class="t">You need (per tab)</b>
+<ul>
+<li>Kevlar tape the width of the tab, plus a little extra. Cut it long enough for 3 or 4 wraps.</li>
+<li>Two <b>M4 stainless bolts</b>. Each one should be the tab thickness plus the squashed wick on both sides, plus about 5 mm.</li>
+<li>Two M4 <b>all-metal lock nuts</b>, plus a stainless washer under each head and each nut.</li>
+<li>Kevlar thread, and a scrap of tape for the flaps.</li>
+<li>An awl, two spanners or a hex key, and a clamp.</li>
+</ul>
+</div>
+
+<div class="card warn"><b class="t">Nyloc nuts</b>A nyloc nut's nylon ring softens with heat. Only use one where it stays well away from the flame and cool to touch after a burn. Next to the wick, use an all-metal lock nut.</div>
+
+<figure>
+<svg viewBox="0 0 520 230" role="img" aria-label="Section through a hub tab: tape wrapped round the top of the tab in layers on both sides, an M4 bolt through tape and tab, washer and lock nut on one side, Kevlar flap stitched over the bolt head on the other">
+<rect x="200" y="40" width="14" height="180" fill="var(--steel)"/>
+<path d="M194 210 V44 A13 13 0 0 1 220 44 V210" fill="none" stroke="var(--kev)" stroke-width="6"/>
+<path d="M186 210 V44 A21 21 0 0 1 228 44 V210" fill="none" stroke="var(--kev)" stroke-width="6"/>
+<path d="M178 210 V44 A29 29 0 0 1 236 44 V210" fill="none" stroke="var(--kev)" stroke-width="6"/>
+<path d="M170 210 V44 A37 37 0 0 1 244 44 V176" fill="none" stroke="var(--kev)" stroke-width="6"/>
+<rect x="150" y="110" width="118" height="10" fill="#c9d1dc"/>
+<rect x="142" y="100" width="10" height="30" fill="#c9d1dc"/>
+<rect x="250" y="102" width="5" height="26" fill="var(--steel)"/>
+<rect x="255" y="100" width="14" height="30" fill="#c9d1dc" stroke="var(--bg)"/>
+<rect x="152" y="102" width="5" height="26" fill="var(--steel)"/>
+<path d="M162 86 C128 86 128 144 162 144" fill="none" stroke="var(--ember)" stroke-width="5"/>
+<path d="M162 86 l-6 -4 M162 144 l-6 4" stroke="var(--fg)" stroke-width="2"/>
+<text class="svt" x="16" y="30">flame end</text>
+<text class="svt" x="16" y="214">hub</text>
+<text class="svt" x="16" y="100">Kevlar flap,</text>
+<text class="svt" x="16" y="118">stitched over</text>
+<text class="svt" x="16" y="136">the bolt head</text>
+<text class="svt" x="290" y="90">M4 stainless bolt</text>
+<text class="svt" x="290" y="112">washer + all-metal</text>
+<text class="svt" x="290" y="130">lock nut</text>
+<text class="svt" x="290" y="170">gold: tape wrapped round</text>
+<text class="svt" x="290" y="188">the tab, 3 to 4 layers</text>
+<text class="svt" x="290" y="212">grey bar: CNC tab</text>
+</svg>
+<figcaption>A section through one tab. The bolt goes through every layer of tape and the tab. Use a second bolt about 25 mm further along. Not to scale.</figcaption>
+</figure>
+
+<details open>
+<summary>Steps: bolt-on tab wick</summary>
+<ol class="steps">
+<li>Check the tab. It needs two clean M4 holes and no sharp corners. File off any burrs, because burrs cut tape.</li>
+<li>Fold 15 mm of tape back on itself at the start.</li>
+<li>Lay the fold flat on one side of the tab, over the holes.</li>
+<li>Wrap the tape up over the tip, down the other side and round, pulling hard.</li>
+<li>Do 3 or 4 wraps. Finish with the tail on the side where the bolt heads will go.</li>
+<li>Clamp it all tight.</li>
+<li>Find a hole by feel, then push the awl through the tape <b>from both sides</b> into that hole. Don't drill, because a drill grabs and tears Kevlar.</li>
+<li>Put a washer on a bolt and push the bolt through.</li>
+<li>Add a washer and the lock nut on the far side.</li>
+<li>Tighten until the wick is firm. Stop before it crushes and cuts the tape.</li>
+<li>Repeat for the second hole.</li>
+<li>Stitch the tail end down with Kevlar thread.</li>
+<li>Stitch a Kevlar flap over the bolt heads.</li>
+<li>Do every tab the same way, with the same tape length, same wraps and same bolts. Same wicks give the same balance.</li>
+</ol>
+</details>
+
+<!-- ============ KNOTS ============ -->
+<h2 id="knots">Rope wick heads and knots</h2>
+<p>These ideas come from paracord and sailors' knots, but <b>you tie every one of them in Kevlar rope or Kevlar thread only</b>. Paracord is fine for <b>practice</b>, but never light it.</p>
+
+<div class="card warn"><b class="t">Kevlar rope tips</b>
+<ul>
+<li>Common sizes are 5 to 6 mm and 10 to 12 mm.</li>
+<li>Kevlar doesn't melt, so you can't seal the ends with a flame. Bind (whip) each cut end with Kevlar thread <b>before</b> you cut.</li>
+<li>It's stiff and slippery, so tie it loose first, then work the slack out bit by bit.</li>
+<li>Tie one in cheap cord first to learn the path.</li>
+</ul></div>
+
+<p><span class="pill d">diagram</span> = drawn here. <span class="pill l">link</span> = the path is hard to draw clearly, so follow the animated tutorial.</p>
+
+<!-- Monkey's fist -->
+<details>
+<summary>Monkey's fist <span class="pill d">diagram</span> <small>a ball head for fire poi, meteor or rope dart</small></summary>
+<p class="why"><b>Why:</b> a round, heavy, even burner. It's the classic fire-poi and rope-dart head.</p>
+<div class="card need"><b class="t">You need</b>
+<ul>
+<li>Kevlar rope, 6 mm or 10 mm.</li>
+<li>A <b>steel core</b>, either a steel ball or a short steel slug.</li>
+<li>Stainless wire 1.0 to 1.5 mm, Kevlar thread, and a blunt spike or marlinspike.</li>
+</ul></div>
+
+<h3>How many turns?</h3>
+<p>The knot is <b>3 sets of turns</b>. Each set has the same number of turns. More turns cover a bigger core.</p>
+<div class="tbl"><table>
+<tr><th>Rope</th><th>Core size</th><th>Turns per set</th><th>Rope to cut</th></tr>
+<tr><td>6 mm</td><td>25 mm ball</td><td>4</td><td>about 2 m</td></tr>
+<tr><td>6 mm</td><td>32 to 38 mm ball</td><td>5 to 6</td><td>about 3 m</td></tr>
+<tr><td>10 mm</td><td>30 to 32 mm ball</td><td>3</td><td>about 2.5 m</td></tr>
+<tr><td>10 mm</td><td>40 to 50 mm ball</td><td>4 to 5</td><td>about 3.5 m</td></tr>
+</table></div>
+<p class="muted">Rule of thumb: turns per set ≈ the core width ÷ the rope width, minus 1. This is scaled from a 550-paracord size chart, so tie a test first and add 30% to the rope length for your tails.</p>
+
+<figure>
+<svg viewBox="0 0 520 190" role="img" aria-label="Three stages of a monkey's fist: first set of loops, second set wrapped round them, third set through the middle around the second set">
+<g fill="none" stroke-width="5">
+<g stroke="var(--kev)"><ellipse cx="70" cy="90" rx="22" ry="50"/><ellipse cx="82" cy="90" rx="22" ry="50"/><ellipse cx="94" cy="90" rx="22" ry="50"/></g>
+<g stroke="var(--kev)" opacity=".55"><ellipse cx="250" cy="90" rx="22" ry="50"/><ellipse cx="262" cy="90" rx="22" ry="50"/><ellipse cx="274" cy="90" rx="22" ry="50"/></g>
+<g stroke="var(--ember)"><ellipse cx="262" cy="78" rx="44" ry="9"/><ellipse cx="262" cy="90" rx="44" ry="9"/><ellipse cx="262" cy="102" rx="44" ry="9"/></g>
+<g stroke="var(--kev)" opacity=".35"><ellipse cx="430" cy="90" rx="22" ry="50"/><ellipse cx="442" cy="90" rx="22" ry="50"/><ellipse cx="454" cy="90" rx="22" ry="50"/></g>
+<g stroke="var(--ember)" opacity=".5"><ellipse cx="442" cy="78" rx="44" ry="9"/><ellipse cx="442" cy="90" rx="44" ry="9"/><ellipse cx="442" cy="102" rx="44" ry="9"/></g>
+<g stroke="var(--good)"><ellipse cx="430" cy="90" rx="8" ry="36"/><ellipse cx="442" cy="90" rx="8" ry="36"/><ellipse cx="454" cy="90" rx="8" ry="36"/></g>
+</g>
+<text class="svt" x="20" y="170">1. Three turns</text>
+<text class="svm" x="20" y="186">round your fingers</text>
+<text class="svt" x="200" y="170">2. Three turns across</text>
+<text class="svm" x="200" y="186">round the first set</text>
+<text class="svt" x="380" y="170">3. Three turns through</text>
+<text class="svm" x="380" y="186">the middle, round set 2</text>
+</svg>
+<figcaption>A schematic with 3 turns per set, not every crossing is drawn. The core goes inside after stage 2. Animated version: <a href="https://www.animatedknots.com/monkeys-fist-knot">animatedknots.com: Monkey's Fist</a>.</figcaption>
+</figure>
+
+<ol class="steps">
+<li>Bind both ends of the rope with Kevlar thread.</li>
+<li>Leave a long standing end, about 1 m for the tether or a loop.</li>
+<li><b>Set 1:</b> wrap the working end round 2 or 3 fingers, using your number of turns.</li>
+<li><b>Set 2:</b> turn 90° and wrap the same number of turns round the middle of set 1.</li>
+<li>Slide it off your fingers and push the steel core into the middle.</li>
+<li><b>Set 3:</b> pass the end through the inside of set 1, <b>round</b> set 2, using the same number of turns.</li>
+<li>Count each set again. Uneven sets make a lumpy, wobbly ball.</li>
+<li>Tighten turn by turn. Follow the rope from the standing end all the way to the working end, and repeat 2 or 3 times.</li>
+<li>Tuck the working end inside, or bring it out next to the standing end to make a loop.</li>
+<li>Lock it (see <a href="#lock">Locking any knot</a>): run stainless wire through the ball and round the core, twist the ends, and bury them.</li>
+<li>Stitch where the rope leaves the ball with Kevlar thread.</li>
+</ol>
+<div class="card warn"><b class="t">Note</b>A steel-cored monkey's fist hits <b>hard</b>. Practise with a soft unlit one. In some places a weighted rope ball counts as a weapon if you carry it, so check your local law.</div>
+</details>
+
+<!-- Turk's head -->
+<details>
+<summary>Turk's head <span class="pill l">link</span> <small>a ring wick round a spoke tip or along a hub rim</small></summary>
+<p class="why"><b>Why:</b> it makes a neat, woven ring that hugs a round bar. Doubling or tripling it builds a fat burn ring.</p>
+<div class="card need"><b class="t">You need</b>
+<ul>
+<li>Kevlar rope 3 to 6 mm, or doubled Kevlar thread for a thin ring.</li>
+<li>About 1 to 2 m for one ring on a spoke, plus more for each extra pass. For a hub rim, measure the rim and allow a lot more.</li>
+<li>A dowel the same size as the bar, a blunt spike, stainless wire and Kevlar thread.</li>
+</ul></div>
+<ol class="steps">
+<li>Learn the basic three-pass Turk's head from the <a href="https://www.animatedknots.com/turks-head-knot">animatedknots.com: Turk's Head</a> video.</li>
+<li>Tie it loosely round a dowel, or round the spoke itself.</li>
+<li><b>Double it:</b> lead the working end alongside the first pass, following the same path.</li>
+<li>Do it a third time to <b>triple</b> it. It will be fatter and burn longer.</li>
+<li>Tighten slowly by following the rope round 2 or 3 times.</li>
+<li>Tuck both ends under the ring's own passes, opposite each other.</li>
+<li><b>Stop it sliding off.</b> The spin flings everything outwards. Put it over a base wrap of tape, then wire it through the rod's cross-hole or behind an end stop. Never rely on friction alone.</li>
+<li>Stitch the ends down with Kevlar thread.</li>
+</ol>
+<p class="muted">On a hub rim, tie a long Turk's head round the rim section, or a series of short rings. Wire each ring to the rim through a drilled hole.</p>
+</details>
+
+<!-- Cobra -->
+<details>
+<summary>Cobra (Solomon bar) <span class="pill d">diagram</span> <small>a flat sinnet over a tape or rod core</small></summary>
+<p class="why"><b>Why:</b> it's a flat, grippy, even wick you can make any length. It works well along a spoke or over a short tape-wrapped core.</p>
+<div class="card need"><b class="t">You need</b>
+<ul>
+<li>Kevlar rope 3 to 6 mm. You need about 30 cm of rope for every 25 mm of cobra if the rope is about 4 mm. Allow more for thicker rope.</li>
+<li>A <b>core</b>, either the steel rod itself or a strip of Kevlar tape laid along it.</li>
+<li>Stainless wire and Kevlar thread.</li>
+</ul></div>
+<figure>
+<svg viewBox="0 0 520 200" role="img" aria-label="One cobra half knot: left cord crosses over the core, right cord crosses over the left cord, goes under the core and up through the left loop">
+<line x1="120" y1="10" x2="120" y2="190" stroke="var(--steel)" stroke-width="7"/>
+<line x1="136" y1="10" x2="136" y2="190" stroke="var(--steel)" stroke-width="7"/>
+<path d="M70 10 V70 Q70 92 95 92 H200" fill="none" stroke="var(--kev)" stroke-width="7"/>
+<path d="M186 10 V112" fill="none" stroke="var(--ember)" stroke-width="7"/>
+<path d="M186 112 Q186 128 170 128 H106 Q94 128 94 114 V88" fill="none" stroke="var(--ember)" stroke-width="7" stroke-dasharray="9 6"/>
+<path d="M94 86 V52" fill="none" stroke="var(--ember)" stroke-width="7"/>
+<path d="M84 58 L94 44 L104 58" fill="none" stroke="var(--ember)" stroke-width="4"/>
+<text class="svt" x="235" y="40">gold = left cord: goes over the core</text>
+<text class="svt" x="235" y="62">to the right, leaving a loop on the left.</text>
+<text class="svt" x="235" y="96">orange = right cord: goes over the gold tail,</text>
+<text class="svt" x="235" y="118">under the core (dashed),</text>
+<text class="svt" x="235" y="140">and up through the gold loop to the front.</text>
+<text class="svm" x="235" y="172">grey = core. Pull both cords tight.</text>
+<text class="svm" x="235" y="190">Next knot: start from the right.</text>
+</svg>
+<figcaption>One half knot of the cobra. Swap the starting side each time for a flat bar. Starting on the same side every time makes it twist into a spiral. Animated version: <a href="https://www.animatedknots.com/cobra-lanyard-knot">animatedknots.com: Cobra (Portuguese sinnet / Solomon bar)</a>.</figcaption>
+</figure>
+<ol class="steps">
+<li>Find the middle of the rope and fold it there.</li>
+<li>Put the fold behind the core at the start end, with one leg either side.</li>
+<li>Pin the fold to the core with a stitch or a turn of wire.</li>
+<li><b>Left</b> cord: take it over the core to the right, leaving a loop.</li>
+<li><b>Right</b> cord: take it over the left tail, under the core, and up through the loop.</li>
+<li>Pull both tight and snug it up to the start.</li>
+<li>Now start from the <b>right</b>: right cord over the core, then the left cord over it, under the core, and up through the loop.</li>
+<li>Keep swapping sides until the length you want.</li>
+<li>Finish: tuck each end under the last 2 or 3 knots on its side, pull tight, then trim.</li>
+<li>Lock it with a few turns of stainless wire round each end, and Kevlar stitches through the knots into the core.</li>
+</ol>
+</details>
+
+<!-- King cobra -->
+<details>
+<summary>King cobra <span class="pill l">link</span> <small>a cobra tied over a cobra, for a thick, chunky wick</small></summary>
+<p class="why"><b>Why:</b> it's twice the thickness, so it holds more fuel and burns longer. It is heavier too, so match it on every spoke.</p>
+<div class="card need"><b class="t">You need</b>A finished cobra (don't cut its ends), and about the same length of Kevlar rope again. Use a second rope if the first ends are short.</div>
+<ol class="steps">
+<li>Tie a cobra as above, but <b>don't cut</b> the ends.</li>
+<li>Go back to the start end.</li>
+<li>Tie a second row of cobra knots <b>on top</b>, using the first cobra as the core.</li>
+<li>Keep swapping sides as before.</li>
+<li>Pull each knot tight so it beds into the row below.</li>
+<li>Tuck and trim the ends, as for the cobra.</li>
+<li>Lock it with wire at both ends and Kevlar stitches through both layers.</li>
+</ol>
+<p class="muted">The cobra video above shows the stitch. A king cobra is the same stitch done again over the top.</p>
+</details>
+
+<!-- Crown sinnet -->
+<details>
+<summary>Crown sinnet / box knot <span class="pill d">diagram</span> <small>a chunky square head</small></summary>
+<p class="why"><b>Why:</b> it's a dense block of rope that gives a bigger, brighter flame than a flat wrap.</p>
+<div class="card need"><b class="t">You need</b>
+<ul>
+<li>Two lengths of Kevlar rope (5 to 6 mm), crossed in the middle to make 4 strands.</li>
+<li>Each crown uses about 4 to 5 rope widths per strand. Cut generously.</li>
+<li>Stainless wire, Kevlar thread, and a rod end with a cross-hole, or a core to tie onto.</li>
+</ul></div>
+<figure>
+<svg viewBox="0 0 520 210" role="img" aria-label="Top view of one crown: four strands, each folded over its neighbour clockwise, the last tucked through the first loop">
+<rect x="92" y="87" width="36" height="36" fill="var(--steel)" opacity=".6"/>
+<g fill="none" stroke-width="7" stroke-linecap="round">
+<g stroke="var(--raise)" stroke-width="13"><path d="M110 87 V30 Q110 20 120 20 Q160 20 170 50 L170 140"/></g>
+<path d="M110 87 V30 Q110 20 120 20 Q160 20 170 50 L170 140" stroke="var(--kev)"/>
+<path d="M128 105 H185 Q195 105 195 115 Q195 155 165 165 L80 165" stroke="var(--raise)" stroke-width="13"/>
+<path d="M128 105 H185 Q195 105 195 115 Q195 155 165 165 L80 165" stroke="var(--ember)"/>
+<path d="M110 123 V180 Q110 190 100 190 Q60 190 50 160 L50 70" stroke="var(--raise)" stroke-width="13"/>
+<path d="M110 123 V180 Q110 190 100 190 Q60 190 50 160 L50 70" stroke="var(--good)"/>
+<path d="M92 105 H35 Q25 105 25 95 Q25 55 55 45 L140 45" stroke="var(--raise)" stroke-width="13"/>
+<path d="M92 105 H35 Q25 105 25 95 Q25 55 55 45 L140 45" stroke="#c79bff"/>
+<path d="M110 58 V32" stroke="var(--raise)" stroke-width="13" stroke-linecap="butt"/>
+<path d="M110 66 V24" stroke="var(--kev)" stroke-linecap="butt"/>
+</g>
+<text class="svt" x="104" y="14">1</text><text class="svt" x="200" y="100">2</text>
+<text class="svt" x="104" y="206">3</text><text class="svt" x="8" y="100">4</text>
+<text class="svt" x="240" y="40">Looking down on the head:</text>
+<text class="svt" x="240" y="66">1. Fold strand 1 across strand 2.</text>
+<text class="svt" x="240" y="88">2. Fold 2 over the end of 1, across 3.</text>
+<text class="svt" x="240" y="110">3. Fold 3 over the end of 2, across 4.</text>
+<text class="svt" x="240" y="132">4. Fold 4 over the end of 3,</text>
+<text class="svt" x="258" y="152">then <tspan fill="var(--ember)">tuck it under the loop of 1</tspan>.</text>
+<text class="svm" x="240" y="180">Pull all four even. That is one crown.</text>
+<text class="svm" x="240" y="200">Next crown: go the other way round = box knot.</text>
+</svg>
+<figcaption>One crown, seen from above (a schematic). Box knot = alternate clockwise and anticlockwise crowns. Animated version: <a href="https://www.animatedknots.com/crown-sinnet-knot">animatedknots.com: Crown Sinnet</a>.</figcaption>
+</figure>
+<ol class="steps">
+<li>Bind all 8 rope ends with Kevlar thread.</li>
+<li>Cross the two ropes at their middles to make a plus sign with 4 strands.</li>
+<li>Fix the cross to the rod end with stainless wire through the cross-hole.</li>
+<li>Tie one crown going clockwise (see the diagram).</li>
+<li>Pull each strand evenly until the crown is a tight square.</li>
+<li>Tie the next crown <b>anticlockwise</b>. This is the box knot pattern.</li>
+<li>Keep alternating until the head is the length you want, usually 6 to 10 crowns.</li>
+<li>Finish by tucking each strand down through the block, along the core.</li>
+<li>Lock it with stainless wire right through the block and round the rod, twisted and buried. Stitch with Kevlar thread at the base.</li>
+<li>Trim the ends short and bind them.</li>
+</ol>
+</details>
+
+<!-- Diamond -->
+<details>
+<summary>Diamond / lanyard knot <span class="pill l">link</span> <small>a finishing stopper</small></summary>
+<p class="why"><b>Why:</b> it's a round, firm knot that stops a rope wick sliding or fraying at its end. It works at the end of a rope dart tail, or above a monkey's fist.</p>
+<div class="card need"><b class="t">You need</b>A two-strand rope end, or a rope doubled into a loop, Kevlar thread, and stainless wire if it goes in the flame.</div>
+<ol class="steps">
+<li>Learn it from the <a href="https://www.animatedknots.com/lanyard-knot">animatedknots.com: Lanyard (Diamond) Knot</a> video.</li>
+<li>Tie it loosely first. It starts as a carrick bend.</li>
+<li>Bring each end round the outside and up through the centre.</li>
+<li>Tighten slowly, following each strand through.</li>
+<li>Slide it to where you want it before the final tightening.</li>
+<li>Stitch it through with Kevlar thread so it can't loosen.</li>
+<li>If it sits in the flame, add one turn of stainless wire just below it.</li>
+</ol>
+</details>
+
+<!-- ============ LOCKING ============ -->
+<h2 id="lock">Locking any knot</h2>
+<p class="why"><b>Why:</b> heat, spin and fuel loosen knots. A knot that is only tied <b>will</b> work loose.</p>
+<ol class="steps">
+<li><b>Stainless wire:</b> push it right through the knot and round the core or rod, twist it tight, then bury the twist.</li>
+<li><b>Kevlar thread:</b> stitch through the crossings, especially where the ends come out.</li>
+<li><b>No glue</b> unless it is fire-rated. Ordinary glue burns, smokes and lets go.</li>
+<li><b>No melting the ends.</b> Kevlar doesn't melt, so bind the ends with thread.</li>
+<li>Re-check it after the first burn. Rope bedding in leaves slack, so tighten it and add stitches.</li>
+</ol>
+
+<!-- ============ FIT ============ -->
+<h2 id="fit">Fitting fire spokes to a forge hub</h2>
+<p class="why"><b>Why:</b> a spoke that flies out mid-spin is the worst-case failure. The grub screws are what stop it.</p>
+<div class="card need"><b class="t">You need</b>The hub, your spokes, <b>M5 grub screws</b> (one per spoke), the matching hex key, and a kitchen scale.</div>
+<ol class="steps">
+<li>Each spoke goes into an <b>8 mm radial socket</b> in the hub.</li>
+<li>Push the spoke rod all the way in to the bottom of the socket.</li>
+<li>Screw in that spoke's <b>M5 grub screw</b> from the hub face.</li>
+<li>Tighten it firmly onto the rod.</li>
+<li>Tug the spoke. It must not move at all.</li>
+<li>Do the same for every spoke.</li>
+<li><b>Thread-locker:</b> use a high-temperature grade only, or none. Using none is fine if you re-check every time.</li>
+<li><b>Balance:</b> put the same wick type and size on every spoke.</li>
+<li>Weigh each spoke and keep a set within a few grams of each other. Swap the odd one out.</li>
+<li>Spin it unlit. If it wobbles, look for a heavier wick or a spoke that isn't pushed fully in.</li>
+</ol>
+<div class="card warn"><b class="t">Every burn</b>Check <b>every grub screw</b> before you light up. Heat and vibration loosen them.</div>
+
+<!-- ============ CHECKLIST ============ -->
+<h2 id="check">Before every burn</h2>
+<ol class="steps">
+<li>Every grub screw is tight, and every spoke passes a tug test.</li>
+<li>Every wick is tight, with no loose layers or flapping tails.</li>
+<li>Every wire twist is flat and buried. No sharp ends.</li>
+<li>Every bolt is tight, and the flaps cover the heads.</li>
+<li>Every knot is checked, the stitches are intact, and nothing has slid.</li>
+<li>Loose threads are trimmed.</li>
+<li>The fuel dump is set up well away, with a metal pot and the lid on.</li>
+<li>The safety person, damp towel or blanket, and extinguisher are all ready.</li>
+<li>After the burn, put it out before it runs dry. Let it cool, then cover it.</li>
+<li>Store it dry, covered and out of the sun.</li>
+</ol>
+
+<!-- ============ SOURCES ============ -->
+<h2 id="sources">Sources</h2>
+<ul class="sources">
+<li><a href="https://gaealady.squarespace.com/blog/basic-fire-safety">Basic fire safety outline</a>: fuel dump distance, damp towels, extinguishers</li>
+<li><a href="https://www.instructables.com/How-to-Sew-Kevlar-Wicks">Instructables: How to sew Kevlar wicks</a>: wire anchoring, cow-hitch thread anchor</li>
+<li><a href="https://flowartsinstitute.com/?p=1171">Flow Arts Institute: staff materials and maintenance</a>: screws, rivets, thread; crown-sinnet knot wicks</li>
+<li><a href="https://en.wikipedia.org/wiki/Kevlar">Wikipedia: Kevlar</a>: UV degradation</li>
+<li><a href="https://www.animatedknots.com/monkeys-fist-knot">Animated Knots: Monkey's Fist</a></li>
+<li><a href="https://paracordplanet.com/blog/monkey-fist-size-chart">Paracord Planet: monkey fist size chart</a>: passes vs core size (scaled for Kevlar here)</li>
+<li><a href="https://www.animatedknots.com/turks-head-knot">Animated Knots: Turk's Head</a>: also warns that molten nylon is dangerously hot</li>
+<li><a href="https://www.animatedknots.com/cobra-lanyard-knot">Animated Knots: Cobra / Solomon bar</a></li>
+<li><a href="https://www.animatedknots.com/crown-sinnet-knot">Animated Knots: Crown Sinnet / box knot</a></li>
+<li><a href="https://www.animatedknots.com/lanyard-knot">Animated Knots: Lanyard / Diamond Knot</a></li>
+</ul>
+<p class="muted">Figures in the knot tables are starting points, not specifications. Tie a test piece, and when in doubt, ask an experienced fire spinner to check your prop before it's lit.</p>
+
+</main>
+</body>
+</html>
