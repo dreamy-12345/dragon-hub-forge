@@ -20,7 +20,7 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', DartClassic: 'Classic', DartModern: 'Modern', SparkCages: '🔥 Spark cages (CNC only)', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', DartClassic: 'Classic', DartModern: 'Modern', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
@@ -666,7 +666,7 @@ const SECTION_OF = {
   Fire: 'fire', SpokeHubs: 'fire', PracticeSpokes: 'fire',
   Contact: 'contact',
   DartClassic: 'rope', DartModern: 'rope',
-  SparkCages: 'sparks',
+  SparkDragon: 'sparks', SparkRope: 'sparks', SparkStaff: 'sparks',
   Adaptors: 'fittings', Sleeves: 'fittings', Grips: 'fittings', Collapsible: 'fittings',
 }
 for (const d of DESIGNS) if (!d.custom && d.group !== 'Creations' && !SECTION_OF[d.group]) SECTION_OF[d.group] = 'hubs'
@@ -808,8 +808,20 @@ function setThumb(d, polys, R) {
 const builtHooks = []
 let creator = null
 
+// Thumbnails build one at a time in the background: always the next one you can SEE first
+// (an open folder), so new designs at the end of the list never sit blank.
+let thumbing = false
 async function fillThumbs() {
-  for (const d of DESIGNS) {
+  if (thumbing) return
+  thumbing = true
+  const left = new Set(DESIGNS)
+  const next = () => {
+    for (const d of left) if (document.querySelector(`canvas[data-thumb="${d.id}"]`)) return d
+    return left.values().next().value
+  }
+  while (left.size) {
+    const d = next()
+    left.delete(d)
     try {
       const p = { ...state.params[d.id] }
       const k = keyOf(d.id, p)
@@ -819,6 +831,7 @@ async function fillThumbs() {
       if (k === keyOf(state.design, params())) rebuild()
     } catch {}
   }
+  thumbing = false
 }
 
 // ------------------------------------------------------------------ build --
@@ -1107,7 +1120,7 @@ function renderDartVerdict(hub, p, mat) {
   $('verdict').innerHTML = `
     <div class="big">${s.grams.toFixed(0)} g<small>in ${mName}${v.style === 'glow' ? ', plus the capsule' : ''}</small></div>
     <div class="row"><span>Size</span><span>${v.H.toFixed(0)} mm long · Ø${(2 * v.R).toFixed(0)} widest</span></div>
-    <div class="row"><span>Rope eye</span><span>Ø${(2 * v.eyeR).toFixed(1)} mm for ${p.ropeD} mm rope</span></div>
+    <div class="row"><span>Rope</span><span>${(p.attach || 'eye').startsWith('swivel') ? (cnc ? 'M8 tapped socket: screw in a stainless swivel eye bolt' : 'M8 nut trap: drop in an M8 nut while printing (pause), screw in a swivel eye bolt') : `Ø${(2 * v.eyeR).toFixed(1)} mm eye for ${p.ropeD} mm rope`}</span></div>
     <div class="row"><span>Same shape in</span><span>TPU ${((v.vol / 1000) * 1.21).toFixed(0)} g · alu ${((v.vol / 1000) * 2.7).toFixed(0)} g · brass ${((v.vol / 1000) * 8.5).toFixed(0)} g</span></div>
     <div class="row"><span>${cnc ? 'Made on' : 'Prints'}</span><span>${cnc ? (v.turned ? 'a lathe (drawing below)' : '4-axis mill or metal 3D print') : 'eye-down, with a brim'}</span></div>
     ${!cnc && !state.material.startsWith('tpu') ? '<div class="warnline">A rope dart hits you: print it in TPU for practice.</div>' : ''}
@@ -1282,7 +1295,9 @@ function renderCutExports(d) {
       ['Flat pattern (SVG, true size)', '', txt(() => toCutSVG(hub.layers, 0), `spark-cage-${d.kind}-${c.thick}mm.svg`, 'image/svg+xml'), !ready],
       ['Folded 3D model (STL)', '', () => download(toSTL(hub.meshes.combined, d.name), `spark-cage-${d.kind}.stl`), !ready],
     ])
-    $('exportNote').innerHTML = `<b>Send the DXF</b> to a laser or waterjet shop: ${c.thick} mm ${matOf(c).name}. Layers: <b>CUT</b> outline, <b>HOLES</b> spark holes and fixings, <b>BEND</b> fold lines (not cut: ask them to fold on these, or fold it yourself in a vice, every fold 90° the same way). ${d.kind === 'diamond' ? 'Fold every BEND line to make the diamond, then stitch the open edges with 1 mm stainless wire through the small holes; leave one edge as the loading door, tied with a twist of wire.' : d.kind === 'tube' ? 'Roll the big rectangle into a tube round a pipe, overlap the seam and rivet it; fold the cap tabs down and bolt the caps in with M4 stainless bolts (one cap comes off to load).' : 'Fold the sides up, fold the tabs in and pop-rivet them (3.2 mm stainless rivets), then fold the lid over and bolt its tab to the front with an M5 bolt. ' + (d.kind === 'box' ? 'The floor bolts to a flange collar on the staff end.' : 'Each cube goes on a spoke tip: an 8 mm threaded spoke end through the floor hole, a nut and washer inside and out.')}`
+    const attach = d.mount === 'spoke' ? `<b>On the staff:</b> each cage goes on a spoke tip of a fire spoke hub. Use M8 stainless threaded rod as the spokes (it fits the 8 mm sockets): the rod goes through the cage floor, with a nut and washer inside and out. ` : d.mount === 'pole' ? `<b>On the staff:</b> the floor has the 4 × M4 holes on the forge's 44 mm circle: bolt it to the forge <b>End Expander</b> (inside the pole end, safe for carbon) or a <b>Clamp Collar</b>. ` : d.kind === 'diamond' ? `<b>On the rope:</b> a stainless shackle through the stitch holes at the top point, then a swivel. ` : `<b>On the rope:</b> an M8 stainless eye bolt through the top cap (nut and lock nut inside), then a swivel so the rope never twists. `
+    const lock = d.kind === 'diamond' ? `<b>Opening and locking:</b> the loading seam is closed with stainless lock-wire, twisted tight with pliers and the twisted tail tucked in (aviation safety-wire style); check it before every burn. ` : `<b>Opening and locking:</b> ${d.kind === 'tube' ? 'the top cap comes off for loading; its bolts take <b>all-metal lock nuts</b>' : 'the lid has <b>two bolts</b> with <b>all-metal lock nuts</b>, so it stays shut even if one works loose'}. Never nylon-insert nuts: the nylon melts next to charcoal. `
+    $('exportNote').innerHTML = attach + lock + `<b>Send the DXF</b> to a laser or waterjet shop: ${c.thick} mm ${matOf(c).name}. Layers: <b>CUT</b> outline, <b>HOLES</b> spark holes and fixings, <b>BEND</b> fold lines (not cut: ask them to fold on these, or fold it yourself in a vice, every fold 90° the same way). ${d.kind === 'diamond' ? 'Fold every BEND line to make the diamond, then stitch the open edges with 1 mm stainless wire through the small holes; leave one edge as the loading door, tied with a twist of wire.' : d.kind === 'tube' ? `${d.sides ? 'Fold the big rectangle on every BEND line into a six-sided tube' : 'Roll the big rectangle into a tube round a pipe'}, overlap the seam and rivet it; fold the cap tabs down and bolt the caps in with M4 stainless bolts (one cap comes off to load). ${d.mount === 'spoke' ? 'The spoke tip goes through the bottom cap: nut and washer inside and out.' : 'An M8 stainless eye bolt through the top cap takes the rope.'}` : 'Fold the sides up, fold the tabs in and pop-rivet them (3.2 mm stainless rivets), then fold the lid over and bolt its tab to the front with an M5 bolt. ' + (d.kind === 'box' && d.mount !== 'spoke' ? 'The floor bolts to a flange collar on the staff end.' : 'Each cube goes on a spoke tip: an 8 mm threaded spoke end through the floor hole, a nut and washer inside and out.')}`
     return
   }
   if (d.dart) {

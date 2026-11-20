@@ -25,7 +25,6 @@ import { sleeveDesigns } from './inserts.js'
 import { practiceDesigns } from './practice.js'
 import { noveltyDesigns } from './novelty.js'
 import { dartDesigns } from './darts.js'
-import { cageDesigns } from './cages.js'
 import { gripDesigns } from './grip.js'
 import { TAU, rot, place, ccw, cw, rng, voronoi, pointInPoly, circlePts, HEART, wingPoly, logoDragonfly, Canvas } from './geom.js'
 
@@ -3293,8 +3292,8 @@ DESIGNS.push(...fireDesigns(DESIGNS, { drawSpokes, drawVortex }))
 DESIGNS.push(...ballDesigns(), ...noveltyDesigns())
 // printed practice spokes for the spoke hubs, and pole inserts that stop clamps crushing a hollow pole
 DESIGNS.push(...practiceDesigns(), ...sleeveDesigns(), ...gripDesigns())
-// rope dart heads (print or lathe) and spark cages (CNC only)
-DESIGNS.push(...dartDesigns(), ...cageDesigns())
+// rope dart heads (print or lathe)
+DESIGNS.push(...dartDesigns())
 
 const polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)]
 

@@ -13,6 +13,7 @@ import { TAU } from './geom.js'
 export const DART_PARAMS = [
   { key: 'length', label: 'Length', unit: 'mm', min: 60, max: 180, step: 1, value: 110, hint: 'Tip to the top of the eye.' },
   { key: 'maxD', label: 'Widest', unit: 'mm', min: 20, max: 70, step: 0.5, value: 34 },
+  { key: 'attach', label: 'Rope attaches by', options: ['eye', 'swivel socket (M8)'], value: 'eye', hint: 'Eye: tie the rope through the hole (figure-eight loop). Swivel socket: a threaded M8 socket at the top for a stainless swivel eye bolt, so the rope never twists; lock the thread with a drop of thread-locker (metal) or the printed nut trap (print).' },
   { key: 'ropeD', label: 'Rope', unit: 'mm', min: 3, max: 14, step: 0.5, value: 7, presets: [6, 8, 10], hint: 'The eye fits this rope with a millimetre to spare.' },
 ]
 
@@ -105,7 +106,13 @@ export function buildDart(wasm, p, opts = {}) {
     const hole = k(k(k(Manifold.cylinder(4 * bossR, eyeR, eyeR, 32)).rotate([90, 0, 0])).translate([0, 2 * bossR, eyeZ]))
     const flare = k(k(k(Manifold.cylinder(2.2, eyeR + 1.4, eyeR, 32)).rotate([90, 0, 0])).translate([0, bossR + 0.6, eyeZ]))
     const flare2 = k(k(k(Manifold.cylinder(2.2, eyeR, eyeR + 1.4, 32)).rotate([90, 0, 0])).translate([0, -bossR + 1.6, eyeZ]))
-    m = k(m.subtract(k(Manifold.union([hole, flare, flare2]))))
+    if ((p.attach || 'eye').startsWith('swivel')) {
+      // no eye: a flat top with an M8 socket (tapped in metal; a hex nut trap in a print)
+      m = k(m.subtract(k(k(Manifold.cube([4 * bossR, 4 * bossR, bossH + 4], true)).translate([0, 0, L - 2 + bossH / 2 + 4.5]))))
+      const topZ = L + 2.5
+      m = k(m.subtract(k(k(Manifold.cylinder(18, opts.cnc ? 3.4 : 4.3, opts.cnc ? 3.4 : 4.3, 24)).translate([0, 0, topZ - 17]))))
+      if (!opts.cnc) m = k(m.subtract(k(k(Manifold.cylinder(6.6, 13.2 / Math.sqrt(3), 13.2 / Math.sqrt(3), 6)).translate([0, 0, topZ - 14]))))
+    } else m = k(m.subtract(k(Manifold.union([hole, flare, flare2]))))
     m = k(m.trimByPlane([0, 0, 1], 0))
 
     let plug = null

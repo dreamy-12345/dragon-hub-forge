@@ -23,7 +23,6 @@ import { buildSleeve } from './inserts.js'
 import { buildPracticeSpoke } from './practice.js'
 import { buildNovelty } from './novelty.js'
 import { buildDart } from './darts.js'
-import { buildCage } from './cages.js'
 import { buildGrip } from './grip.js'
 
 export { DESIGNS }
@@ -228,7 +227,6 @@ export function buildHub(wasm, design, p, opts = {}) {
   if (design.adaptor) return buildAdaptor(wasm, p, opts)
   if (design.grip) return buildGrip(wasm, p, { kind: design.kind, density: opts.material?.density })
   if (design.dart) return buildDart(wasm, p, { style: design.style, density: opts.material?.density })
-  if (design.cage) return buildCage(wasm, p, { kind: design.kind, thick: design.cnc?.thick })
   if (design.novelty) return buildNovelty(wasm, p, { kind: design.kind, density: opts.material?.density })
   if (design.sleeve) return buildSleeve(wasm, p, { style: design.style, density: opts.material?.density })
   if (design.practiceSpoke) return buildPracticeSpoke(wasm, p, { head: design.head, density: opts.material?.density })

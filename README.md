@@ -27,8 +27,6 @@ browser; saved designs stay in that browser).
 - **Contact staff ends**: push-on balls in three flat parts (weight them with steel shot)
   and fun ends (trident, heart, mace, axe), balanced over the pole.
 - **Rope dart heads**: 3 classic (with a lathe drawing for metal) and 3 modern.
-- **Spark cages** (CNC only): perforated steel cages for charcoal, as flat patterns
-  with fold lines: staff box, rope dart tube, diamond, spoke-tip cubes.
 - **Pole fittings**: pole inserts, an internal End Expander and a Clamp Collar so
   rigid hubs grip without crushing carbon, and collapsible staff joints (screw,
   twist-lock, snap-button). Type your pole's inside and outside size once.
