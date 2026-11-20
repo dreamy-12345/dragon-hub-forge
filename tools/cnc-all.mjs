@@ -10,14 +10,14 @@ wasm.setup()
 const [out, only] = process.argv.slice(2)
 let fails = 0
 for (const d of DESIGNS) {
-  if (d.adaptor || (only && !only.split(',').includes(d.id))) continue
+  if (d.adaptor || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.dart || d.cage || d.grip || (only && !only.split(',').includes(d.id))) continue
   const p = defaults(d), c = cncDefaults(d)
   const t0 = performance.now()
   try {
     let r
     if (d.spokeHub) {
       const pr = buildHub(wasm, d, p, { material: MATERIALS.pa })
-      r = buildSpokeHub(wasm, p, { mode: 'cnc', shape: d.shape, density: matOf(c).density })
+      r = buildSpokeHub(wasm, p, { mode: 'cnc', shape: d.shape, density: matOf(c).density, fireSafe: matOf(c).kind === 'metal' })
       const s = r.stats
       console.log(`${d.id.padEnd(14)} ${(performance.now() - t0).toFixed(0).padStart(5)}ms  hub ${s.gHub.toFixed(0)}g (print ${pr.stats.gHub.toFixed(0)}g)  spoke ${s.gSpoke.toFixed(0)}g  total ${s.gTotal.toFixed(0)}g  Ø${s.overD.toFixed(0)}  wall ${r.spoke.minWall.toFixed(1)}  ${s.warns.join(' | ')}`)
     } else {

@@ -34,9 +34,9 @@ export function fireDesigns(all, { drawSpokes, drawVortex }) {
       name: 'Fire Wheel',
       blurb: 'The classic fire hub: bold spokes, a solid rim, and a Kevlar wick on a tab at the end of every spoke. Cut it from aluminium or stainless, or print it as a practice hub.',
       overrides: { strutW: 7, rimW: 12, fillet: 3 },
-      cnc: { material: 'al6061', process: 'laser', ends: 'tape', tabs: 6 },
+      cnc: { material: 'al6061', process: 'laser', ends: 'tape', tabs: 3 },
       params: [
-        { key: 'spokes', label: 'Spokes', unit: '', min: 3, max: 12, step: 1, value: 6, hint: 'Set Wick tabs (in Ends) to the same number so a wick sits on every spoke.' },
+        { key: 'spokes', label: 'Spokes', unit: '', min: 3, max: 12, step: 1, value: 6, hint: 'With 3 wicks they sit on every other spoke; set Wicks (in Ends) to 6 for one on every spoke.' },
         { key: 'inner', label: 'Inner ring', options: ['on', 'off'], value: 'on' },
       ],
       draw(c, g, p) {
@@ -67,7 +67,7 @@ export function fireDesigns(all, { drawSpokes, drawVortex }) {
       name: 'Sun Wick',
       blurb: 'A sun: straight rays and wavy rays between them, every straight ray ending in a wick tab. Lit, it is a ring of little suns; unlit in Perspex it throws the light from the edges.',
       overrides: { strutW: 5.5, rimW: 10, fillet: 2.5 },
-      cnc: { material: 'al5052', process: 'waterjet', ends: 'tape', tabs: 8 },
+      cnc: { material: 'al5052', process: 'waterjet', ends: 'tape', tabs: 4 },
       params: [
         { key: 'rays', label: 'Rays', unit: '', min: 4, max: 12, step: 1, value: 8 },
         { key: 'wave', label: 'Wave', unit: 'mm', min: 0, max: 14, step: 0.5, value: 7 },
@@ -92,7 +92,7 @@ export function fireDesigns(all, { drawSpokes, drawVortex }) {
       name: 'Practice Halo',
       blurb: 'Made to learn on: wide, rounded bars that take a drop, three rings for weight at the edge, and TPU bumpers on the tabs weighted like wet wicks, so the moves you learn carry straight over to fire. Cut it in Perspex for the glow or HDPE for toughness.',
       overrides: { strutW: 8, rimW: 14, fillet: 4 },
-      cnc: { material: 'acrylic', process: 'laser', ends: 'bumper', tabs: 6, thick: 6 },
+      cnc: { material: 'acrylic', process: 'laser', ends: 'bumper', tabs: 3, thick: 6 },
       params: [
         { key: 'spokes', label: 'Spokes', unit: '', min: 3, max: 10, step: 1, value: 6 },
         { key: 'rings', label: 'Rings', unit: '', min: 0, max: 3, step: 1, value: 2 },
@@ -106,21 +106,22 @@ export function fireDesigns(all, { drawSpokes, drawVortex }) {
   ]
   // favourites, re-cut for cutting and fire
   const melt = by('meltRim'), fern = by('koru'), veins = by('veins')
-  if (melt) out.push({ ...recut(melt), id: 'fireMelt', group: 'Fire', name: 'Molten Fire', blurb: 'Meltdown re-cut for metal: the same drips running in off the rim, thickened so a cutter and a flame can live with them, and a wick tab between the drips. It looks like the rim is melting into the fire.', cnc: { material: 'al6061', process: 'waterjet', ends: 'tape', tabs: 6 } })
+  if (melt) out.push({ ...recut(melt), id: 'fireMelt', group: 'Fire', name: 'Molten Fire', blurb: 'Meltdown re-cut for metal: the same drips running in off the rim, thickened so a cutter and a flame can live with them, and a wick tab between the drips. It looks like the rim is melting into the fire.', cnc: { material: 'al6061', process: 'waterjet', ends: 'tape', tabs: 3 } })
   if (fern) out.push({ ...recut(fern), id: 'fireFronds', group: 'Fire', name: 'Fire Fronds', blurb: 'Fern Fronds re-cut for metal: unfurling fronds from the staff, bolder, with a Kevlar rope ring round the rim so the fronds curl inside a circle of flame.', cnc: { material: 'al5052', process: 'router', ends: 'rope' } })
   if (veins) out.push({ ...recut(veins), id: 'fireVeins', group: 'Fire', name: 'Burning Wings', blurb: 'Wing Veins re-cut for metal: the veined wings with chunkier cells (small cells are filled for you in CNC mode), wicks on tabs past the rim.', cnc: { material: 'ss304', process: 'laser', ends: 'tape', tabs: 4 } })
 
   // ------------------------------------------------------------- spoke hubs
-  const spoke = (id, name, shape, blurb) => ({
+  const spoke = (id, name, shape, blurb, over = {}) => ({
     id, name, group: 'SpokeHubs', blurb, spokeHub: true, shape,
     cnc: { material: 'al6061', process: 'router' },
-    params: SPOKE_PARAMS.map((d) => ({ ...d })),
+    params: SPOKE_PARAMS.map((d) => ({ ...d, ...(over[d.key] !== undefined ? { value: over[d.key] } : {}) })),
     draw: () => {},
   })
   out.push(
     spoke('spokeRound', 'Spoke Hub', 'round', 'A round machined hub for 8 mm fire spokes, like the common 2" dragon fire spoke: each spoke pushes into a socket and one grub screw clamps it; two more clamp the pole. Pick fire ends, or practice ends that weigh the same as a wet wick.'),
     spoke('spokeStar', 'Spoke Star', 'star', 'A star-shaped spoke hub: a boss round each socket and nothing in between, so it is lighter and looks like part of the staff. Takes 8 mm fire spokes.'),
     spoke('spokePetal', 'Spoke Petal', 'petal', 'A spoke hub with a fat petal round each socket, flowing into the next. Takes 8 mm fire spokes; print it in PETG or nylon to practise first.'),
+    spoke('spokeMinimal', 'Minimal Spoke Hub', 'star', 'A small, light three-spoke hub for 6 mm cable spokes with knot wicks: just enough metal round each socket, an expanding spigot inside the pole end (or a clamp), and nothing else. Pairs with the Pole Joiner for a three-piece travel staff.', { spokes: 3, rodD: 6, hubD: 72, hubT: 15, depth: 20 }),
     spoke('spokeFlower', 'Spoke Flower', 'flower', 'Broad petals with vent holes between them: lighter, and the holes glow orange in the firelight. Takes 8 mm fire spokes.'),
   )
   for (const d of out) d.added = '2026-11-20'

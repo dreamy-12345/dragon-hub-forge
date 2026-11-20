@@ -7,6 +7,7 @@ import { initCreate } from './create.js'
 import { createLikes } from './likes.js'
 import { initHelp } from './help.js'
 import { CNC_PARAMS, PROCESSES, cncDefaults, matOf, matKey, procKey, endsKey, ENDS, SPOKE_ENDS, toDXF, toCutSVG, spokeDrawingSVG } from './cnc.js'
+import { dartDrawingSVG } from './darts.js'
 
 const $ = (id) => document.getElementById(id)
 // UV colours glow under the blacklight view; the others stay dark
@@ -19,7 +20,7 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', Contact: 'Contact staff ball ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', DartClassic: 'Classic', DartModern: 'Modern', SparkCages: '🔥 Spark cages (CNC only)', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
@@ -49,7 +50,8 @@ state.mode = saved.mode === 'cnc' ? 'cnc' : 'print'
 state.cncp = {}
 for (const d of DESIGNS) state.cncp[d.id] = { ...cncDefaults(d), ...(saved.cncp?.[d.id] || {}) }
 const isCnc = () => state.mode === 'cnc'
-const printOnly = (d) => !!(d.adaptor || d.ballEnd) // always 3D printed, in either mode
+const cncOnly = (d) => !!d.cncOnly // spark cages: steel, cut on a CNC, never printed
+const printOnly = (d) => !!(d.adaptor || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.grip) // always 3D printed, in either mode
 const cncp = () => state.cncp[state.design]
 const design = () => DESIGNS.find((d) => d.id === state.design)
 const params = () => state.params[state.design]
@@ -100,7 +102,7 @@ const camAngle = new THREE.PerspectiveCamera(35, 1, 1, 5000)
 camAngle.up.set(0, 0, 1)
 camAngle.position.set(260, -330, 300)
 const ctlFace = new OrbitControls(camFace, canvas)
-ctlFace.enableRotate = false // face-on stays face-on: zoom and pan only
+// every view can be turned to look from any side; 360° (or swapping views) puts it back
 ctlFace.target.set(0, 0, 8)
 const ctlAngle = new OrbitControls(camAngle, canvas)
 ctlAngle.enableDamping = true
@@ -418,7 +420,7 @@ function control(def, get, set) {
       for (const v of def.presets) {
         const b = document.createElement('button')
         b.className = 'chip'
-        b.textContent = `${v} mm`
+        b.textContent = def.unit ? `${v} ${def.unit}` : String(v)
         b.setAttribute('aria-pressed', String(+get() === v))
         b.onclick = () => {
           input.value = v; out.textContent = fmt(v); set(v)
@@ -451,7 +453,7 @@ function renderCncParams(d, cp, set) {
   const setC = (key) => (v) => {
     c[key] = v
     if (key === 'material') { c.thick = matOf(c).def; if (matOf(c).kind !== 'metal' && ['tape', 'rope'].includes(endsKey(c.ends))) c.ends = ENDS.bumper }
-    if (['material', 'process', 'ends', 'flangeN'].includes(key)) renderParams()
+    if (['material', 'process', 'ends', 'flangeN', 'ropePlace', 'mount'].includes(key)) renderParams()
     renderGuide()
     schedule()
   }
@@ -468,12 +470,24 @@ function renderCncParams(d, cp, set) {
     if (def.key === 'ends' && matOf(c).kind !== 'metal') dd = { ...def, options: def.options.filter((o) => !o.startsWith('fire')) }
     return [dd, () => c[def.key], setC(def.key)]
   })
+  if (d.cage) {
+    const steelOnly = C(['material', 'process', 'thick'])
+    steelOnly[0][0] = { ...steelOnly[0][0], options: steelOnly[0][0].options.filter((o) => /stainless|mild steel/i.test(o)) }
+    if (!steelOnly[0][0].options.includes(c.material)) c.material = steelOnly[0][0].options[0]
+    steelOnly[1][0] = { ...steelOnly[1][0], options: steelOnly[1][0].options.filter((o) => !/router/i.test(o)) }
+    sec('Cut from steel sheet', steelOnly, true)
+    return
+  }
+  if (d.dart) {
+    sec('Material', C(['material']), true)
+    return
+  }
   if (d.spokeHub) {
     sec('Material', C(['material']), true)
     sec('Pole size', P(['poleOD']), true)
     return
   }
-  sec('Cut', C(['material', 'process', 'thick', ...(pk === 'router' ? ['tool'] : []), 'clear', 'flangeN', ...(c.flangeN > 0 ? ['flangePCD', 'flangeHole'] : []), 'engrave']), true)
+  sec('Cut', C(['material', 'process', 'thick', ...(pk === 'router' ? ['tool'] : []), 'mount', 'clear', 'flangeN', ...(c.flangeN > 0 ? ['flangePCD', 'flangeHole'] : []), 'engrave']), true)
   const endKeys = ek === 'tape' ? ['tabs', 'tabAngle', 'tabW', 'neck', 'wickW', 'tapeLen', 'tapeT', 'tabBolt']
     : ek === 'bumper' ? ['tabs', 'tabAngle', 'tabW', 'neck', 'wickW', 'tabBolt']
     : ek === 'rope' ? ['ropeD', 'ropePlace', 'laceStep'] : []
@@ -487,7 +501,16 @@ function renderParams() {
   const dp = $('designParams')
   dp.innerHTML = '<h2>Design</h2>'
   const set = (key) => (v) => { params()[key] = v; schedule() }
-  for (const def of d.params) dp.append(control(def, () => params()[def.key], set(def.key)))
+  // fire wicks only ever on fire-safe material: a printed or plastic spoke hub only offers practice ends
+  const fireSafe = isCnc() && matOf(cncp()).kind === 'metal'
+  for (const def0 of d.params) {
+    let def = def0
+    if (d.spokeHub && def.key === 'ends' && !fireSafe) {
+      def = { ...def0, options: def0.options.filter((o) => !o.startsWith('fire')) }
+      if (!def.options.includes(params().ends)) params().ends = SPOKE_ENDS.tpu
+    }
+    dp.append(control(def, () => params()[def.key], set(def.key)))
+  }
   const bal = d.params.find((x) => x.balance)
   if (bal) {
     const b = document.createElement('button')
@@ -505,7 +528,7 @@ function renderParams() {
   cp.innerHTML = ''
   $('matSection').hidden = isCnc() && !printOnly(d)
   if (isCnc() && !printOnly(d)) renderCncParams(d, cp, set)
-  const groups = d.adaptor || (isCnc() && !printOnly(d)) ? [] : d.spokeHub || d.ballEnd ? ['Fit'] : [...new Set(COMMON_PARAMS.map((p) => p.group))].filter((g) => g !== 'Glow' || d.pods)
+  const groups = d.adaptor || (isCnc() && !printOnly(d)) ? [] : d.sleeve || d.practiceSpoke || d.dart || d.cage || d.grip ? [] : d.spokeHub || d.ballEnd || d.novelty ? ['Fit'] : [...new Set(COMMON_PARAMS.map((p) => p.group))].filter((g) => g !== 'Glow' || d.pods)
   const label = { Fit: 'Pole size and fit', Glow: 'Lanterns and capsules', 'Weight ring': 'Bubble weight ring', 'Snap weight': 'Snap-on weight ring' }
   for (const g of groups) {
     const det = document.createElement('details')
@@ -637,15 +660,35 @@ function entries() {
   return { list, all: [...designs, ...ideas], grouped: sort === 'groups' && !q, mine }
 }
 
+// the big folders in the design list, and which groups live in each
+const SECTIONS = { hubs: 'Dragon staff hubs', fire: 'Fire and metal (CNC)', sparks: 'Spark cages (charcoal, CNC only)', rope: 'Rope dart heads', contact: 'Contact staff ends', fittings: 'Pole fittings' }
+const SECTION_OF = {
+  Fire: 'fire', SpokeHubs: 'fire', PracticeSpokes: 'fire',
+  Contact: 'contact',
+  DartClassic: 'rope', DartModern: 'rope',
+  SparkCages: 'sparks',
+  Adaptors: 'fittings', Sleeves: 'fittings', Grips: 'fittings', Collapsible: 'fittings',
+}
+for (const d of DESIGNS) if (!d.custom && d.group !== 'Creations' && !SECTION_OF[d.group]) SECTION_OF[d.group] = 'hubs'
+// first time with folders: hub styles start folded, except the one you are on, so the list is short
+if (!listUI.folders) {
+  const cur = DESIGNS.find((d) => d.id === state.design)?.group
+  listUI.collapsed = [...new Set([...listUI.collapsed, ...Object.keys(SECTION_OF).filter((g) => SECTION_OF[g] === 'hubs' && g !== cur)])]
+  listUI.folders = 1
+  keepList()
+}
+
 function renderGallery() {
   galleryTools()
   const g = $('gallery')
   g.querySelectorAll('.design, h3, .empty').forEach((n) => n.remove())
   for (const b of $('listChips').children) b.setAttribute('aria-pressed', b.dataset.f === listUI.filter)
   const { list, all, grouped, mine } = entries()
-  const cutFirst = ['Fire', 'SpokeHubs'] // in CNC mode the metal designs come first
+  // folders: every group sits in a big folder (Dragon staff hubs, Fire and metal, ...)
+  const secOrder = isCnc() ? ['fire', 'sparks', 'hubs', 'rope', 'contact', 'fittings'] : ['hubs', 'fire', 'rope', 'contact', 'sparks', 'fittings'] // CNC mode: metal first
   const order0 = [...new Set(DESIGNS.map((d) => d.group))]
-  const order = isCnc() ? [...cutFirst, ...order0.filter((g) => !cutFirst.includes(g))] : order0
+  const secRank = (g) => (SECTION_OF[g] ? 1 + secOrder.indexOf(SECTION_OF[g]) : 0)
+  const order = [...order0].sort((a, b) => secRank(a) - secRank(b) || order0.indexOf(a) - order0.indexOf(b))
   const groupOf = (e) => e.group
   let rows = list
   if (grouped) {
@@ -661,12 +704,32 @@ function renderGallery() {
   }
   const counts = {}
   for (const e of rows) counts[e.group] = (counts[e.group] || 0) + 1
-  let group = null
+  let group = null, section = null
+  const secCount = {}
+  for (const e of rows) if (SECTION_OF[e.group]) secCount[SECTION_OF[e.group]] = (secCount[SECTION_OF[e.group]] || 0) + 1
   for (const e of rows) {
+    const sec = grouped && e.group !== '__liked' ? SECTION_OF[e.group] || null : null
+    if (grouped && sec !== section) {
+      section = sec
+      if (sec) {
+        const key = 'sec:' + sec, closed = listUI.collapsed.includes(key)
+        const h = document.createElement('h3')
+        h.className = 'section'
+        h.innerHTML = `<button class="grouphead" aria-expanded="${!closed}"><span>${closed ? '📁' : '📂'} ${SECTIONS[sec]}</span><small>${secCount[sec]}</small></button>`
+        h.firstChild.onclick = () => {
+          listUI.collapsed = closed ? listUI.collapsed.filter((x) => x !== key) : [...new Set([...listUI.collapsed, key])]
+          keepList()
+          renderGallery()
+        }
+        g.append(h)
+      }
+    }
+    if (sec && listUI.collapsed.includes('sec:' + sec)) continue
     if (grouped && e.group !== group) {
       group = e.group
       const closed = listUI.collapsed.includes(group)
       const h = document.createElement('h3')
+      if (sec) h.className = 'sub'
       h.innerHTML = `<button class="grouphead" aria-expanded="${!closed}"><span>${closed ? '▸' : '▾'} ${group === '__liked' ? '♥ Liked by me' : GROUPS[group] || group}</span><small>${counts[group]}</small></button>`
       const name = group // the loop moves on; the click needs this heading's group
       h.firstChild.onclick = () => {
@@ -700,6 +763,7 @@ function designCard(e) {
       for (const [box, hex] of [['swatches', d.colors.A], ['swatchesB', d.colors.B]])
         $(box).querySelectorAll('.swatch').forEach((s) => s.setAttribute('aria-pressed', s.style.background && new THREE.Color(s.style.background).getHexString() === hex.slice(1)))
     }
+    if (cncOnly(d) && !isCnc()) return setMode('cnc') // spark cages are only ever cut in steel
     renderParams()
     applyLook()
     schedule(0)
@@ -891,6 +955,9 @@ function show(hub, d, p, t0) {
   setGeo(rodMesh, m.rods)
   setGeo(kevMesh, m.kevlar)
   setGeo(pracMesh, m.practice)
+  $('vSpokes').hidden = !(m.rods || m.kevlar || m.practice)
+  $('vSpokes').textContent = hub.spoke ? 'Spokes' : 'Wicks / ends'
+  if (view.spokes === false) for (const x of [rodMesh, kevMesh, pracMesh]) x.visible = false
   $('ringColourRow').hidden = !(m.ring || m.snap)
   $('glowRow').hidden = $('ledRow').hidden = !hasLeds() // the LED ring can switch them on for any design
   weakGroup.clear()
@@ -900,7 +967,7 @@ function show(hub, d, p, t0) {
     weakGroup.add(w)
   }
   drawHalo(hub, p)
-  pole.visible = !hub.ball && $('vPole').getAttribute('aria-pressed') === 'true' // a ball end sits on the pole's tip
+  pole.visible = !(hub.ball || hub.novelty || hub.dart || hub.cage || hub.sleeve || hub.practiceSpoke || hub.grip) && $('vPole').getAttribute('aria-pressed') === 'true' // a ball end sits on the pole's tip
   const poleD = hub.adaptor ? p.small : p.poleOD // an adaptor shows its thin pole running through it
   frameView(hub.viewR || p.diameter / 2)
   pole.scale.set(poleD / 22, 1, poleD / 22)
@@ -971,8 +1038,8 @@ function renderCncVerdict(hub, p) {
     <div class="row"><span>Kevlar tape to buy</span><span>${((c.tapeLen * s.tabs) / 1000 * 1.1).toFixed(1)} m of ${c.wickW} mm</span></div>
     <div class="row"><span>Wick head</span><span>about Ø${s.headD.toFixed(0)} mm · ${(s.kevG / s.tabs).toFixed(0)} g dry, ${((s.kevG * s.wet) / s.tabs).toFixed(0)} g fuelled</span></div>
     <div class="row"><span>Bolts</span><span>${s.tabs * 2} stainless, Ø${c.tabBolt} holes, all-metal lock nuts</span></div>` : ''}
-    ${ek === 'rope' ? `<div class="row"><span>Rope to buy</span><span>${((s.ropeLen / 1000) * 1.15).toFixed(2)} m of ${c.ropeD} mm Kevlar</span></div>
-    <div class="row"><span>Lacing holes</span><span>${s.laceHoles} · stainless wire or Kevlar thread</span></div>
+    ${ek === 'rope' ? `<div class="row"><span>Rope to buy</span><span>${((s.ropeLen / 1000) * 1.15 + (s.slots ? 0.3 : 0)).toFixed(2)} m of ${c.ropeD} mm Kevlar</span></div>
+    ${s.slots ? `<div class="row"><span>Woven through</span><span>${s.slots} slots · held by its own tension</span></div>` : `<div class="row"><span>Lacing holes</span><span>${s.laceHoles} · stainless wire or Kevlar thread</span></div>`}
     ${s.pocketDepth ? `<div class="row"><span>Rope groove</span><span>${s.pocketDepth.toFixed(1)} mm deep (milled)</span></div>` : ''}` : ''}
     ${ek === 'bumper' ? `<div class="row"><span>Practice bumpers</span><span>${s.tabs} × ${s.bumper.g.toFixed(0)} g TPU</span></div>
     <div class="row"><span>A wet wick would be</span><span>${s.bumper.target.toFixed(0)} g ${pill(Math.abs(s.bumper.g - s.bumper.target) < 5 ? 'good' : 'warn', Math.abs(s.bumper.g - s.bumper.target) < 5 ? 'matched' : 'close')}</span></div>` : ''}
@@ -981,7 +1048,106 @@ function renderCncVerdict(hub, p) {
     <div class="row"><span>Cut length · pierces</span><span>${(s.cutLen / 1000).toFixed(1)} m · ${s.pierces}</span></div>
     <div class="row"><span>Thinnest bar · smallest gap</span><span>${s.lim.web.toFixed(1)} mm · ${s.lim.gap.toFixed(1)} mm</span></div>
     <div class="row"><span>Fire</span><span>${fire ? pill('good', 'yes, with Kevlar only') : pill('bad', 'never: practice only')}</span></div>
+    ${c.flangeN > 0 ? insertTip('A bolted collar clamps the pole with screws.') : ''}
     ${s.fixes.length ? `<div class="sub">The forge fixed it for cutting</div>${s.fixes.map((f) => `<div class="row"><span>✓ ${f}</span><span></span></div>`).join('')}` : ''}
+    ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+}
+
+// jump to another design (e.g. a pole insert for this pole), carrying the pole size over
+function goDesign(id) {
+  const from = params()
+  state.design = id
+  if (from?.poleOD && 'poleOD' in params()) params().poleOD = from.poleOD
+  renderGallery(); renderParams(); applyLook(); schedule(0)
+  document.querySelector('.design[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest' })
+}
+// clamps and screws on a hollow carbon pole can crush it: point at the inserts
+function insertTip(why) {
+  return `<div class="row"><span>Carbon or hollow pole?</span><span><button class="btn" data-go="sleeveSolid">Pole insert ↗</button></span></div>
+    <div class="hint">${why} A printed pole insert inside the pole under the hub stops it crushing.</div>`
+}
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) goDesign(b.dataset.go) })
+
+function openGripGuide() {
+  if (!window.__GRIP_GUIDE_HTML) return window.open('pole-grip-guide.html', '_blank')
+  const w = window.open('', '_blank')
+  if (!w) return status('Allow pop-ups to open the pole grip guide.')
+  w.document.open(); w.document.write(window.__GRIP_GUIDE_HTML); w.document.close()
+}
+function renderGripVerdict(hub, p, mat) {
+  const s = hub.stats, v = hub.grip
+  $('verdict').innerHTML = `
+    <div class="big">${s.grams.toFixed(0)} g<small>${['joiner', 'thread', 'bayonet', 'snap'].includes(v.kind) ? 'one per joint (a 3-piece staff has 2)' : 'one per hub'}</small></div>
+    <div class="row"><span>Pole</span><span>Ø${p.poleOD} outside · Ø${(2 * v.rIn).toFixed(1)} inside</span></div>
+    <div class="row"><span>Bolts to buy</span><span>${v.bolt}${['expander', 'clamp'].includes(v.kind) ? ' + 4 × M4 for the hub' : ''}</span></div>
+    ${['expander', 'clamp'].includes(v.kind) ? `<div class="row"><span>Hub bolt circle</span><span>4 × M4 on Ø${p.pcd} (same as the CNC plates)</span></div>` : ''}
+    <div class="row"><span>Crushes carbon?</span><span>${v.kind === 'clamp' ? pill('warn', 'fit a Pole Insert inside') : pill('good', 'no: it works from inside')}</span></div>
+    <div class="row"><span>Material</span><span>${pill(state.material.startsWith('tpu') ? 'bad' : mat.verdict === 'avoid' ? 'bad' : 'good', mat.name)}</span></div>
+    ${state.material.startsWith('tpu') ? '<div class="warnline">Grips must be rigid: print them in PETG or nylon (PA), 100% infill.</div>' : ''}
+    <div class="row"><span>How to fit it</span><span><button class="btn" id="gripGuideBtn">Pole grip guide ↗</button></span></div>
+    ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+  $('gripGuideBtn').onclick = openGripGuide
+}
+function renderCageVerdict(hub, p) {
+  const s = hub.stats, v = hub.cage, m = matOf(cncp())
+  const [a, b, h] = v.size
+  $('verdict').innerHTML = `
+    <div class="big">${s.grams.toFixed(0)} g<small>empty · about ${(s.grams + v.coalG).toFixed(0)} g loaded with ${v.coalG.toFixed(0)} g of charcoal</small></div>
+    <div class="row"><span>Folded size</span><span>${a.toFixed(0)} × ${b.toFixed(0)} × ${h.toFixed(0)} mm</span></div>
+    <div class="row"><span>Flat sheet</span><span>${v.flatW.toFixed(0)} × ${v.flatH.toFixed(0)} mm, ${s.thick} mm ${m.name}</span></div>
+    <div class="row"><span>Spark holes</span><span>${v.sparks} × Ø${p.perf} mm</span></div>
+    <div class="row"><span>Fixings</span><span>${v.holes.filter((x) => x.kind === 'rivet').length} rivets${v.holes.some((x) => x.kind === 'stitch') ? ' · stainless wire stitching' : ''}${v.holes.some((x) => x.kind === 'cap bolt') ? ' · M4 cap bolts' : ''}${v.holes.some((x) => x.kind === 'lid bolt') ? ' · M5 lid bolt' : ''}</span></div>
+    <div class="row"><span>Made by</span><span>${pill('good', 'laser or waterjet, then folded')}</span></div>
+    <div class="row"><span>Never printed</span><span>${pill('bad', 'steel only, never aluminium')}</span></div>
+    ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+}
+function renderDartVerdict(hub, p, mat) {
+  const s = hub.stats, v = hub.dart, cnc = isCnc()
+  const mName = cnc ? matOf(cncp()).name : mat.name
+  $('verdict').innerHTML = `
+    <div class="big">${s.grams.toFixed(0)} g<small>in ${mName}${v.style === 'glow' ? ', plus the capsule' : ''}</small></div>
+    <div class="row"><span>Size</span><span>${v.H.toFixed(0)} mm long · Ø${(2 * v.R).toFixed(0)} widest</span></div>
+    <div class="row"><span>Rope eye</span><span>Ø${(2 * v.eyeR).toFixed(1)} mm for ${p.ropeD} mm rope</span></div>
+    <div class="row"><span>Same shape in</span><span>TPU ${((v.vol / 1000) * 1.21).toFixed(0)} g · alu ${((v.vol / 1000) * 2.7).toFixed(0)} g · brass ${((v.vol / 1000) * 8.5).toFixed(0)} g</span></div>
+    <div class="row"><span>${cnc ? 'Made on' : 'Prints'}</span><span>${cnc ? (v.turned ? 'a lathe (drawing below)' : '4-axis mill or metal 3D print') : 'eye-down, with a brim'}</span></div>
+    ${!cnc && !state.material.startsWith('tpu') ? '<div class="warnline">A rope dart hits you: print it in TPU for practice.</div>' : ''}
+    ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+}
+
+function renderNoveltyVerdict(hub, p, mat) {
+  const s = hub.stats, v = hub.novelty
+  $('verdict').innerHTML = `
+    <div class="big">${s.gramsTotal.toFixed(0)} g<small>${s.gShot ? 'with its steel shot' : 'at 100% infill'} · ${(s.gramsTotal * 2).toFixed(0)} g a pair</small></div>
+    ${s.gShot ? `<div class="row"><span>Print · steel shot</span><span>${s.grams.toFixed(0)} g · ${s.gShot.toFixed(0)} g</span></div>
+    <div class="row"><span>Pause the print at</span><span>${s.pauseAt.toFixed(1)} mm: fill the chambers with steel shot</span></div>` : ''}
+    <div class="row"><span>Balance point</span><span>${s.comAbove.toFixed(0)} mm past the pole tip${s.gShot ? ` (${s.comPrinted.toFixed(0)} mm without shot)` : ''} · ${s.comOff < 0.3 ? pill('good', 'on the axis') : pill('warn', s.comOff.toFixed(1) + ' mm off')}</span></div>
+    <div class="row"><span>Size</span><span>${v.width.toFixed(0)} wide × ${v.height.toFixed(0)} mm tall</span></div>
+    <div class="row"><span>Grip on Ø${p.poleOD} pole</span><span>${v.squeeze.toFixed(2)} mm squeeze</span></div>
+    <div class="row"><span>Prints</span><span>standing on its socket, one part</span></div>
+    <div class="row"><span>Material</span><span>${pill(state.material.startsWith('tpu') ? 'good' : 'warn', mat.name)}</span></div>
+    ${!state.material.startsWith('tpu') ? '<div class="warnline">These hit your body and the floor: print them in TPU 95A.</div>' : ''}
+    <div class="row"><span>Heavier?</span><span><button class="btn" data-go="ballSmooth">Weightable balls ↗</button></span></div>`
+}
+
+function renderSleeveVerdict(hub, p, mat) {
+  const s = hub.stats, v = hub.sleeve
+  $('verdict').innerHTML = `
+    <div class="big">${s.grams.toFixed(0)} g<small>each · one under every hub</small></div>
+    <div class="row"><span>Fits inside</span><span>Ø${p.poleOD} pole with ${p.poleWall} mm wall (inside Ø${v.id.toFixed(1)})</span></div>
+    <div class="row"><span>Insert</span><span>Ø${v.od.toFixed(2)} × ${v.L} mm</span></div>
+    <div class="row"><span>Material</span><span>${pill(state.material.startsWith('tpu') ? 'warn' : mat.verdict === 'avoid' ? 'bad' : 'good', mat.name)}</span></div>
+    ${state.material.startsWith('tpu') ? '<div class="warnline">An insert must be rigid to stop crushing: print it in PETG or nylon, 100% infill.</div>' : ''}
+    ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+}
+function renderPracticeVerdict(hub, p, mat) {
+  const s = hub.stats, v = hub.practiceSpoke
+  $('verdict').innerHTML = `
+    <div class="big">${s.gramsTotal.toFixed(0)} g<small>each spoke with its head · print one per hub socket</small></div>
+    <div class="row"><span>Printed spoke</span><span>${v.gSpoke.toFixed(0)} g ${state.material.startsWith('tpu') ? 'PETG/nylon' : mat.name}</span></div>
+    <div class="row"><span>TPU head</span><span>Ø${v.headD.toFixed(0)} mm · ${v.gHead.toFixed(0)} g${v.head === 'glow' ? ' with capsule' : ''}</span></div>
+    <div class="row"><span>Shank</span><span>Ø${(p.rodD - 0.2).toFixed(1)} × ${p.depth} mm, with a flat for the clamp screw</span></div>
+    <div class="row"><span>Fire</span><span>${pill('bad', 'never: practice only')}</span></div>
+    ${state.material.startsWith('tpu') ? '<div class="warnline">Print the spoke itself in PETG or nylon so it stays straight; only the head is TPU.</div>' : ''}
     ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
 }
 
@@ -991,7 +1157,8 @@ function renderBallVerdict(hub, p, mat) {
   $('verdict').innerHTML = `
     <div class="big">${kg(s.gramsTotal)}<small>each · ${kg(s.gramsTotal * 2)} a pair</small></div>
     <div class="row"><span>Printed ball</span><span>${s.gShell.toFixed(0)} g ${mat.name}</span></div>
-    ${b.fill !== 'hollow' ? `<div class="row"><span>${b.fill} inside</span><span>${b.gFill.toFixed(0)} g (${p.fillPct}% full)</span></div>` : ''}
+    ${b.fill !== 'hollow' ? `<div class="row"><span>${b.fill.startsWith('heaviest') ? 'packed steel shot' : b.fill} inside</span><span>${b.gFill.toFixed(0)} g (${b.fill.startsWith('heaviest') ? 100 : p.fillPct}% full)</span></div>` : ''}
+    <div class="row"><span>As heavy as it gets</span><span>${kg(s.gShell + b.fullShot)} packed with steel shot</span></div>
     <div class="row"><span>Chamber holds</span><span>${b.cavityCm3.toFixed(0)} cm³ · up to ${b.fullShot.toFixed(0)} g of steel shot</span></div>
     <div class="row"><span>Ball · socket</span><span>Ø${p.ballD} mm · ${b.depth.toFixed(0)} mm deep</span></div>
     <div class="row"><span>Grip on Ø${p.poleOD} pole</span><span>${b.squeeze > 0 ? b.squeeze.toFixed(2) + ' mm squeeze' : pill('bad', 'loose')}</span></div>
@@ -1015,11 +1182,13 @@ function renderSpokeVerdict(hub, p) {
     ${sp.endInfo?.kind === 'tpu' ? `<div class="row"><span>Practice weight</span><span>Ø${sp.endInfo.D.toFixed(0)} × ${sp.endInfo.L} mm · ${sp.endInfo.g.toFixed(0)} g TPU</span></div>` : ''}
     ${sp.endInfo?.kind === 'led' ? `<div class="row"><span>LED end</span><span>holds a Ø${p.capD} × ${p.capL} capsule · ${sp.endInfo.g.toFixed(0)} g with it</span></div>` : ''}
     <div class="row"><span>Sockets</span><span>${sp.n} × Ø${sp.socketD.toFixed(2)} × ${p.depth} mm</span></div>
-    <div class="row"><span>Clamp screws</span><span>${sp.n + 2} × ${sp.grub} ${cnc ? `(tap drill Ø${sp.tap})` : 'grub screws + nuts in the traps'}</span></div>
-    <div class="row"><span>Pole bore</span><span>Ø${sp.boreD.toFixed(2)} mm</span></div>
+    <div class="row"><span>Spoke clamp screws</span><span>${sp.n} × ${sp.grub} ${cnc ? `(tap drill Ø${sp.tap})` : 'grub screws + nuts in the traps'}</span></div>
+    <div class="row"><span>On the pole</span><span>${sp.grip.startsWith('inside') ? `expanding spigot inside the pole end · 1 × M6 × 40 bolt` : sp.grip.startsWith('split') ? `split clamp · 1 × ${sp.grub} pinch bolt · bore Ø${sp.boreD.toFixed(2)}` : `2 × ${sp.grub} grub screws · bore Ø${sp.boreD.toFixed(2)}`}</span></div>
     <div class="row"><span>Across the spoke tips</span><span>Ø${s.overD.toFixed(0)} mm</span></div>
     <div class="row"><span>Thinnest wall</span><span>${sp.minWall < 4 ? pill('warn', sp.minWall.toFixed(1) + ' mm') : sp.minWall.toFixed(1) + ' mm'}</span></div>
     <div class="row"><span>Fire</span><span>${cnc && matOf(cncp()).kind === 'metal' ? pill('good', 'yes') : pill('bad', 'practice only')}</span></div>
+    ${sp.grip.startsWith('inside') ? '' : insertTip(sp.grip.startsWith('split') ? 'The split clamp squeezes the pole.' : 'Two clamp screws press straight onto the pole.')}
+    <div class="row"><span>No fire spokes yet?</span><span><button class="btn" data-go="practiceWick">Practice spokes ↗</button></span></div>
     ${tpu ? '<div class="warnline">TPU is too soft to hold 185 mm spokes straight: print the practice spoke hub in PETG or nylon (PA), 100% infill.</div>' : ''}
     ${!cnc && sp.ends !== 'tpu' && sp.ends !== 'led' && sp.ends !== 'none' ? '<div class="warnline">A printed hub must never carry fire spokes that are lit. Use it to practise with the spokes unlit, or pick practice ends.</div>' : ''}
     ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
@@ -1029,9 +1198,15 @@ function renderVerdict(hub, p) {
   const s = hub.stats
   const mat = MATERIALS[state.material]
   if (hub.adaptor) return renderAdaptorVerdict(hub, p, mat)
+  if (hub.cage) return renderCageVerdict(hub, p)
+  if (hub.grip) return renderGripVerdict(hub, p, mat)
+  if (hub.dart) return renderDartVerdict(hub, p, mat)
   if (hub.cnc) return renderCncVerdict(hub, p)
   if (hub.spoke) return renderSpokeVerdict(hub, p)
   if (hub.ball) return renderBallVerdict(hub, p, mat)
+  if (hub.sleeve) return renderSleeveVerdict(hub, p, mat)
+  if (hub.novelty) return renderNoveltyVerdict(hub, p, mat)
+  if (hub.practiceSpoke) return renderPracticeVerdict(hub, p, mat)
   const bedMax = Number(state.bed)
   const bal = s.centroidOffset < 0.1 ? pill('good', 'balanced') : s.centroidOffset < 1 ? pill('warn', `${s.centroidOffset.toFixed(2)} mm off`) : pill('bad', `${s.centroidOffset.toFixed(1)} mm off`)
   const weak = s.weakArea < 1 ? pill('good', 'none') : s.weakArea < 150 ? pill('warn', `${s.weakArea.toFixed(0)} mm²`) : pill('bad', `${s.weakArea.toFixed(0)} mm²`)
@@ -1058,6 +1233,7 @@ function renderVerdict(hub, p) {
     <div class="row"><span>Material</span><span>${pill(matPill, mat.name)}</span></div>
     <div class="row"><span>Fits ${bedMax} mm bed</span><span>${p.diameter <= bedMax - 2 ? pill('good', `${p.diameter} mm`) : pill('bad', `${p.diameter} mm, too big`)}</span></div>
     <div class="row"><span>Grip on Ø${p.poleOD} pole</span><span>${squeeze > 0 ? squeeze.toFixed(2) + ' mm squeeze' : pill('bad', 'loose')}</span></div>
+    ${p.screw > 0 ? insertTip('The set screw presses on the pole.') : ''}
     ${caps ? `<div class="row"><span>Lantern height</span><span>${hub.podH.toFixed(1)} mm</span></div>` : ''}
     ${s.parts > 1 ? `<div class="row"><span>Separate solids</span><span>${pill('bad', String(s.parts))}</span></div>` : ''}
     ${s.dropped ? `<div class="row"><span>Loose bits removed</span><span>${pill('warn', String(s.dropped))}</span></div>` : ''}
@@ -1095,11 +1271,32 @@ function exportButtons(list) {
 
 function renderCutExports(d) {
   const hub0 = current && current.design === d ? current.hub : null
-  const hub = hub0 && (hub0.cnc || hub0.spoke) ? hub0 : null // a print build still on screen does not count
+  const hub = hub0 && (hub0.cnc || hub0.spoke || hub0.cage || hub0.dart) ? hub0 : null // a print build still on screen does not count
   const ready = !!hub
   const c = cncp(), p = params()
   const name = `hub-${d.id}-${matKey(c)}`
   const txt = (data, file, type) => () => download(data(), file, type)
+  if (d.cage) {
+    exportButtons([
+      ['Flat pattern (DXF)', 'primary', txt(() => toDXF(hub.layers, d.name), `spark-cage-${d.kind}-${c.thick}mm.dxf`, 'application/dxf'), !ready],
+      ['Flat pattern (SVG, true size)', '', txt(() => toCutSVG(hub.layers, 0), `spark-cage-${d.kind}-${c.thick}mm.svg`, 'image/svg+xml'), !ready],
+      ['Folded 3D model (STL)', '', () => download(toSTL(hub.meshes.combined, d.name), `spark-cage-${d.kind}.stl`), !ready],
+    ])
+    $('exportNote').innerHTML = `<b>Send the DXF</b> to a laser or waterjet shop: ${c.thick} mm ${matOf(c).name}. Layers: <b>CUT</b> outline, <b>HOLES</b> spark holes and fixings, <b>BEND</b> fold lines (not cut: ask them to fold on these, or fold it yourself in a vice, every fold 90° the same way). ${d.kind === 'diamond' ? 'Fold every BEND line to make the diamond, then stitch the open edges with 1 mm stainless wire through the small holes; leave one edge as the loading door, tied with a twist of wire.' : d.kind === 'tube' ? 'Roll the big rectangle into a tube round a pipe, overlap the seam and rivet it; fold the cap tabs down and bolt the caps in with M4 stainless bolts (one cap comes off to load).' : 'Fold the sides up, fold the tabs in and pop-rivet them (3.2 mm stainless rivets), then fold the lid over and bolt its tab to the front with an M5 bolt. ' + (d.kind === 'box' ? 'The floor bolts to a flange collar on the staff end.' : 'Each cube goes on a spoke tip: an 8 mm threaded spoke end through the floor hole, a nut and washer inside and out.')}`
+    return
+  }
+  if (d.dart) {
+    const nm = `rope-dart-${d.id}-${matKey(c)}`
+    exportButtons([
+      ...(hub?.dart.turned ? [['Lathe drawing (SVG)', 'primary', txt(() => dartDrawingSVG(hub, p, matOf(c).name, d.name), nm + '-lathe.svg', 'image/svg+xml'), !ready],
+        ['Side profile (DXF)', '', txt(() => toDXF(hub.layers, d.name), nm + '-profile.dxf', 'application/dxf'), !ready]] : []),
+      ['3D model (STL)', hub?.dart.turned ? '' : 'primary', () => download(toSTL(hub.meshes.printFlat, d.name), nm + '.stl'), !ready],
+    ])
+    $('exportNote').innerHTML = hub?.dart.turned
+      ? `A classic turned shape: a lathe shop can make it from the drawing (diameters every 10 mm) or the DXF profile. ${matOf(c).name} makes it ${hub ? hub.stats.grams.toFixed(0) : ''} g. Ask for the eye hole edges rounded so the rope does not fray.`
+      : 'Not a lathe shape: send the STL to a shop with a 4-axis mill, or to a metal 3D printing service (stainless or bronze). Or print it in TPU.'
+    return
+  }
   if (d.spokeHub) {
     const cnc = hub?.spoke?.mode === 'cnc'
     exportButtons([
@@ -1133,6 +1330,47 @@ function renderExports() {
   const box = $('exports')
   const m = current && current.design === d ? current.hub.meshes : null
   if ((isCnc() && !printOnly(d)) || d.spokeHub) return renderCutExports(d)
+  if (d.dart) {
+    const p = params()
+    exportButtons([
+      ['STL (print eye-down)', 'primary', () => download(toSTL(m.printFlat, d.name), `rope-dart-${d.id}-${p.length}mm.stl`), !m?.printFlat],
+      ...(m?.plugFlat ? [['Capsule plug STL', '', () => download(toSTL(m.plugFlat, d.name + ' plug'), `rope-dart-${d.id}-plug.stl`), false]] : []),
+    ])
+    $('exportNote').innerHTML = 'Print it standing on its eye as it comes, TPU 95A for practice (it will hit you), 100% infill for weight, with a brim. Thread the rope through the eye and tie it off with a stopper knot or a figure-eight loop. Want it heavier or for fire practice in metal? Switch to CNC: the classic shapes come with a lathe drawing.'
+    return
+  }
+  if (d.novelty) {
+    const p = params()
+    exportButtons([
+      ['STL', 'primary', () => download(toSTL(m.combined, d.name), `contact-end-${d.kind}-${p.poleOD}pole.stl`), !m],
+      ['Fit-test ring', '', async () => download(toSTL(await work('fit', { params: params() }), 'fit test'), `fit-test-${params().poleOD}pole-${params().fit}clear.stl`)],
+    ])
+    $('exportNote').innerHTML = 'Print it standing on its socket as shown, TPU 95A, 3+ walls; 100% infill for the most weight (or 20–40% gyroid for a lighter end). Print the fit-test ring first. Push it onto the staff end; the crush ribs grip it.'
+    return
+  }
+  if (d.grip) {
+    const p = params(), nm = `pole-${d.kind}-${p.poleOD}x${(p.poleOD - 2 * p.poleWall).toFixed(1)}`
+    exportButtons([
+      [current?.hub.grip?.halves ? 'Half A STL (stub)' : d.kind === 'expander' ? 'Expander STL (cap down)' : d.kind === 'joiner' ? 'Joiner STL' : 'Clamp Collar STL', 'primary', () => download(toSTL(m.mainFlat, d.name), nm + (current?.hub.grip?.halves ? '-A.stl' : '.stl')), !m?.mainFlat],
+      ...(m?.wedgeFlat ? [[current?.hub.grip?.halves ? 'Half B STL (collar)' : 'Wedge STL', 'primary', () => download(toSTL(m.wedgeFlat, d.name + (current.hub.grip.halves ? ' B' : ' wedge')), nm + (current.hub.grip.halves ? '-B.stl' : '-wedge.stl')), false]] : []),
+      ...(d.kind === 'clamp' ? [['Pole Insert ↗', '', () => goDesign('sleeveSolid')]] : []),
+      ['Pole grip guide', '', openGripGuide],
+    ])
+    $('exportNote').innerHTML = 'Print in PETG or nylon (PA), 100% infill, 4+ walls, flat as they come. The STL also works for a machinist if you want it in aluminium (best next to fire). The guide explains every step, what to buy, and how tight is tight.'
+    return
+  }
+  if (d.sleeve || d.practiceSpoke) {
+    const p = params(), nm = d.sleeve ? `pole-insert-${d.id}-${p.poleOD}x${p.poleWall}-${p.length}mm` : `practice-spoke-${d.id}-${p.rodD}mm`
+    exportButtons(d.sleeve
+      ? [['Pole insert STL', 'primary', () => download(toSTL(m.combined, d.name), nm + '.stl'), !m]]
+      : [['Spoke STL (PETG / nylon)', 'primary', () => download(toSTL(m.spokeFlat, d.name), nm + '-spoke.stl'), !m?.spokeFlat],
+         ['Head STL (TPU)', 'primary', () => download(toSTL(m.practiceFlat, d.name + ' head'), nm + '-head.stl'), !m?.practiceFlat],
+         ['Spoke hubs ↗', '', () => goDesign('spokeRound')]])
+    $('exportNote').innerHTML = d.sleeve
+      ? 'Print it standing up, 100% infill, PETG or nylon. Measure the inside of your pole first. Tie a string through the end hole, push the insert into the pole and pull it to where the hub will sit; the hub screws then press on the insert, not the bare tube. One per hub.'
+      : 'Print the spoke lying on its flat (as shown), PETG or nylon, 4+ walls; print the head standing up in TPU 95A. Push the head onto the peg. Slide the shank into a hub socket with the flat towards the clamp screw, and tighten the screw onto the flat. Print one per socket and weigh them: all within 2 g.'
+    return
+  }
   if (d.ballEnd) {
     const ready = m?.lowerFlat, p = params(), nm = `contact-ball-${d.id}-${p.ballD}mm-${p.poleOD}pole`
     exportButtons([
@@ -1206,7 +1444,8 @@ function spokeHowTo(d, cnc) {
     `${n} fire spokes with an ${p.rodD} mm rod, about ${p.spokeLen} mm long (the common 2" dragon fire spoke), or ${p.rodD} mm rod to make your own`,
     `${n + 2} × ${g} stainless grub screws, cup point, ${Math.round(p.hubT / 2)} mm long, and the hex key for them`,
     `a staff that is Ø${p.poleOD} mm (two hubs for a dragon staff: one each end, or both near the middle)`,
-    ...(ek === 'tpu' || ek === 'led' ? [`${p.rodD} mm aluminium rod for practice spokes: ${n} pieces ${p.spokeLen - 30} mm long`] : []),
+    ...(ek === 'tpu' || ek === 'led' ? [`practice spokes: print them (the Practice spokes designs) or use ${p.rodD} mm aluminium rod, ${n} pieces ${p.spokeLen - 30} mm long`] : []),
+    (p.poleGrip || '').startsWith('inside') ? 'one M6 × 40 bolt per hub for the expanding spigot (it grips the inside of the pole end: safe for carbon)' : 'a carbon or hollow pole? a Pole Insert under each hub, so the clamp cannot crush it',
     ...(ek === 'fist' ? ['10 mm braided Kevlar rope (about 1.2 m per monkey fist) and a steel ball or rod core'] : []),
   ]
   const make = cnc ? [
@@ -1238,18 +1477,38 @@ const endsKeyOf = (label) => Object.keys(SPOKE_ENDS).find((k) => SPOKE_ENDS[k] =
 
 function renderCutGuide() {
   const d = design(), c = cncp(), m = matOf(c), proc = PROCESSES[procKey(c)]
+  if (d.cage) {
+    $('guide').innerHTML = `<h2>Spark cages: safely</h2><ul>
+      <li><b>Steel only.</b> Stainless 304 is best; mild steel works but rusts. Never aluminium: burning charcoal is hotter than aluminium melts.</li>
+      <li><b>Charcoal:</b> crushed shisha (hookah) charcoal throws the best sparks and burns steady. Fill the cage about two-thirds, close it, light it with the cage on a fireproof stand, and let it glow evenly before you spin.</li>
+      <li><b>Sparks fall everywhere,</b> not just outwards. Fireproof hood or balaclava, goggles, natural-fibre clothes, closed shoes. Clear a wide space, no dry grass, a safety person with a fire blanket and water.</li>
+      <li><b>Heat travels:</b> keep the cage off the staff's grip area and let everything cool before touching. Check rivets, bolts and wire stitching before every burn; replace any that have burnt thin.</li>
+      <li><b>Empty the ash</b> into a metal bucket of water, never onto the ground.</li></ul>`
+    return
+  }
+  if (d.dart) {
+    $('guide').innerHTML = `<h2>Making the rope dart head</h2><ul>
+      <li><b>${m.name}:</b> ${m.note}</li>
+      <li><b>Turned shapes</b> (Classic, Meteor Bell, Willow Leaf, Glow Drop): any lathe shop can make them from the drawing. Brass and stainless are the classic, heavy choice; aluminium is lighter for learning.</li>
+      <li><b>Faceted and twisted shapes</b> need a 4-axis mill or metal 3D printing (stainless or bronze), or print them in TPU.</li>
+      <li><b>The rope:</b> round the eye's edges so the rope cannot fray; thread it and tie a figure-eight loop or a stopper knot. Check the rope at the eye before every session.</li>
+      <li><b>Fire:</b> a fire rope dart has a Kevlar wick head, not a metal dart: see the monkey's fist in the <a href="#" class="wickLink">wicking and knots guide</a>.</li></ul>`
+    for (const l of document.querySelectorAll('.wickLink')) l.onclick = (e) => { e.preventDefault(); openWickGuide() }
+    return
+  }
   const metal = m.kind === 'metal'
   $('guide').innerHTML = `<h2>${d.spokeHub ? 'Making the spoke hub' : 'Cutting it'}</h2>
     <ul>
       <li><b>${m.name}:</b> ${m.note}</li>
       ${d.spokeHub ? '' : `<li><b>${proc.name}:</b> ${proc.note}</li>`}
-      ${d.spokeHub ? '' : `<li><b>Collar:</b> a flat plate needs a collar to stay square on the pole. Bolt on a flanged shaft collar for your pole size and set its bolt circle under Cut; for practice hubs you can print the forge collar instead.</li>`}
+      ${d.spokeHub ? '' : (c.mount || '').startsWith('End') ? `<li><b>On the pole:</b> print the <b>End Expander</b> (Pole fittings) for your pole; it grips the inside of the pole end and the plate bolts to it with 4 × M4 on the ${c.flangePCD} mm circle. Nothing squeezes the carbon. <a href="#" class="gripLink">Pole grip guide</a>.</li>` : `<li><b>On the pole:</b> a flat plate needs a collar to stay square. Print the forge <b>Clamp Collar</b> (or bolt on a bought flange shaft collar) and set its bolt circle under Cut. On a carbon pole, always put a <b>Pole Insert</b> inside under it. <a href="#" class="gripLink">Pole grip guide</a>.</li>`}
       ${metal ? `<li><b>Fire:</b> only 100% Kevlar tape, rope and thread, and bare stainless bolts and wire, near the flame. Never nylon paracord, cotton or polyester: nylon melts and drips. Check every bolt, screw and lacing before each burn. Step-by-step wicking, and knots taken from paracord work (monkey's fist, Turk's head, cobra) tied in Kevlar: <a href="#" id="wickLink">wicking and knots guide</a>.</li>
       <li><b>Balance:</b> wrap every wick with the same length of tape, and weigh them. A heavy wick makes the staff wobble.</li>` : `<li><b>No fire, ever:</b> ${m.name} burns or melts. This is a practice hub: drop it on grass or mats.</li>`}
       <li><b>Practice ends</b> weigh about the same as a fuelled wick, so what you learn with them carries over to fire.</li>
     </ul>`
   if (d.spokeHub) $('guide').innerHTML = spokeHowTo(d, true) + $('guide').innerHTML
   for (const l of document.querySelectorAll('#wickLink, .wickLink')) l.onclick = (e) => { e.preventDefault(); openWickGuide() }
+  for (const l of document.querySelectorAll('.gripLink')) l.onclick = (e) => { e.preventDefault(); openGripGuide() }
 }
 
 function renderGuide() {
@@ -1271,7 +1530,7 @@ function renderGuide() {
       <li><b>Glowing lanterns:</b> clear or natural TPU at 100% infill glows evenly. Infill patterns show up as shadows when lit.</li>
       <li><b>Bed:</b> TPU welds to PEI. Use glue stick as a release layer on smooth PEI.</li>` : ''}
       ${state.material === 'pa' ? '<li><b>Nylon:</b> enclosure on, dry it hard (70 °C, 8 h), brim to stop the rim lifting.</li>' : ''}
-      <li><b>Capsules:</b> push in through the top slot and they snap past the lips. Pick the mode first (or use the Flowtoys remote) since the button ends up inside. Capsules sync over radio, so every lantern can run the same pattern.</li>
+      <li><b>Capsules:</b> push in through the top slot and they snap past the lips. Pick the mode first (or use the capsule remote) since the button ends up inside. Capsules sync over radio, so every lantern can run the same pattern.</li>
       ${current?.hub.ring?.snap ? `<li><b>Bubble ring (snap-on, no tools):</b> one TPU hoop, like the snap-on weight, with the loops standing on a shelf under it. Lay it loops-down on a table and push the hub into it, collar up: the rim cams the lip open and it clicks over. Peel it off the same way. The loops hang on the side away from your hand and stay inside the rim, so an edge-first drop lands on the hoop. Print it lip-down, loops up, in one piece; TPU 95A, 3+ walls, slow the outer walls for the standing loops. If it creeps when spun hard, set Snap stretch to -1.5. Rinse after use: dried mix gets sticky.</li>` : current?.hub.ring?.internal ? `<li><b>Bubble loops (internal):</b> they are part of the hub, so there is no ring to print or bolt. They stand up on the collar side just inside the rim, each fused into the rim and standing on a pad, so a drop on the edge lands on the rim. They print standing up: slow the outer walls and turn the fan up for them. A flat face-first drop can still hit the loop tops, but TPU loops bend rather than snap. Rinse after use: dried mix gets sticky.</li>` : current?.hub.ring?.face ? `<li><b>Bubble ring (flat face):</b> a flat plate with the loops standing on it. It bolts under the hub on the side away from the collar, so the loops point away from your hand and stay inside the rim: a drop lands on the smooth edge, not the loops. Print it plate-down, loops up; it ${current.hub.ring.segs > 1 ? `comes in ${current.hub.ring.segs} arc segments (<i>Split to objects</i> in the slicer)` : 'fits the bed in one piece'}. M3 bolts and nylock nuts up through plate and rim, heads on the plate side. Slow the outer walls for the standing loops. Rinse after use: dried mix gets sticky.</li>` : `<li><b>Bubble ring:</b> a tyre round the outside of the rim, its flange under the rim on the side away from the collar. Stretch it on, then M3 bolts and nylock nuts up through flange and rim. It is wider than the hub, so it prints in arc segments: in the slicer use <i>Split to objects</i> and arrange them. Edge-on loops print standing up; slow the outer walls down for them. Rinse after use: dried mix gets sticky.</li>`}
       ${current?.hub.snap?.led ? `<li><b>LED weight ring:</b> print block-down in natural TPU, 100% infill, 3+ perimeters. <b>Pause at ${current.hub.snap.led.pauseAt.toFixed(1)} mm</b>: the LED slot and wire groove are open there. Lay the strip (in clear heat-shrink, not glued) into the slot, LEDs facing out, wires in the groove, ends coiled into the pods, then resume; print the roof slowly with the fan on. Turn on supports for the two pod cavities only (their ceilings are a wide bridge). Pods open on the face away from the collar; the lids press in. Weigh both pods' contents and match them within 1 g. Wiring, parts from Thai shops and firmware: <a href="led-ring-plan.html" target="_blank">LED ring plan</a>.</li>` : ''}
       ${current?.hub.snap ? `<li><b>Snap-on weight:</b> one hoop per weight, printed block-down with no supports; the lip's top is chamfered, so it needs none either. To fit it, lay the hoop on a table, set the hub in at an angle so one side of the rim is under the lip, then push down round the edge like a bike tyre until it clicks over. Peel it off the same way to swap. If it creeps round the rim on hard spins, print it with a tighter stretch (-1.5 mm). Heavy = slower, longer, smoother spins; light = quicker tricks.</li>` : ''}
@@ -1337,7 +1596,14 @@ toggle('v360', false, (on) => {
     setMain(false)
     status('360°: drag to turn · pinch or scroll to zoom')
   } else setMain(framedR >= 140)
+  // back to straight face-on
+  const dist = camFace.position.distanceTo(ctlFace.target)
+  camFace.position.set(ctlFace.target.x, ctlFace.target.y, ctlFace.target.z + dist)
+  camFace.up.set(0, 1, 0)
+  ctlFace.update()
 })
+// fire spokes and their ends are bought, not cut or printed: hide them to see just the hub
+toggle('vSpokes', true, (on) => { view.spokes = on; for (const m of [rodMesh, kevMesh, pracMesh]) m.visible = on && !!m.geometry.attributes.position })
 toggle('vBubbles', false, (on) => {
   bubbles.enabled = on
   $('bubblePanel').hidden = !on
@@ -1375,6 +1641,7 @@ $('spinRate').oninput = (e) => { view.rate = Number(e.target.value); $('spinOut'
 
 function setMode(m, quiet) {
   state.mode = m
+  if (!quiet) renderParams() // fire ends come and go with the material
   $('modePrint').setAttribute('aria-pressed', String(m === 'print'))
   $('modeCnc').setAttribute('aria-pressed', String(m === 'cnc'))
   document.body.classList.toggle('cncMode', m === 'cnc')
@@ -1382,8 +1649,33 @@ function setMode(m, quiet) {
   if (quiet) return
   renderParams(); renderGuide(); renderGallery(); schedule(0); persist()
 }
-$('modePrint').onclick = () => setMode('print')
+// My pole: type it once, every design that fits a pole follows it
+state.pole = saved.pole && saved.pole.od ? saved.pole : { od: 22, id: 19 }
+$('poleOut').value = state.pole.od
+$('poleIn').value = state.pole.id
+function applyPole() {
+  const od = Number($('poleOut').value), id = Number($('poleIn').value)
+  if (!(od >= 8 && od <= 40) || !(id >= 0 && id < od - 0.8)) return status('My pole: inside must be at least 1 mm smaller than outside.')
+  state.pole = { od, id }
+  const wall = id > 0 ? +((od - id) / 2).toFixed(2) : 0
+  for (const d of DESIGNS) {
+    const P = state.params[d.id]
+    if (d.adaptor) { if (od < P.big) P.small = od; continue }
+    if ('poleOD' in P) P.poleOD = od
+    if ('poleWall' in P && wall > 0) P.poleWall = wall
+  }
+  if (id === 0) status('Solid pole: inserts and expanders need a hollow pole; clamps and bores still fit it.')
+  renderParams(); schedule(0); persist()
+}
+$('poleOut').onchange = applyPole
+$('poleIn').onchange = applyPole
+
+$('modePrint').onclick = () => {
+  if (cncOnly(design())) state.design = DESIGNS.find((d) => !d.adaptor && !d.custom && !d.cncOnly).id // a spark cage can't be printed
+  setMode('print')
+}
 $('modeCnc').onclick = () => setMode('cnc')
+if (cncOnly(design())) state.mode = 'cnc'
 setMode(state.mode, true)
 
 const matSel = $('material')

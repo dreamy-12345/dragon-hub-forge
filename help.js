@@ -112,7 +112,7 @@ const TOPICS = [
       ['**LED strip inside** turns that ring into a light-up ring.', { group: 'Snap-on weight ring' }],
       ['**Bubble weight ring**: loops that blow bubbles. **snap ring** clips on with no tools.', { group: 'Bubble weight ring' }],
       ['Turn on **Bubbles** in the view and press **Dip in mix** to try it.', T.bubbles],
-      ['Lantern designs hold Flowtoys capsules: see **Lanterns and capsules**.', { group: 'Lanterns and capsules', when: '**Lanterns and capsules** appears for lantern designs, like **Heart Lanterns**.' }],
+      ['Lantern designs hold LED capsules: see **Lanterns and capsules**.', { group: 'Lanterns and capsules', when: '**Lanterns and capsules** appears for lantern designs, like **Heart Lanterns**.' }],
     ],
   },
   {

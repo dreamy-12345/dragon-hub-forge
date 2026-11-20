@@ -1,8 +1,8 @@
 /**
- * Flowtoys Capsule 2.0 modes, emulated for the preview.
+ * LED capsule modes, emulated for the preview.
  *
  * The real modes are byte tables run through the fluxFX engine
- * (~/Projects/flowtoys/flowos-vision/capsule/src/C0-1.TXT and
+ * (the capsule firmware sources, C0-1.TXT and
  * patterns/src/patterns.cpp). A capsule lights its whole lantern, so what
  * matters here is its colour over time: spin the hub with trails on and that
  * timeline is painted round the circle, the way it looks on a real staff.

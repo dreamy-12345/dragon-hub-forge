@@ -15,7 +15,7 @@ browser; saved designs stay in that browser).
   bore, collar, rim weight.
 - Pole sizes 22 / 16 / 13 mm, plus pole adaptors (13→22, 16→22, collet).
 - Snap-on weight rings (no tools), bubble loops, LED ring variant, capsule lanterns
-  for Flowtoys capsules.
+  for LED capsules.
 - Live checks: balance on the staff, thin spots, weight and filament use, bed fit.
 - **CNC mode**: any design as a flat plate for a laser, waterjet, plasma or CNC
   router, in aluminium, stainless, steel, Perspex, polycarbonate, HDPE or POM. It
@@ -24,7 +24,14 @@ browser; saved designs stay in that browser).
   bumpers weighted like a wet wick.
 - **Fire spoke hubs**: machined hubs for 8 mm fire spokes, with a drawing for the
   machine shop, a printable practice version, practice ends and a step-by-step guide.
-- **Contact staff ball ends**: push-on balls in three flat parts, weightable.
+- **Contact staff ends**: push-on balls in three flat parts (weight them with steel shot)
+  and fun ends (trident, heart, mace, axe), balanced over the pole.
+- **Rope dart heads**: 3 classic (with a lathe drawing for metal) and 3 modern.
+- **Spark cages** (CNC only): perforated steel cages for charcoal, as flat patterns
+  with fold lines: staff box, rope dart tube, diamond, spoke-tip cubes.
+- **Pole fittings**: pole inserts, an internal End Expander and a Clamp Collar so
+  rigid hubs grip without crushing carbon, and collapsible staff joints (screw,
+  twist-lock, snap-button). Type your pole's inside and outside size once.
 - A wicking and knots guide (Kevlar tape, monkey's fist, Turk's head, cobra).
 - Previews: spinning, light trails, strobe/zoetrope, blacklight, bubbles.
 

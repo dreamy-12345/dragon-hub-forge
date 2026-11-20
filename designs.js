@@ -21,6 +21,12 @@ import { MELT_DESIGNS } from './designs-melt.js'
 import { CUSTOM_DESIGNS } from './designs-custom.js'
 import { fireDesigns } from './designs-fire.js'
 import { ballDesigns } from './balls.js'
+import { sleeveDesigns } from './inserts.js'
+import { practiceDesigns } from './practice.js'
+import { noveltyDesigns } from './novelty.js'
+import { dartDesigns } from './darts.js'
+import { cageDesigns } from './cages.js'
+import { gripDesigns } from './grip.js'
 import { TAU, rot, place, ccw, cw, rng, voronoi, pointInPoly, circlePts, HEART, wingPoly, logoDragonfly, Canvas } from './geom.js'
 
 const deg = (d) => (d * Math.PI) / 180
@@ -279,7 +285,7 @@ export const DESIGNS = [
     id: 'hearts',
     group: 'Glow',
     name: 'Heart Lanterns',
-    blurb: 'Hollow hearts in clear TPU, each holding a Flowtoys capsule, on a low dark frame. Only the hearts light up.',
+    blurb: 'Hollow hearts in clear TPU, each holding a LED capsule, on a low dark frame. Only the hearts light up.',
     glow: '#ff3d7f',
     pods: true,
     overrides: { strutW: 3.2, frameH: 4 },
@@ -3284,7 +3290,11 @@ export const DESIGNS = [
 // CNC and fire: new ones, favourites re-cut, and hubs for 8 mm fire spokes
 DESIGNS.push(...fireDesigns(DESIGNS, { drawSpokes, drawVortex }))
 // contact staff ball ends: printed, push onto the pole
-DESIGNS.push(...ballDesigns())
+DESIGNS.push(...ballDesigns(), ...noveltyDesigns())
+// printed practice spokes for the spoke hubs, and pole inserts that stop clamps crushing a hollow pole
+DESIGNS.push(...practiceDesigns(), ...sleeveDesigns(), ...gripDesigns())
+// rope dart heads (print or lathe) and spark cages (CNC only)
+DESIGNS.push(...dartDesigns(), ...cageDesigns())
 
 const polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)]
 

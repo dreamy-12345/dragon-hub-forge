@@ -12,7 +12,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url))
 const PORT = Number(process.argv[2] || process.env.PORT || 9560)
 const IDEAS = path.join(ROOT, 'ideas.json')
 const LIKES = path.join(ROOT, 'likes.json') // [{ key, name, liked: [target] }], one record per person
-const SERVE = new Set(['index.html', 'app.js', 'hub.js', 'geom.js', 'designs.js', 'worker.js', 'leds.js', 'bubbles.js', 'dome.js', 'dragonfly.js', 'designs-dogs.js', 'designs-veins.js', 'designs-signature.js', 'designs-loyaldog.js', 'designs-melt.js', 'designs-custom.js', 'create.js', 'likes.js', 'help.js', 'cnc.js', 'designs-fire.js', 'balls.js', 'led-ring-plan.html', 'wicking-guide.html'])
+const SERVE = new Set(['index.html', 'app.js', 'hub.js', 'geom.js', 'designs.js', 'worker.js', 'leds.js', 'bubbles.js', 'dome.js', 'dragonfly.js', 'designs-dogs.js', 'designs-veins.js', 'designs-signature.js', 'designs-loyaldog.js', 'designs-melt.js', 'designs-custom.js', 'create.js', 'likes.js', 'help.js', 'cnc.js', 'designs-fire.js', 'balls.js', 'inserts.js', 'practice.js', 'novelty.js', 'darts.js', 'cages.js', 'grip.js', 'pole-grip-guide.html', 'led-ring-plan.html', 'wicking-guide.html'])
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.wasm': 'application/wasm', '.svg': 'image/svg+xml' }
 
 const loadIdeas = () => {

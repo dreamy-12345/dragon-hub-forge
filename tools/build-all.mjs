@@ -8,6 +8,7 @@ const wasm = await Module()
 wasm.setup()
 const out = process.argv[2]
 for (const d of DESIGNS) {
+  if (d.spokeHub || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.dart || d.cage || d.grip) continue // tools/cnc-all.mjs and tools/balls-test.mjs cover these
   const p = defaults(d)
   const t0 = performance.now()
   let hub

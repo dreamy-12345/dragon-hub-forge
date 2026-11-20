@@ -432,8 +432,8 @@ LiPo− ──B−┤ TP4056-C (DW01) OUT+──SW1──┤                    
 <li><b>Frame time sets how short a flash can be.</b> WS2812 data takes about 30 µs per LED, so 78 LEDs take about 2.4 ms. At 6 rev/s the rim moves 11 mm in that time, so strobe segments smear by about one LED pitch. That's acceptable. If you want sharper strobes, use fewer LEDs or a clocked APA102/SK9822 strip (I couldn't verify one in Thailand).</li>
 <li><b>Turn off temporal dithering</b> with <code>FastLED.setDither(0)</code>. On a moving prop, dithering and low PWM duty (WS2812 PWM runs at about 1–2 kHz) show up as dashed trails. You can also lean into that and use it as a look on purpose.</li>
 <li><b>v2, true stationary images:</b> to keep the pattern still in space while the hub spins, you need the spin angle. Typical gyros (MPU6050, BMI270, ICM-42688) saturate at 2000 °/s, which is 5.5 rev/s, below contact-roll speeds. A ±32 g accelerometer (LSM6DSO32) on the ring reads centripetal acceleration up to about 8 rev/s. Treat this as an experiment, not v1.</li>
-<li><b>v2 sync:</b> ESP-NOW between the two hubs on a staff, or with a phone, at a cost of about 60–80 mA while it listens. Flowtoys capsules use an nRF24-style 250 kbit radio that the ESP32 can't speak; see the lighttoys hoop notes.</li>
-<li>The preview in <code>leds.js</code> already emulates the Flowtoys capsule modes as colour over time. Any mode that looks good there as a "lantern" also works as Halo or Palette drift here.</li>
+<li><b>v2 sync:</b> ESP-NOW between the two hubs on a staff, or with a phone, at a cost of about 60–80 mA while it listens. LED capsules use an nRF24-style 250 kbit radio that the ESP32 can't speak; see the lighttoys hoop notes.</li>
+<li>The preview in <code>leds.js</code> already emulates the LED capsule modes as colour over time. Any mode that looks good there as a "lantern" also works as Halo or Palette drift here.</li>
 </ul>
 
 <h3>Starter sketch (Arduino IDE, board "ESP32C3 Dev Module", USB CDC On Boot: Enabled, FastLED 3.7 or later)</h3>

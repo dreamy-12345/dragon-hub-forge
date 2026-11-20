@@ -19,6 +19,12 @@ import { DESIGNS } from './designs.js'
 import { TAU, rot, ccw, capsuleRect, Canvas } from './geom.js'
 import { buildSpokeHub } from './cnc.js'
 import { buildBallEnd } from './balls.js'
+import { buildSleeve } from './inserts.js'
+import { buildPracticeSpoke } from './practice.js'
+import { buildNovelty } from './novelty.js'
+import { buildDart } from './darts.js'
+import { buildCage } from './cages.js'
+import { buildGrip } from './grip.js'
 
 export { DESIGNS }
 
@@ -43,7 +49,7 @@ export const COMMON_PARAMS = [
   { key: 'reliefH', label: 'Shape height', unit: 'mm', min: 3, max: 25, step: 0.5, value: 10, group: 'Levels', hint: 'How tall the dragonflies stand above the bed. Standard is 10 mm, level with the rim.' },
   { key: 'fillet', label: 'Corner fillet', unit: 'mm', min: 0, max: 5, step: 0.1, value: 1.6, group: 'Levels', hint: 'Rounds every inside corner of the frame.' },
 
-  { key: 'capD', label: 'Capsule diameter', unit: 'mm', min: 10, max: 30, step: 0.1, value: 21, group: 'Glow', hint: 'Flowtoys Capsule 2.0 is listed at Ø21 mm. Measure yours.' },
+  { key: 'capD', label: 'Capsule diameter', unit: 'mm', min: 10, max: 30, step: 0.1, value: 21, group: 'Glow', hint: 'A common LED capsule is Ø21 mm. Measure yours.' },
   { key: 'capL', label: 'Capsule length', unit: 'mm', min: 40, max: 120, step: 0.5, value: 88, group: 'Glow', hint: 'Listed as 88 mm (some pages say 95 with the end ring). Measure yours.' },
   { key: 'capMass', label: 'Capsule weight', unit: 'g', min: 0, max: 80, step: 1, value: 32, group: 'Glow' },
   { key: 'capClr', label: 'Capsule clearance', unit: 'mm', min: 0, max: 2, step: 0.05, value: 0.5, group: 'Glow' },
@@ -220,6 +226,12 @@ export function buildHub(wasm, design, p, opts = {}) {
     return xs.length ? k(CrossSection.union(xs)) : null // manifold has no empty CrossSection
   }
   if (design.adaptor) return buildAdaptor(wasm, p, opts)
+  if (design.grip) return buildGrip(wasm, p, { kind: design.kind, density: opts.material?.density })
+  if (design.dart) return buildDart(wasm, p, { style: design.style, density: opts.material?.density })
+  if (design.cage) return buildCage(wasm, p, { kind: design.kind, thick: design.cnc?.thick })
+  if (design.novelty) return buildNovelty(wasm, p, { kind: design.kind, density: opts.material?.density })
+  if (design.sleeve) return buildSleeve(wasm, p, { style: design.style, density: opts.material?.density })
+  if (design.practiceSpoke) return buildPracticeSpoke(wasm, p, { head: design.head, density: opts.material?.density })
   if (design.ballEnd) return buildBallEnd(wasm, p, { style: design.style, density: opts.material?.density })
   if (design.spokeHub) return buildSpokeHub(wasm, p, { mode: 'print', shape: design.shape, density: opts.material?.density || 1.2 })
   try {

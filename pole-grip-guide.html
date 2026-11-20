@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pole Grip Guide</title>
+<meta name="description" content="How to fix Dragon Hub Forge hubs to a carbon or metal staff pole so they grip without crushing the tube: End Expander, Clamp Collar with Pole Insert, split clamps, crush ribs and buy-in parts.">
+<style>
+:root {
+  --bg: #0e0d12; --panel: #17151d; --raise: #201d28; --line: #2d2937;
+  --fg: #ece8f2; --muted: #958fa6;
+  --ember: #f0a23b; --ember-dim: #6b4a1e;
+  --good: #6cd39a; --warn: #f2c94c; --bad: #ff6070;
+  --steel: #9aa6b8; --kev: #e8c46a;
+  --display: "Unbounded", "Avenir Next", "Helvetica Neue", sans-serif;
+  --body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.6 var(--body); }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 90px; }
+h1 { font: 700 1.9rem/1.15 var(--display); margin: .2em 0 .3em; letter-spacing: .01em; }
+h1 span { color: var(--ember); }
+h2 { font: 700 1.4rem/1.2 var(--display); margin: 2.4em 0 .6em; padding-top: .8em; border-top: 1px solid var(--line); }
+h3 { font: 600 1.15rem/1.3 var(--body); margin: 1.4em 0 .4em; color: var(--ember); }
+a { color: var(--ember); word-break: break-word; }
+code { font: .88em var(--mono); background: var(--raise); padding: .1em .35em; border-radius: 4px; }
+.lede { color: var(--muted); font-size: 1.05rem; }
+.why { font-size: 1.02rem; margin: .3em 0 .8em; }
+.why b { color: var(--ember); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin: 14px 0; }
+.card > :first-child { margin-top: 0; }
+.card > :last-child { margin-bottom: 0; }
+.need { border-left: 4px solid var(--good); }
+.need b.t, .warn b.t, .safety b.t { display: block; font: 700 .8rem var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .3em; }
+.need b.t { color: var(--good); }
+.warn { border-left: 4px solid var(--warn); }
+.warn b.t { color: var(--warn); }
+.safety { border: 2px solid var(--bad); background: #24141a; }
+.safety b.t { color: var(--bad); font-size: .95rem; }
+.safety h2 { border: 0; margin-top: .2em; padding-top: 0; color: var(--bad); }
+ul, ol { padding-left: 1.4em; }
+li { margin: .3em 0; }
+ol.steps { counter-reset: s; list-style: none; padding-left: 0; }
+ol.steps > li { counter-increment: s; position: relative; padding: .45em .6em .45em 3em; margin: .35em 0; background: var(--panel); border-radius: 8px; }
+ol.steps > li::before { content: counter(s); position: absolute; left: .55em; top: .4em; width: 1.75em; height: 1.75em; border-radius: 50%; background: var(--ember-dim); color: var(--ember); font: 700 .95rem/1.75em var(--mono); text-align: center; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+.stat { background: var(--raise); border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font: 700 1.2rem var(--display); color: var(--ember); }
+.stat small { color: var(--muted); }
+nav.toc { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+nav.toc ol { margin: 6px 0; padding-left: 22px; columns: 2 230px; }
+nav.toc a { text-decoration: none; }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px 14px; margin: 12px 0; }
+details[open] { padding-bottom: 12px; }
+summary { cursor: pointer; font: 600 1.12rem/1.4 var(--body); padding: 10px 0; color: var(--fg); }
+summary::marker { color: var(--ember); }
+summary small { color: var(--muted); font-weight: 400; font-size: .9rem; }
+details .card { background: var(--raise); }
+details ol.steps > li { background: var(--raise); }
+figure { margin: 14px 0; background: var(--raise); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+figure svg { width: 100%; height: auto; display: block; max-height: 340px; }
+figcaption { color: var(--muted); font-size: .9rem; padding: 6px 4px 0; }
+.svt { font: 13px var(--body); fill: var(--fg); }
+.svm { font: 12px var(--body); fill: var(--muted); }
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+th, td { text-align: left; vertical-align: top; padding: 7px 9px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; }
+.pill { display: inline-block; font: 700 .72rem var(--mono); padding: 1px 8px; border-radius: 99px; vertical-align: 2px; }
+.pill.d { background: rgba(108,211,154,.15); color: var(--good); }
+.pill.l { background: rgba(240,162,59,.15); color: var(--ember); }
+.sources li { font-size: .92rem; }
+.muted { color: var(--muted); }
+@media print { body { background: #fff; color: #000; } details { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Fixing a hub to the pole: <span>grip without crushing</span></h1>
+<p class="lede">How to make a Dragon Hub Forge hub hold tight on a staff pole without cracking it. Short steps, one job each. Pick your method, open it, do the steps.</p>
+
+<nav class="toc" aria-label="Contents">
+<b>On this page</b>
+<ol>
+<li><a href="#rule">The one rule (read this)</a></li>
+<li><a href="#pick">Which method do I need?</a></li>
+<li><a href="#expander">1. End Expander</a></li>
+<li><a href="#collar">2. Clamp Collar + Pole Insert</a></li>
+<li><a href="#split">3. Split-clamp spoke hub</a></li>
+<li><a href="#ribs">4. Crush ribs (TPU hubs)</a></li>
+<li><a href="#buy">5. Buy-in options</a></li>
+<li><a href="#tight">How tight is tight?</a></li>
+<li><a href="#table">What to print vs what to buy</a></li>
+<li><a href="#trouble">Troubleshooting</a></li>
+<li><a href="#check">Before every session</a></li>
+</ol>
+</nav>
+
+<!-- ============ RULE ============ -->
+<section class="card safety" id="rule">
+<b class="t">Read this before you start</b>
+<h2>The one rule</h2>
+<p><b>Never clamp or screw onto bare carbon.</b> Something solid must be inside the pole under every clamp and every screw.</p>
+<h3>Why it matters</h3>
+<ul>
+<li>A 22 mm carbon staff tube is usually <b>22 × 19 mm</b>. The wall is only about <b>1.5 mm</b> thick.</li>
+<li>Carbon is strong along its length, but weak when you squeeze it from the side.</li>
+<li>A clamp or grub screw on a hollow tube crushes the fibres. The tube can then snap mid-spin.</li>
+<li><b>Carbon cracks before it squeaks.</b> You won't hear a warning.</li>
+</ul>
+<h3>Why printed TPU hubs are different</h3>
+<ul>
+<li>TPU stretches. Its crush ribs squeeze the pole gently, so it grips without a clamp.</li>
+<li>Metal and rigid plastic hubs don't stretch. They need a clamp, and a clamp needs support inside.</li>
+</ul>
+</section>
+
+<!-- ============ PICK ============ -->
+<h2 id="pick">Which method do I need?</h2>
+<div class="grid">
+<div class="stat"><b>Metal hub at a pole end</b><small>→ 1. End Expander (best)</small></div>
+<div class="stat"><b>Hub along the pole, or flat CNC plate</b><small>→ 2. Clamp Collar + Pole Insert</small></div>
+<div class="stat"><b>Fire spoke hub</b><small>→ 3. Split clamp + Pole Insert</small></div>
+<div class="stat"><b>Printed TPU hub</b><small>→ 4. Crush ribs (the forge default)</small></div>
+<div class="stat"><b>Rather buy parts?</b><small>→ 5. Buy-in options</small></div>
+</div>
+<p class="muted">The methods are listed best first. If two fit, pick the higher one.</p>
+
+<!-- ============ 1 EXPANDER ============ -->
+<h2 id="expander">1. End Expander <span class="pill d">recommended</span></h2>
+<p><b>What it is:</b> a plug that goes into the pole end and spreads out against the inside.</p>
+<p class="why"><b>Why:</b> it pushes outwards from inside, so nothing squeezes the tube. That makes it safe for carbon.</p>
+<p class="muted">Best for metal hubs that sit at the ends of the pole.</p>
+
+<div class="card need">
+<b class="t">Print (forge: Pole fittings → End Expander)</b>
+<ul>
+<li>The <b>slotted sleeve</b> with its flange cap. The slots open at the bottom, and the bore narrows towards the top.</li>
+<li>The <b>cone wedge</b>, with its M6 nut trap.</li>
+<li>Material: <b>PETG or nylon (PA)</b>, <b>100% infill</b>, <b>4 or more walls</b>.</li>
+</ul>
+</div>
+
+<div class="card need">
+<b class="t">Buy</b>
+<ul>
+<li>1 × <b>M6 bolt</b>. The forge shows the length, about 45 mm.</li>
+<li>1 × <b>M6 nut</b> and 1 × <b>M6 washer</b>.</li>
+<li>4 × <b>M4 bolts</b> and 4 × <b>M4 all-metal lock nuts</b>, to hold the hub plate on.</li>
+</ul>
+</div>
+
+<div class="card warn"><b class="t">Fire hubs</b>On a fire hub the expander sits right at the hub, close to the heat. Print it in <b>nylon</b>, or have it turned in <b>aluminium</b>. A machinist can work from the same STL.</div>
+
+<figure>
+<svg viewBox="0 0 520 300" role="img" aria-label="Cross-section of the End Expander in a pole end: the sleeve's flange sits on the pole end with the hub plate bolted on top; the sleeve fingers sit inside the pole; the M6 bolt runs down the middle into a cone wedge below; tightening pulls the wedge up and spreads the fingers outward against the pole wall">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="var(--ember)"/></marker></defs>
+<rect x="88" y="110" width="8" height="180" fill="#3a3445" stroke="var(--muted)"/>
+<rect x="184" y="110" width="8" height="180" fill="#3a3445" stroke="var(--muted)"/>
+<rect x="34" y="98" width="212" height="12" fill="var(--good)" opacity=".75"/>
+<polygon points="97,110 128,110 119,250 97,250" fill="var(--good)" opacity=".75"/>
+<polygon points="183,110 152,110 161,250 183,250" fill="var(--good)" opacity=".75"/>
+<rect x="18" y="80" width="106" height="18" fill="var(--steel)"/>
+<rect x="156" y="80" width="106" height="18" fill="var(--steel)"/>
+<rect x="128" y="88" width="24" height="10" fill="#c9d1dc"/>
+<rect x="137" y="98" width="6" height="160" fill="#c9d1dc"/>
+<polygon points="121,215 159,215 167,268 113,268" fill="var(--kev)" opacity=".85"/>
+<rect x="131" y="244" width="18" height="11" fill="#c9d1dc" stroke="var(--bg)"/>
+<rect x="48" y="72" width="6" height="48" fill="#c9d1dc"/><rect x="43" y="110" width="16" height="8" fill="#c9d1dc" stroke="var(--bg)"/>
+<rect x="226" y="72" width="6" height="48" fill="#c9d1dc"/><rect x="221" y="110" width="16" height="8" fill="#c9d1dc" stroke="var(--bg)"/>
+<line x1="102" y1="232" x2="80" y2="232" stroke="var(--ember)" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="178" y1="232" x2="200" y2="232" stroke="var(--ember)" stroke-width="3" marker-end="url(#ah)"/>
+<line x1="140" y1="292" x2="140" y2="272" stroke="var(--ember)" stroke-width="3" marker-end="url(#ah)"/>
+<text class="svt" x="290" y="40">steel bar: hub plate</text>
+<text class="svt" x="290" y="62">4 × M4 bolts + lock nuts</text>
+<text class="svt" x="290" y="84">through plate and flange</text>
+<text class="svt" x="290" y="114">green: sleeve and flange cap</text>
+<text class="svt" x="290" y="136">dark bars: pole wall (carbon)</text>
+<text class="svt" x="290" y="158">light: M6 bolt down the middle</text>
+<text class="svt" x="290" y="180">gold: cone wedge, M6 nut inside</text>
+<text class="svt" x="290" y="212">orange: tighten the bolt, the</text>
+<text class="svt" x="290" y="230">wedge rises, the fingers push</text>
+<text class="svt" x="290" y="248">OUT against the pole wall</text>
+<text class="svm" x="290" y="282">Not to scale.</text>
+</svg>
+<figcaption>Section through a pole end. The force goes outwards into the wall, never inwards, so the tube is not squeezed.</figcaption>
+</figure>
+
+<details open>
+<summary>Steps: fit the End Expander</summary>
+<ol class="steps">
+<li>Push the M6 nut into the wedge's nut trap. It should sit flush.</li>
+<li>Put the wedge under the sleeve, narrow end up.</li>
+<li>Put the washer on the M6 bolt.</li>
+<li>Pass the bolt down through the cap and the sleeve.</li>
+<li>Screw it into the wedge's nut by two or three turns only. Keep it loose for now.</li>
+<li>Slide the sleeve into the pole end.</li>
+<li>Push it in until the flange sits flat on the pole end.</li>
+<li>Tighten the M6 bolt. The wedge pulls up and spreads the fingers against the inside of the pole.</li>
+<li>Stop at <a href="#tight">snug</a>.</li>
+<li>Lay the hub plate on the flange and line up the 4 holes.</li>
+<li>Fit the 4 M4 bolts and lock nuts.</li>
+<li>Tighten them a little at a time in a cross pattern, so the plate pulls down evenly.</li>
+</ol>
+</details>
+
+<details>
+<summary>Check before use</summary>
+<ul>
+<li>Twist the hub by hand. It must not turn.</li>
+<li>Pull the hub along the pole. It must not move.</li>
+<li>Look at the gap between flange and pole end. There should be none.</li>
+<li>All 4 M4 nuts are tight.</li>
+</ul>
+</details>
+
+<details>
+<summary>Good to know <small>(bolt pattern)</small></summary>
+<ul>
+<li>The flange has <b>4 holes on a 44 mm bolt circle</b>.</li>
+<li>That is the same pattern as the forge's CNC hub plates' <b>Collar bolts</b>, so any of those plates bolts straight on.</li>
+<li>To take it off, loosen the M6 bolt a few turns, then tap its head gently to drop the wedge.</li>
+</ul>
+</details>
+
+<!-- ============ 2 COLLAR ============ -->
+<h2 id="collar">2. Clamp Collar + Pole Insert</h2>
+<p><b>What it is:</b> a split collar that pinches the pole, with a solid insert inside the pole to take the squeeze.</p>
+<p class="why"><b>Why:</b> the hub can sit anywhere along the pole. The insert stops the clamp crushing the tube.</p>
+<p class="muted">Best for hubs part-way along the pole, and for flat CNC plates.</p>
+
+<div class="card need">
+<b class="t">Print (forge: Clamp Collar and Pole Insert)</b>
+<ul>
+<li>The <b>Clamp Collar</b>: a split collar with a flange. The flange has 4 × M4 holes on the 44 mm circle. A pinch bolt crosses the split, with an M5 nut trap on one side.</li>
+<li>The <b>Pole Insert</b>: a plug that slides inside the pole, under the collar.</li>
+<li>Material: <b>PETG or nylon (PA)</b>, <b>100% infill</b>, <b>4 or more walls</b>. Use nylon near fire.</li>
+</ul>
+</div>
+
+<div class="card need">
+<b class="t">Buy</b>
+<ul>
+<li>1 × <b>M5 × 30 bolt</b>, 1 × <b>M5 nut</b> and 2 × <b>M5 washers</b>.</li>
+<li>4 × <b>M4 bolts</b> and 4 × <b>M4 lock nuts</b> (all-metal near fire).</li>
+<li>A long piece of <b>string</b> and a thin dowel, to move the insert.</li>
+</ul>
+</div>
+
+<figure>
+<svg viewBox="0 0 520 260" role="img" aria-label="End-on cross-section through the Clamp Collar: the collar ring surrounds the hollow pole wall, with a split at the top closed by an M5 pinch bolt through two lugs; the Pole Insert fills the inside of the pole under the collar">
+<defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="var(--ember)"/></marker></defs>
+<g transform="translate(150 145)">
+<circle r="57" fill="none" stroke="var(--steel)" stroke-width="26"/>
+<rect x="-30" y="-92" width="27" height="40" fill="var(--steel)"/>
+<rect x="3" y="-92" width="27" height="40" fill="var(--steel)"/>
+<rect x="-3" y="-95" width="6" height="50" fill="var(--raise)"/>
+<rect x="-44" y="-76" width="88" height="7" fill="#c9d1dc"/>
+<rect x="-52" y="-84" width="10" height="23" fill="#c9d1dc"/>
+<rect x="40" y="-83" width="12" height="21" fill="#c9d1dc" stroke="var(--bg)"/>
+<circle r="41" fill="none" stroke="#3a3445" stroke-width="6"/>
+<circle r="41" fill="none" stroke="var(--muted)" stroke-width="1"/>
+<circle r="37" fill="var(--good)" opacity=".75"/>
+<line x1="-90" y1="0" x2="-74" y2="0" stroke="var(--ember)" stroke-width="3" marker-end="url(#ah2)"/>
+<line x1="90" y1="0" x2="74" y2="0" stroke="var(--ember)" stroke-width="3" marker-end="url(#ah2)"/>
+<line x1="0" y1="90" x2="0" y2="74" stroke="var(--ember)" stroke-width="3" marker-end="url(#ah2)"/>
+</g>
+<text class="svt" x="290" y="40">light: M5 pinch bolt across</text>
+<text class="svt" x="290" y="58">the split (nut in a trap)</text>
+<text class="svt" x="290" y="88">steel ring: Clamp Collar</text>
+<text class="svt" x="290" y="116">dark ring: carbon pole wall</text>
+<text class="svt" x="290" y="144">green: Pole Insert, solid,</text>
+<text class="svt" x="290" y="162">takes the squeeze</text>
+<text class="svt" x="290" y="192">orange: the clamp squeezes in,</text>
+<text class="svt" x="290" y="210">the insert pushes back</text>
+<text class="svm" x="290" y="240">Not to scale. Flange not shown.</text>
+</svg>
+<figcaption>End-on section through the collar. Without the green insert, the dark pole wall would be crushed.</figcaption>
+</figure>
+
+<details open>
+<summary>Steps: fit the collar and insert</summary>
+<ol class="steps">
+<li>Decide where the hub will sit. Mark that spot on the outside of the pole.</li>
+<li>Measure from the pole end to the mark.</li>
+<li>Tie the string to the insert.</li>
+<li>Push the insert into the pole end.</li>
+<li>Move it along inside the pole to the mark. Push with the dowel, pull back with the string.</li>
+<li>Mark the string at the pole end, so you can always find the insert again.</li>
+<li>Slide the collar on and line it up over the insert.</li>
+<li>Bolt the hub plate to the collar flange with the 4 M4 bolts and lock nuts.</li>
+<li>Tighten those 4 in a cross pattern, a little at a time.</li>
+<li>Put the M5 nut in its trap.</li>
+<li>Fit the M5 bolt with a washer under the head.</li>
+<li>Tighten the pinch bolt until the split closes a little. Stop at <a href="#tight">snug</a>.</li>
+</ol>
+</details>
+
+<details>
+<summary>Check before use</summary>
+<ul>
+<li>The insert is right under the collar. Check with the string mark.</li>
+<li>The split is still open a little. If it's fully shut, the collar is too big or the insert is too small.</li>
+<li>The hub can't twist or slide by hand.</li>
+<li>No white marks or creaks from the carbon.</li>
+</ul>
+</details>
+
+<!-- ============ 3 SPLIT ============ -->
+<h2 id="split">3. Split-clamp spoke hub</h2>
+<p><b>What it is:</b> the fire spoke hub clamps itself onto the pole with one pinch bolt.</p>
+<p class="why"><b>Why:</b> no extra collar needed. The hub is its own clamp.</p>
+
+<div class="card need">
+<b class="t">Forge setting</b>
+<ul>
+<li>Spoke hub → <b>Pole grip</b> → <b>split clamp (pinch bolt)</b>.</li>
+<li>This cuts a slit from the bore to the edge, between two spokes.</li>
+<li>One <b>M5 pinch bolt</b> crosses the slit. Machined hubs are tapped for it. Printed practice hubs have a nut trap.</li>
+<li>Also print a <b>Pole Insert</b>. <b>Always</b> use one with this method.</li>
+</ul>
+</div>
+
+<div class="card need">
+<b class="t">Buy</b>
+<ul>
+<li>1 × <b>M5 bolt</b> and a washer. Add an M5 nut for a printed practice hub.</li>
+</ul>
+</div>
+
+<details open>
+<summary>Steps: split-clamp hub</summary>
+<ol class="steps">
+<li>Fit the Pole Insert where the hub will sit (steps 1 to 6 of <a href="#collar">method 2</a>).</li>
+<li>Slide the hub on over the insert.</li>
+<li>Turn it so the spokes point where you want them.</li>
+<li>Fit the M5 bolt across the slit, with a washer.</li>
+<li>Tighten until the slit closes a little. Stop at <a href="#tight">snug</a>.</li>
+</ol>
+</details>
+
+<div class="card warn"><b class="t">Grub screw option</b>The other <b>Pole grip</b> setting, <b>grub screws</b>, uses two M5 grub screws pressing on the pole. A grub screw point is the harshest thing you can put on carbon. Use it <b>only with a Pole Insert inside</b>.</div>
+
+<!-- ============ 4 RIBS ============ -->
+<h2 id="ribs">4. Crush ribs (printed TPU hubs)</h2>
+<p><b>What it is:</b> small ribs inside the hub's bore squeeze onto the pole.</p>
+<p class="why"><b>Why:</b> TPU stretches, so the ribs grip gently. No clamp is needed, and it's safe for carbon. This is the forge's default.</p>
+
+<div class="card need">
+<b class="t">Print</b>
+<ul>
+<li>The <b>fit-test ring</b> first. It's quick and shows if the ribs are right.</li>
+<li>Then the hub.</li>
+</ul>
+</div>
+
+<details open>
+<summary>Steps: crush-rib hub</summary>
+<ol class="steps">
+<li>Print the fit-test ring.</li>
+<li>Push it onto the pole. It should go on firmly but by hand.</li>
+<li>Too loose? Make the fit tighter in the forge and print another ring.</li>
+<li>Too tight to push on? Make it looser and print another ring.</li>
+<li>When the ring is right, print the hub with the same settings.</li>
+<li>Push the hub onto the pole with a twisting motion.</li>
+</ol>
+</details>
+
+<div class="card warn"><b class="t">Set-screw</b>If you add the optional set-screw, put a <b>Pole Insert</b> inside the pole under it first.</div>
+
+<!-- ============ 5 BUY ============ -->
+<h2 id="buy">5. Buy-in options</h2>
+<p>Ready-made parts that do the same jobs. Search for these generic names.</p>
+
+<details>
+<summary>"rubber expansion plug 19 mm" <small>instead of the End Expander</small></summary>
+<p><b>What it is:</b> a rubber bung that swells outwards when you tighten its bolt.</p>
+<p class="why"><b>Why:</b> it grips from inside like the End Expander, so it's carbon-safe.</p>
+<ul>
+<li>Size it to the pole's <b>inside</b> diameter (19 mm on a 22 × 19 tube).</li>
+<li>Rubber softens with heat. Keep it away from fire ends.</li>
+</ul>
+</details>
+
+<details>
+<summary>"flange shaft collar 22 mm" or "rigid flange coupling 22 mm" <small>instead of the Clamp Collar</small></summary>
+<p><b>What it is:</b> a metal split collar with a flange for bolting a plate on.</p>
+<p class="why"><b>Why:</b> stronger than a printed collar and fine near heat.</p>
+<ul>
+<li><b>Always use it with a Pole Insert</b>. Metal collars squeeze hard.</li>
+<li>Check that its bolt holes match your plate before you buy.</li>
+</ul>
+</details>
+
+<!-- ============ TIGHT ============ -->
+<h2 id="tight">How tight is tight?</h2>
+<div class="card warn"><b class="t">Snug</b>
+<ol class="steps">
+<li>Tighten until the hub can't twist by hand.</li>
+<li>Then a quarter turn more.</li>
+<li>Stop. Carbon cracks before it squeaks.</li>
+</ol></div>
+<p class="muted">Use a short spanner or hex key. Long tools make it too easy to overdo it.</p>
+
+<!-- ============ TABLE ============ -->
+<h2 id="table">What to print vs what to buy</h2>
+<div class="tbl"><table>
+<tr><th>Method</th><th>Use for</th><th>Print</th><th>Buy</th><th>Carbon-safe?</th></tr>
+<tr><td>1. End Expander</td><td>Metal hubs at the pole ends</td><td>End Expander (sleeve + wedge)</td><td>M6 bolt ~45 mm, nut, washer; 4 × M4 bolts + all-metal lock nuts</td><td>Yes, on its own</td></tr>
+<tr><td>2. Clamp Collar</td><td>Hubs along the pole, flat CNC plates</td><td>Clamp Collar + Pole Insert</td><td>M5 × 30 bolt, nut, washers; 4 × M4 bolts + lock nuts</td><td>Only with the insert</td></tr>
+<tr><td>3. Split clamp</td><td>Fire spoke hubs</td><td>Pole Insert (+ practice hub)</td><td>M5 bolt, washer (+ nut for printed)</td><td>Only with the insert</td></tr>
+<tr><td>3b. Grub screws</td><td>Spoke hubs</td><td>Pole Insert</td><td>2 × M5 grub screws</td><td>Only with the insert</td></tr>
+<tr><td>4. Crush ribs</td><td>Printed TPU hubs</td><td>Fit-test ring, then hub</td><td>Nothing</td><td>Yes</td></tr>
+<tr><td>5a. Expansion plug</td><td>Swap for method 1, away from fire</td><td>Nothing</td><td>Rubber expansion plug 19 mm</td><td>Yes</td></tr>
+<tr><td>5b. Metal collar</td><td>Swap for method 2</td><td>Pole Insert</td><td>Flange shaft collar or rigid flange coupling 22 mm</td><td>Only with the insert</td></tr>
+</table></div>
+
+<!-- ============ TROUBLE ============ -->
+<h2 id="trouble">Troubleshooting</h2>
+
+<details>
+<summary>Hub slips round the pole</summary>
+<ul>
+<li><b>End Expander:</b> tighten the M6 bolt a quarter turn.</li>
+<li><b>Clamp:</b> the insert is missing or too small. Reprint it with a lower <b>Slide fit</b>.</li>
+<li><b>Clamp collar:</b> add a strip of grip tape under the collar.</li>
+</ul>
+</details>
+
+<details>
+<summary>Hub wobbles</summary>
+<ul>
+<li><b>Collar not square:</b> loosen the plate bolts, then tighten them evenly in a cross pattern.</li>
+<li><b>Pole end not cut square:</b> sand it flat, then refit.</li>
+</ul>
+</details>
+
+<details>
+<summary>Creaking or white marks on the carbon</summary>
+<div class="card safety"><b class="t">Stop</b>The fibres are crushed. <b>Replace that pole section.</b> Next time, always use an insert.</div>
+</details>
+
+<details>
+<summary>The expander won't go in</summary>
+<ul>
+<li>Sand the sleeve lightly, then try again.</li>
+<li>Or reprint it with more clearance.</li>
+</ul>
+</details>
+
+<details>
+<summary>Bolts loosen with spinning</summary>
+<ul>
+<li>Near fire: use <b>all-metal lock nuts</b>.</li>
+<li>Away from heat: nyloc nuts are fine.</li>
+<li>Non-fire parts: add a drop of <b>medium thread-locker</b>.</li>
+<li>Re-check every bolt every session.</li>
+</ul>
+</details>
+
+<!-- ============ CHECK ============ -->
+<h2 id="check">Before every session</h2>
+<ol class="steps">
+<li>Twist every hub by hand. None should turn.</li>
+<li>Pull every hub along the pole. None should slide.</li>
+<li>Check every M4 plate bolt is tight.</li>
+<li>Check every M5 or M6 clamp bolt is tight.</li>
+<li>Check the string marks: every insert is still under its clamp.</li>
+<li>Look at the carbon next to each hub. No white marks, no cracks.</li>
+<li>Listen as you flex the staff. No creaks.</li>
+<li>Near fire: all-metal lock nuts only, and no printed part is soft or warped.</li>
+<li>Anything wrong? Fix it before you spin.</li>
+</ol>
+
+<p class="muted">These are starting points, not specifications. If you're unsure, ask an experienced spinner to check the prop before you use it.</p>
+
+</main>
+</body>
+</html>

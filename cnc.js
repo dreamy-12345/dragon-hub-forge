@@ -15,6 +15,7 @@
  */
 
 import { TAU } from './geom.js'
+import { expanderParts } from './grip.js'
 
 // density g/cm3. kind decides what is allowed: only metal goes near fire.
 export const CNC_MATERIALS = {
@@ -26,6 +27,8 @@ export const CNC_MATERIALS = {
     note: 'The fire-prop metal: does not mind heat, never rusts. Three times heavier than aluminium, so use thinner sheet (2 mm) or it spins heavy.' },
   steel: { name: 'Mild steel', kind: 'metal', density: 7.85, thick: [1.5, 2, 3], def: 2, fire: 'good', colour: '#73777d',
     note: 'Cheapest, fine with fire, but rusts once fuel and sweat get on it. Paint or zinc-plate it, or pick stainless.' },
+  brass: { name: 'Brass', kind: 'metal', density: 8.5, thick: [1, 1.5, 2, 3], def: 2, fire: 'good', colour: '#c9a34a',
+    note: 'The classic rope dart metal: heavy, turns beautifully on a lathe, never rusts. Heavy for a big hub plate.' },
   acrylic: { name: 'Perspex (cast acrylic)', kind: 'plastic', density: 1.19, thick: [3, 4, 5, 6, 8, 10], def: 6, fire: 'never', colour: '#8fd8ff', clear: true,
     note: 'Glassy, edge-lit glow under LEDs and blacklight, laser-cuts with polished edges. But it is brittle: it can crack on a hard drop onto concrete. Practise on grass or mats, keep struts wide, and buy cast acrylic, not extruded. Never near fire.' },
   pc: { name: 'Polycarbonate (Lexan)', kind: 'plastic', density: 1.20, thick: [3, 4, 5, 6, 8], def: 5, fire: 'never', colour: '#bfe9ff', clear: true,
@@ -69,13 +72,14 @@ export const CNC_PARAMS = [
   { key: 'thick', label: 'Sheet thickness', unit: 'mm', min: 1, max: 15, step: 0.5, value: 4, group: 'Cut', presetsFrom: 'material', hint: 'Buy what the shop stocks: the chips are the usual sheet sizes for this material.' },
   { key: 'tool', label: 'Router bit', unit: 'mm', min: 1, max: 8, step: 0.025, value: 3.175, presets: [3.175, 4, 6], group: 'Cut', onlyFor: 'router', hint: '3.175 mm (1/8") is the usual bit for detail. Bigger bits cut faster but round more.' },
   { key: 'clear', label: 'Bore clearance', unit: 'mm', min: 0, max: 1, step: 0.05, value: 0.2, group: 'Cut', hint: 'Bore = pole + this. Metal does not stretch: 0.2 slides on a 22 mm pole; the collar does the gripping.' },
+  { key: 'mount', label: 'On the pole', options: ['collar round the pole', 'End Expander inside the pole'], value: 'collar round the pole', group: 'Cut', hint: 'Collar: a clamp collar (the forge Clamp Collar, or a bought flange collar) bolts to the plate and clamps round the pole; fit a Pole Insert inside a carbon pole. End Expander: the plate bolts onto an expander that grips the INSIDE of the pole end, so nothing squeezes the carbon. Print it from Pole fittings.' },
   { key: 'flangeN', label: 'Collar bolts', unit: '', min: 0, max: 8, step: 1, value: 4, group: 'Cut', hint: 'A flat plate needs a collar to stay square on the pole: bolt on a flanged shaft collar (search "flange shaft collar 22 mm" or "rigid flange coupling 22 mm"), or print the forge collar for practice hubs. 0 = just the bore.' },
   { key: 'flangePCD', label: 'Collar bolt circle', unit: 'mm', min: 30, max: 90, step: 0.5, value: 44, group: 'Cut', hint: 'Measure across the bolt holes of your collar, centre to centre.' },
   { key: 'flangeHole', label: 'Collar bolt hole', unit: 'mm', min: 3, max: 8.5, step: 0.1, value: 4.5, presets: [3.4, 4.5, 5.5], group: 'Cut', hint: '3.4 for M3, 4.5 for M4, 5.5 for M5.' },
   { key: 'engrave', label: 'Engrave raised shapes', options: ['on', 'off'], value: 'on', group: 'Cut', hint: 'The outlines of the shapes that stand proud on a printed hub, as a separate engrave layer, so the design still reads on a flat plate.' },
 
   { key: 'ends', label: 'Ends', options: Object.values(ENDS), value: ENDS.tape, group: 'Ends', hint: 'Fire: Kevlar wicks on tabs that stand off past the rim, or a Kevlar rope ring round it (metal only). Practice: TPU bumpers on the same tabs, weighted like a wet wick, so practice feels like fire.' },
-  { key: 'tabs', label: 'Wick tabs', unit: '', min: 2, max: 12, step: 1, value: 6, group: 'Ends' },
+  { key: 'tabs', label: 'Wicks', unit: '', min: 2, max: 12, step: 1, value: 3, presets: [3, 4, 6], group: 'Ends', hint: 'How many wicks round the hub. 3 is light and quick, 4 is the most common, 6 is a big ring of fire.' },
   { key: 'tabAngle', label: 'Tab position', unit: '°', min: -90, max: 90, step: 0.5, value: 0, group: 'Ends', hint: 'Turn the tabs to line up with spokes in the design.' },
   { key: 'tabW', label: 'Tab width', unit: 'mm', min: 12, max: 40, step: 0.5, value: 20, group: 'Ends' },
   { key: 'neck', label: 'Tab neck', unit: 'mm', min: 4, max: 40, step: 0.5, value: 10, group: 'Ends', hint: 'Bare metal between rim and wick: keeps the flame off the rim.' },
@@ -84,8 +88,8 @@ export const CNC_PARAMS = [
   { key: 'tapeT', label: 'Tape thickness', unit: 'mm', min: 1, max: 5, step: 0.1, value: 2.5, group: 'Ends' },
   { key: 'tabBolt', label: 'Wick bolt hole', unit: 'mm', min: 3, max: 6.5, step: 0.1, value: 4.5, presets: [3.4, 4.5], group: 'Ends', hint: 'Two stainless bolts through tape and tab. 4.5 for M4.' },
   { key: 'ropeD', label: 'Rope', unit: 'mm', min: 5, max: 20, step: 0.5, value: 10, presets: [6, 10, 13, 16], group: 'Ends', hint: '10 mm (3/8") braided Kevlar rope is the common one.' },
-  { key: 'ropePlace', label: 'Rope sits', options: ['on the face', 'round the edge'], value: 'on the face', group: 'Ends', hint: 'On the face: in a groove (router/mill) or flat on the rim band, laced down with stainless wire. Round the edge: like a fire hoop, laced through holes just inside the rim.' },
-  { key: 'laceStep', label: 'Lacing every', unit: 'mm', min: 12, max: 60, step: 1, value: 25, group: 'Ends', hint: 'Pairs of holes for stainless wire (or Kevlar thread) that hold the rope down.' },
+  { key: 'ropePlace', label: 'Rope sits', options: ['woven through slots', 'on the face', 'round the edge'], value: 'woven through slots', group: 'Ends', hint: 'Woven: the rope threads up and down through a ring of slots in the rim, over one face then under the other, so its own tension holds it; tie the two ends off with stainless wire at the two small holes. On the face: in a groove (router/mill) or flat on the rim band, laced down with stainless wire. Round the edge: like a fire hoop, laced through holes just inside the rim.' },
+  { key: 'laceStep', label: 'Lacing every', unit: 'mm', min: 12, max: 60, step: 1, value: 25, group: 'Ends', hint: 'Pairs of holes for stainless wire (or Kevlar thread) that hold the rope down. Woven: the gap between slots is about 1.6 times this.' },
 ]
 
 export function cncDefaults(design) {
@@ -145,7 +149,7 @@ export function buildPlate(wasm, hub, p, c) {
     const metal = mat.kind === 'metal'
     let ends = endsKey(c.ends)
     const warns = [], fixes = []
-    if (!metal && (ends === 'tape' || ends === 'rope')) { warns.push(`${mat.name} can never take fire. The fire ends are shown as practice bumpers instead.`); ends = 'bumper' }
+    if (!metal && (ends === 'tape' || ends === 'rope')) { warns.push(`Fire wicks only go on metal: ${mat.name} gets practice bumpers instead.`); ends = 'bumper' }
     if (!metal && !proc.plastics) warns.push(`${proc.name} only cuts metal. Pick a laser, waterjet or router for ${mat.name}.`)
     if (pk === 'laser' && matKey(c) === 'pc') warns.push('A laser burns polycarbonate edges yellow and the fumes are harmful: cut it on a router or waterjet.')
     if (pk === 'laser' && (matKey(c) === 'hdpe' || matKey(c) === 'pom')) warns.push(`${mat.name} melts on a laser: use a router.`)
@@ -163,7 +167,12 @@ export function buildPlate(wasm, hub, p, c) {
     const laceR = 1.1 // 2.2 mm holes take 1–1.5 mm stainless wire or doubled Kevlar thread
     let ropeR = 0, band = 0
     if (ends === 'rope') {
-      if (c.ropePlace === 'on the face') {
+      if (c.ropePlace === 'woven through slots') {
+        band = c.ropeD + 1.5 + 2 * Math.max(6, t * 1.5)
+        ropeR = R - band / 2
+        S = k(S.add(k(circle(R).subtract(circle(R - band)))))
+        if (band > p.rimW + 0.5) fixes.push(`widened the rim to ${band.toFixed(0)} mm to carry the woven rope`)
+      } else if (c.ropePlace === 'on the face') {
         band = c.ropeD + 2 * (2 * laceR + 3)
         ropeR = R - band / 2
         S = k(S.add(k(circle(R).subtract(circle(R - band)))))
@@ -217,13 +226,28 @@ export function buildPlate(wasm, hub, p, c) {
     }
 
     // ------------------------------------------------------------- holes
-    holes.push({ x: 0, y: 0, r: boreR, kind: 'bore' })
+    const inside = (c.mount || '').startsWith('End Expander')
+    if (inside) c = { ...c, flangeN: 4 } // the expander has 4 bolts
+    holes.push({ x: 0, y: 0, r: inside ? 6.2 : boreR, kind: inside ? 'expander bolt head' : 'bore' })
     for (let i = 0; i < c.flangeN; i++) {
       const a = (TAU * i) / c.flangeN + TAU / (2 * Math.max(1, c.flangeN))
       holes.push({ x: (c.flangePCD / 2) * Math.cos(a), y: (c.flangePCD / 2) * Math.sin(a), r: c.flangeHole / 2, kind: 'collar bolt' })
     }
     let pocket = null, pocketDepth = 0
-    if (ends === 'rope') {
+    const weave = ends === 'rope' && c.ropePlace === 'woven through slots'
+    let nSlots = 0
+    if (weave) {
+      // an even number of slots, so over-and-under comes back round to where it started
+      nSlots = Math.max(8, 2 * Math.round((TAU * ropeR) / (c.laceStep * 1.6) / 2))
+      const sw = c.ropeD + 1.5, sl = c.ropeD * 1.5 + 2
+      const slot = k(k(k(CrossSection.square([sw, sl - sw], true)).add(k(k(CrossSection.circle(sw / 2, 32)).translate([0, (sl - sw) / 2])))).add(k(k(CrossSection.circle(sw / 2, 32)).translate([0, -(sl - sw) / 2]))))
+      const slots = []
+      for (let i = 0; i < nSlots; i++) slots.push(k(k(slot.translate([ropeR, 0])).rotate((360 * i) / nSlots)))
+      S = k(S.subtract(k(CrossSection.union(slots))))
+      // tie-off: two small holes beside the first slot, for stainless wire round both rope ends
+      for (const dr of [-1, 1]) holes.push({ x: ropeR + dr * (sw / 2 + laceR + 2.2), y: 0, r: laceR, kind: 'tie-off' })
+    }
+    if (ends === 'rope' && !weave) {
       const n = Math.max(8, Math.round((TAU * ropeR) / c.laceStep))
       for (let i = 0; i < n; i++) {
         const a = (TAU * i) / n
@@ -266,10 +290,27 @@ export function buildPlate(wasm, hub, p, c) {
       for (const a of tabAngles) kevParts.push(k(wick.rotate([0, 0, a])))
       kevG = (c.tapeLen * c.wickW * c.tapeT / 1000) * KEVLAR * c.tabs
     }
-    if (ends === 'rope') {
+    let ropeLen = 0
+    if (ends === 'rope' && weave) {
+      // the rope dives through each slot and runs over the top face, then under the bottom, and so on
+      const rr = c.ropeD / 2, A = t / 2 + rr * 0.9, per = 10, n = nSlots * per
+      const pts = []
+      for (let i = 0; i <= n; i++) {
+        const th = (TAU * i) / n
+        pts.push([ropeR * Math.cos(th), ropeR * Math.sin(th), t / 2 + A * Math.sin((nSlots / 2) * th)])
+      }
+      const ball = k(Manifold.sphere(rr, 16))
+      for (let i = 0; i < n; i++) {
+        const a = pts[i], b = pts[i + 1]
+        ropeLen += Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2])
+        kevParts.push(k(Manifold.hull([k(ball.translate(a)), k(ball.translate(b))])))
+      }
+      kevG = (ropeLen * Math.PI * rr ** 2 / 1000) * KEVLAR
+    } else if (ends === 'rope') {
       const zc = c.ropePlace === 'on the face' ? t - pocketDepth + c.ropeD / 2 * 0.95 : t / 2
       kevParts.push(k(k(CrossSection.circle(c.ropeD / 2, 24)).translate([ropeR, zc]).revolve(256)))
-      kevG = (TAU * ropeR * Math.PI * (c.ropeD / 2) ** 2 / 1000) * KEVLAR
+      ropeLen = TAU * ropeR
+      kevG = (ropeLen * Math.PI * (c.ropeD / 2) ** 2 / 1000) * KEVLAR
     }
     if (kevParts.length) kev = k(Manifold.union(kevParts))
     if (ends === 'bumper') {
@@ -300,7 +341,7 @@ export function buildPlate(wasm, hub, p, c) {
     const outer = polyStats(S.toPolygons())
     const holesL = holes.reduce((a, h) => a + TAU * h.r, 0)
     const gEnds = kevG * (ends === 'tape' || ends === 'rope' ? WET : 0) + (ends === 'bumper' ? bumperG * c.tabs : 0)
-    const overD = tabbed ? 2 * (R + c.neck + c.wickW) + (ends === 'tape' ? 0 : 0) : ends === 'rope' && c.ropePlace !== 'on the face' ? 2 * (R + c.ropeD) : 2 * R
+    const overD = tabbed ? 2 * (R + c.neck + c.wickW) + (ends === 'tape' ? 0 : 0) : ends === 'rope' && c.ropePlace === 'round the edge' ? 2 * (R + c.ropeD) : 2 * R
     if (metal && gPlate > 700) warns.push(`${gPlate.toFixed(0)} g is heavy for one hub: thinner sheet, aluminium, or a design with more open space.`)
     if (!metal && t < 4 && matKey(c) === 'acrylic') warns.push('Perspex under 4 mm snaps easily on a spinning hub: 5–6 mm is safer.')
     if (ends === 'tape' && c.tabW < 2 * c.tabBolt + 6) warns.push('Tabs are narrow for the wick bolts: widen them or use smaller bolts.')
@@ -331,7 +372,7 @@ export function buildPlate(wasm, hub, p, c) {
         cx: ps.cx, cy: ps.cy, offset: Math.hypot(ps.cx, ps.cy),
         overD, thick: t, lim, fixes, warns,
         tabs: tabbed ? c.tabs : 0, laceHoles: holes.filter((h) => h.kind === 'lacing').length,
-        ropeLen: ends === 'rope' ? TAU * ropeR : 0, ropeR, pocketDepth,
+        ropeLen, ropeR, pocketDepth, slots: nSlots,
       },
     }
   } finally {
@@ -350,7 +391,7 @@ export const SPOKE_ENDS = {
 const SPOKE_BY_LABEL = Object.fromEntries(Object.entries(SPOKE_ENDS).map(([k, v]) => [v, k]))
 
 export const SPOKE_PARAMS = [
-  { key: 'spokes', label: 'Spokes', unit: '', min: 3, max: 8, step: 1, value: 4, hint: 'Per hub. A fire dragon staff usually has 3 to 4 per end.' },
+  { key: 'spokes', label: 'Spokes', unit: '', min: 3, max: 8, step: 1, value: 3, presets: [3, 4], hint: 'Per hub. 3 is light and quick; 4 is the most common.' },
   { key: 'hubD', label: 'Hub diameter', unit: 'mm', min: 50, max: 140, step: 1, value: 92 },
   { key: 'hubT', label: 'Hub thickness', unit: 'mm', min: 14, max: 34, step: 0.5, value: 18, hint: 'At least the rod plus 5 mm of wall each side.' },
   { key: 'rodD', label: 'Spoke rod', unit: 'mm', min: 5, max: 12, step: 0.1, value: 8, presets: [6, 8, 10], hint: 'The common 2" dragon fire spoke has an 8 mm rod. Measure yours.' },
@@ -360,6 +401,8 @@ export const SPOKE_PARAMS = [
   { key: 'spokeLen', label: 'Spoke length', unit: 'mm', min: 100, max: 300, step: 1, value: 185, hint: 'Whole spoke, rod end included. 185 mm on a common 2" dragon fire spoke.' },
   { key: 'ends', label: 'Ends', options: Object.values(SPOKE_ENDS), value: SPOKE_ENDS.store, hint: 'Fire for burning; practice ends are the same length and about the same weight as a wet wick, so the staff moves the same.' },
   { key: 'practiceG', label: 'Practice end weight', unit: 'g', min: 15, max: 120, step: 1, value: 60, hint: 'About a fuelled 2" wick. Lighter = easier to learn, heavier = closer to fire.' },
+  { key: 'poleGrip', label: 'Pole grip', options: ['inside the pole (expanding spigot)', 'split clamp (pinch bolt)', 'grub screws'], value: 'inside the pole (expanding spigot)', hint: 'Inside the pole: a spigot under the hub slides into the pole end and one M6 bolt spreads it against the inside of the tube, so nothing squeezes the carbon. Split clamp: the hub is slit and one M5 bolt pinches it round the pole. Grub screws: two M5 screws onto the pole. Clamp and grub screws need a Pole Insert inside a carbon pole.' },
+  { key: 'poleWall', label: 'Pole wall', unit: 'mm', min: 0.5, max: 5, step: 0.05, value: 1.5, hint: 'For the expanding spigot: (outside − inside) ÷ 2. Set it once in My pole at the top right.' },
   { key: 'twist', label: 'Spoke offset', unit: '°', min: 0, max: 45, step: 0.5, value: 0, hint: 'Turn the spokes against the pole grub screws.' },
 ]
 
@@ -441,17 +484,38 @@ export function buildSpokeHub(wasm, p, opts) {
       if (!cnc) cuts.push(k(k(k(Manifold.cylinder(4.2, G.nut / Math.sqrt(3) + 0.15, G.nut / Math.sqrt(3) + 0.15, 6)).translate([xs, 0, T - 4.2 + 0.01])).rotate([0, 0, deg(a)]))) // nut trap
     }
     if (warns.length > 1) warns.splice(1)
-    // pole: bore plus two clamp screws between spokes
-    cuts.push(k(k(Manifold.cylinder(T + 2, boreR, boreR, 96)).translate([0, 0, -1])))
-    for (const j of [0, Math.floor(n / 2)]) {
-      const a = ang(j) + Math.PI / n
-      cuts.push(k(k(k(Manifold.cylinder(Rout + 2, (cnc ? G.tap : G.clear) / 2, (cnc ? G.tap : G.clear) / 2, 24)).rotate([0, 90, 0])).translate([0, 0, T / 2])).rotate([0, 0, deg(a)]))
+    // the pole: inside it (expanding spigot), or round it (split clamp or grub screws)
+    const grip = p.poleGrip || 'grub screws'
+    let spigot = null
+    if (grip.startsWith('inside')) {
+      const ri = (p.poleOD - 2 * (p.poleWall || 1.5)) / 2 - 0.15
+      if (ri < 6) warns.push('The pole is too narrow inside for the expanding spigot: pick the split clamp.')
+      spigot = expanderParts(wasm, k, { ri: Math.max(ri, 6), L: 30 })
+      cuts.push(k(k(Manifold.cylinder(T + 2, 3.3, 3.3, 24)).translate([0, 0, -1]))) // M6 through the centre
+      cuts.push(k(k(Manifold.cylinder(6.5, 5.6, 5.6, 32)).translate([0, 0, T - 6]))) // the bolt head sinks in
+    } else {
+      cuts.push(k(k(Manifold.cylinder(T + 2, boreR, boreR, 96)).translate([0, 0, -1])))
+      if (grip.startsWith('split')) {
+        const a = ang(0) + Math.PI / n
+        cuts.push(k(k(k(Manifold.cube([Rout + 10, 1.6, T + 2], false)).translate([boreR - 1, -0.8, -1])).rotate([0, 0, deg(a)])))
+        const hole = (cnc ? G.tap : G.clear) / 2, xb = boreR + 7
+        cuts.push(k(k(k(k(Manifold.cylinder(Rout * 2, hole, hole, 24)).rotate([90, 0, 0])).translate([xb, Rout, T / 2])).rotate([0, 0, deg(a)])))
+        if (cnc) cuts.push(k(k(k(k(Manifold.cylinder(Rout, G.clear / 2, G.clear / 2, 24)).rotate([90, 0, 0])).translate([xb, Rout + 0.8, T / 2])).rotate([0, 0, deg(a)]))) // clearance on the head side
+        else cuts.push(k(k(k(k(Manifold.cylinder(4.5, G.nut / Math.sqrt(3) + 0.15, G.nut / Math.sqrt(3) + 0.15, 6)).rotate([90, 0, 0])).translate([xb, -12, T / 2])).rotate([0, 0, deg(a)])))
+      } else for (const j of [0, Math.floor(n / 2)]) {
+        const a = ang(j) + Math.PI / n
+        cuts.push(k(k(k(k(Manifold.cylinder(Rout + 2, (cnc ? G.tap : G.clear) / 2, (cnc ? G.tap : G.clear) / 2, 24)).rotate([0, 90, 0])).translate([0, 0, T / 2])).rotate([0, 0, deg(a)])))
+      }
     }
     solid = k(solid.subtract(k(Manifold.union(cuts))))
+    if (spigot) solid = k(solid.add(spigot.sleeve))
     const meshes = { combined: meshData(solid) }
+    if (spigot) meshes.wedgeFlat = meshData(spigot.wedge)
 
     // ---------------------------------------------------------- spokes + ends
-    const ek = SPOKE_BY_LABEL[p.ends] || p.ends || 'store'
+    let ek = SPOKE_BY_LABEL[p.ends] || p.ends || 'store'
+    // wicks only ever go on a fire-safe (metal) hub: anything else gets practice ends
+    if (!opts.fireSafe && (ek === 'store' || ek === 'fist')) { ek = 'tpu'; warns.push('Fire wicks only go on a metal hub: this one is shown with practice ends.') }
     const outLen = p.spokeLen - p.depth // past the hub edge
     const rods = [], kev = [], prac = []
     let gSpoke = 0, gEnd = 0, endInfo = null
@@ -486,7 +550,7 @@ export function buildSpokeHub(wasm, p, opts) {
           gEnd = (bob.volume() / 1000) * TPU
           endInfo = { kind: 'tpu', D, L, g: gEnd }
         } else {
-          // LED: a clear sleeve that holds a Flowtoys capsule (Ø21 × 88) in line with the spoke
+          // LED: a clear sleeve that holds a LED capsule (Ø21 × 88) in line with the spoke
           const cd = (p.capD || 21) + 0.6, cl = (p.capL || 88) + 1, wall = 1.8
           const L = cl + wall + 14
           let sleeve = k(Manifold.cylinder(L, cd / 2 + wall, cd / 2 + wall, 48))
@@ -513,7 +577,7 @@ export function buildSpokeHub(wasm, p, opts) {
     const minWall = Math.min(T / 2 - rs, ...sockets.map((s) => s.r0 - boreR))
     if (T / 2 - rs < 4) warns.push(`Only ${(T / 2 - rs).toFixed(1)} mm of wall above and below each spoke: make the hub thicker.`)
     return {
-      spoke: { mode: opts.mode, ends: ek, endInfo, n, outLen, shape, grub: p.grub, tap: G.tap, clear: G.clear, socketD: 2 * rs, boreD: 2 * boreR, minWall },
+      spoke: { mode: opts.mode, grip, ends: ek, endInfo, n, outLen, shape, grub: p.grub, tap: G.tap, clear: G.clear, socketD: 2 * rs, boreD: 2 * boreR, minWall },
       meshes,
       viewR: over,
       polygons: { base: body.toPolygons(), relief: [], pods: [], weak: [] },
@@ -546,6 +610,7 @@ export function toDXF(layers, title = 'dragon hub') {
   const L = { CUT: 7, HOLES: 1, DRILL: 3, ENGRAVE: 5 }
   const pocketName = layers.pocket.length ? `POCKET_${layers.pocketDepth.toFixed(1).replace('.', '_')}MM_DEEP` : null
   if (pocketName) L[pocketName] = 4
+  if (layers.bend?.length) L.BEND = 2
   w(999, `${title} - dream.sc hub forge, millimetres`)
   w(0, 'SECTION'); w(2, 'HEADER'); w(9, '$ACADVER'); w(1, 'AC1009'); w(9, '$INSUNITS'); w(70, 4); w(9, '$MEASUREMENT'); w(70, 1); w(0, 'ENDSEC')
   w(0, 'SECTION'); w(2, 'TABLES'); w(0, 'TABLE'); w(2, 'LAYER'); w(70, Object.keys(L).length)
@@ -563,19 +628,25 @@ export function toDXF(layers, title = 'dragon hub') {
   for (const h of layers.drill) circ('DRILL', h)
   if (pocketName) for (const P of layers.pocket) poly(pocketName, P)
   for (const P of layers.engrave) poly('ENGRAVE', P)
+  // fold lines: open lines, not cuts
+  for (const [a, b] of layers.bend || []) { w(0, 'LINE'); w(8, 'BEND'); w(10, a[0].toFixed(4)); w(20, a[1].toFixed(4)); w(30, 0); w(11, b[0].toFixed(4)); w(21, b[1].toFixed(4)); w(31, 0) }
   w(0, 'ENDSEC'); w(0, 'EOF')
   return out.join('\n') + '\n'
 }
 
 /** SVG at true size (mm): black = cut through, red = drill, blue = pocket, green = engrave. */
 export function toCutSVG(layers, R) {
-  const r = R + 4
+  // the drawing's own extent (a flat pattern is not centred on the staff)
+  const xs = layers.cut.flat().map((q) => q[0]), ys = layers.cut.flat().map((q) => -q[1])
+  const x0 = Math.min(...xs, -R) - 4, x1 = Math.max(...xs, R) + 4, y0 = Math.min(...ys, -R) - 4, y1 = Math.max(...ys, R) + 4
+  const fit = layers.bend?.length || Math.max(-x0, x1, -y0, y1) > R + 6
   const path = (polys) => polys.map((P) => 'M' + P.map(([x, y]) => `${x.toFixed(3)},${(-y).toFixed(3)}`).join('L') + 'Z').join('')
   const circles = (list, col) => list.map((h) => `<circle cx="${h.x.toFixed(3)}" cy="${(-h.y).toFixed(3)}" r="${h.r.toFixed(3)}" fill="none" stroke="${col}" stroke-width="0.1"/>`).join('')
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${2 * r}mm" height="${2 * r}mm" viewBox="${-r} ${-r} ${2 * r} ${2 * r}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${(fit ? x1 - x0 : 2 * R + 8).toFixed(1)}mm" height="${(fit ? y1 - y0 : 2 * R + 8).toFixed(1)}mm" viewBox="${fit ? `${x0} ${y0} ${x1 - x0} ${y1 - y0}` : `${-R - 4} ${-R - 4} ${2 * R + 8} ${2 * R + 8}`}">
 <g id="cut"><path d="${path(layers.cut)}" fill="none" stroke="#000" stroke-width="0.1"/>${circles(layers.holes, '#000')}</g>
 <g id="drill">${circles(layers.drill, '#e00')}</g>
 ${layers.pocket.length ? `<g id="pocket-${layers.pocketDepth.toFixed(1)}mm"><path d="${path(layers.pocket)}" fill="#3060ff" fill-opacity="0.25" fill-rule="evenodd" stroke="#3060ff" stroke-width="0.1"/></g>` : ''}
+${layers.bend?.length ? `<g id="bend">${layers.bend.map(([a, b]) => `<line x1="${a[0].toFixed(3)}" y1="${(-a[1]).toFixed(3)}" x2="${b[0].toFixed(3)}" y2="${(-b[1]).toFixed(3)}" stroke="#c80" stroke-width="0.15" stroke-dasharray="2 1"/>`).join('')}</g>` : ''}
 ${layers.engrave.length ? `<g id="engrave"><path d="${path(layers.engrave)}" fill="none" stroke="#0a0" stroke-width="0.1"/></g>` : ''}
 </svg>\n`
 }
@@ -600,7 +671,7 @@ export function spokeDrawingSVG(hub, p, matName) {
     `Centre bore Ø${s.boreD.toFixed(2)} mm through (pole Ø${p.poleOD}), H7-ish slide fit.`,
     `${s.n} radial sockets Ø${s.socketD.toFixed(2)} × ${p.depth} mm deep, on the mid-plane (${(p.hubT / 2).toFixed(1)} mm from each face), equally spaced.`,
     `${s.n} × ${p.grub} tapped holes (tap drill Ø${s.tap}) from the top face into each socket, ${(p.depth * 0.45).toFixed(1)} mm in from the edge.`,
-    `2 × ${p.grub} tapped holes, radial, on the mid-plane, between spokes, into the bore (pole clamp).`,
+    s.grip?.startsWith('inside') ? `Centre: Ø6.6 through for an M6 bolt, Ø11.2 × 6 counterbore on top; expanding spigot underneath (see the STL) slides into the pole.` : s.grip?.startsWith('split') ? `Pole clamp: a 1.6 mm slit from the bore to the edge between two spokes, and one ${p.grub} pinch bolt across it (tapped one side).` : `2 × ${p.grub} tapped holes, radial, on the mid-plane, between spokes, into the bore (pole clamp).`,
     'Break all edges 0.5 mm. Deburr sockets. Anodise or bead-blast optional.',
     'Takes 8 mm-rod fire spokes, like the common 2" dragon fire spoke; measure the rod.',
   ]
