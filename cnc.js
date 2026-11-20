@@ -397,6 +397,8 @@ export const SPOKE_PARAMS = [
   { key: 'rodD', label: 'Spoke rod', unit: 'mm', min: 5, max: 12, step: 0.1, value: 8, presets: [6, 8, 10], hint: 'The common 2" dragon fire spoke has an 8 mm rod. Measure yours.' },
   { key: 'rodClr', label: 'Socket clearance', unit: 'mm', min: 0, max: 0.8, step: 0.05, value: 0.15 },
   { key: 'depth', label: 'Socket depth', unit: 'mm', min: 12, max: 40, step: 0.5, value: 25, hint: 'How far each spoke goes in. Deeper holds better but needs a bigger hub.' },
+  { key: 'screwsV', label: 'Spoke screws: vertical', options: ['top', 'top and bottom', 'none'], value: 'top', hint: 'Grub screws from the face of the hub down onto each spoke. Top and bottom holds it from both faces.' },
+  { key: 'screwsH', label: 'Spoke screws: horizontal', options: ['none', 'one side', 'both sides'], value: 'none', hint: 'Grub screws from the side, square to each spoke, on the middle of the hub. Both sides plus top holds a spoke every way: it cannot turn or creep out.' },
   { key: 'grub', label: 'Clamp screws', options: ['M5', 'M4', 'M6'], value: 'M5', hint: 'One grub screw per spoke, from the face, onto the rod. Two more grip the pole.' },
   { key: 'spokeLen', label: 'Spoke length', unit: 'mm', min: 100, max: 300, step: 1, value: 185, hint: 'Whole spoke, rod end included. 185 mm on a common 2" dragon fire spoke.' },
   { key: 'ends', label: 'Ends', options: Object.values(SPOKE_ENDS), value: SPOKE_ENDS.store, hint: 'Fire for burning; practice ends are the same length and about the same weight as a wet wick, so the staff moves the same.' },
@@ -477,11 +479,24 @@ export function buildSpokeHub(wasm, p, opts) {
       if (r0 < boreR + 4) warns.push(`Sockets reach within ${(r0 - boreR).toFixed(1)} mm of the bore: make the hub bigger or the sockets shallower.`)
       sockets.push({ a, r0, edge })
       cuts.push(k(k(k(Manifold.cylinder(p.depth + 20, rs, rs, 40)).rotate([0, 90, 0])).translate([r0, 0, T / 2])).rotate([0, 0, deg(a)]))
-      // clamp screw from the face onto the rod
+      // clamp screws onto the rod: vertical (top, or top and bottom) and horizontal (one or both sides)
       const xs = edge - p.depth * 0.45
       const hole = cnc ? G.tap : G.clear
-      cuts.push(k(k(k(Manifold.cylinder(T / 2 + 1, hole / 2, hole / 2, 24)).translate([xs, 0, T / 2])).rotate([0, 0, deg(a)])))
-      if (!cnc) cuts.push(k(k(k(Manifold.cylinder(4.2, G.nut / Math.sqrt(3) + 0.15, G.nut / Math.sqrt(3) + 0.15, 6)).translate([xs, 0, T - 4.2 + 0.01])).rotate([0, 0, deg(a)]))) // nut trap
+      const V = p.screwsV || 'top', Hz = p.screwsH || 'none'
+      const at = (m) => k(k(m).rotate([0, 0, deg(a)]))
+      if (V !== 'none') {
+        cuts.push(at(k(Manifold.cylinder(T / 2 + 1, hole / 2, hole / 2, 24)).translate([xs, 0, T / 2])))
+        if (!cnc) cuts.push(at(k(Manifold.cylinder(4.2, G.nut / Math.sqrt(3) + 0.15, G.nut / Math.sqrt(3) + 0.15, 6)).translate([xs, 0, T - 4.2 + 0.01]))) // nut trap
+        if (V.includes('bottom')) {
+          cuts.push(at(k(Manifold.cylinder(T / 2 + 1, hole / 2, hole / 2, 24)).translate([xs, 0, -1])))
+          if (!cnc) cuts.push(at(k(Manifold.cylinder(4.2, G.nut / Math.sqrt(3) + 0.15, G.nut / Math.sqrt(3) + 0.15, 6)).translate([xs, 0, -0.01])))
+        }
+      }
+      if (Hz !== 'none') {
+        // sideways, on the mid-plane, square to the spoke; printed hubs take the screw self-tapping
+        const hh = (cnc ? G.tap : G.tap) / 2
+        for (const side of Hz.includes('both') ? [1, -1] : [1]) cuts.push(at(k(k(Manifold.cylinder(Rout, hh, hh, 24)).rotate([side > 0 ? -90 : 90, 0, 0])).translate([xs, 0, T / 2])))
+      }
     }
     if (warns.length > 1) warns.splice(1)
     // the pole: inside it (expanding spigot), or round it (split clamp or grub screws)
@@ -577,14 +592,14 @@ export function buildSpokeHub(wasm, p, opts) {
     const minWall = Math.min(T / 2 - rs, ...sockets.map((s) => s.r0 - boreR))
     if (T / 2 - rs < 4) warns.push(`Only ${(T / 2 - rs).toFixed(1)} mm of wall above and below each spoke: make the hub thicker.`)
     return {
-      spoke: { mode: opts.mode, grip, ends: ek, endInfo, n, outLen, shape, grub: p.grub, tap: G.tap, clear: G.clear, socketD: 2 * rs, boreD: 2 * boreR, minWall },
+      spoke: { mode: opts.mode, grip, perSpoke: ((p.screwsV || 'top') === 'none' ? 0 : (p.screwsV || '').includes('bottom') ? 2 : 1) + ((p.screwsH || 'none') === 'none' ? 0 : (p.screwsH || '').includes('both') ? 2 : 1), ends: ek, endInfo, n, outLen, shape, grub: p.grub, tap: G.tap, clear: G.clear, socketD: 2 * rs, boreD: 2 * boreR, minWall },
       meshes,
       viewR: over,
       polygons: { base: body.toPolygons(), relief: [], pods: [], weak: [] },
       layers: {
         cut: body.toPolygons(),
         holes: [{ x: 0, y: 0, r: boreR, kind: 'bore' }],
-        drill: sockets.map((s) => ({ x: (s.edge - p.depth * 0.45) * Math.cos(s.a), y: (s.edge - p.depth * 0.45) * Math.sin(s.a), r: G.tap / 2, kind: `${p.grub} tap` })),
+        drill: (p.screwsV || 'top') === 'none' ? [] : sockets.map((s) => ({ x: (s.edge - p.depth * 0.45) * Math.cos(s.a), y: (s.edge - p.depth * 0.45) * Math.sin(s.a), r: G.tap / 2, kind: `${p.grub} tap` })),
         pocket: [], pocketDepth: 0, engrave: [],
       },
       podH: T,
@@ -670,7 +685,7 @@ export function spokeDrawingSVG(hub, p, matName) {
     `Material: ${matName}. Thickness ${p.hubT} mm. Overall Ø${p.hubD} mm (${s.shape} outline).`,
     `Centre bore Ø${s.boreD.toFixed(2)} mm through (pole Ø${p.poleOD}), H7-ish slide fit.`,
     `${s.n} radial sockets Ø${s.socketD.toFixed(2)} × ${p.depth} mm deep, on the mid-plane (${(p.hubT / 2).toFixed(1)} mm from each face), equally spaced.`,
-    `${s.n} × ${p.grub} tapped holes (tap drill Ø${s.tap}) from the top face into each socket, ${(p.depth * 0.45).toFixed(1)} mm in from the edge.`,
+    `${s.perSpoke} × ${p.grub} tapped hole${s.perSpoke > 1 ? 's' : ''} per socket (tap drill Ø${s.tap}), ${(p.depth * 0.45).toFixed(1)} mm in from the edge: ${[(p.screwsV || 'top') !== 'none' ? `vertical from the ${(p.screwsV || 'top')} face${(p.screwsV || '').includes('bottom') ? 's' : ''}` : '', (p.screwsH || 'none') !== 'none' ? `horizontal from ${p.screwsH === 'both sides' ? 'both sides' : 'one side'}, on the mid-plane` : ''].filter(Boolean).join('; ')}.`,
     s.grip?.startsWith('inside') ? `Centre: Ø6.6 through for an M6 bolt, Ø11.2 × 6 counterbore on top; expanding spigot underneath (see the STL) slides into the pole.` : s.grip?.startsWith('split') ? `Pole clamp: a 1.6 mm slit from the bore to the edge between two spokes, and one ${p.grub} pinch bolt across it (tapped one side).` : `2 × ${p.grub} tapped holes, radial, on the mid-plane, between spokes, into the bore (pole clamp).`,
     'Break all edges 0.5 mm. Deburr sockets. Anodise or bead-blast optional.',
     'Takes 8 mm-rod fire spokes, like the common 2" dragon fire spoke; measure the rod.',

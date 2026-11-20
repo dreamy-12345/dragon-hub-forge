@@ -1182,7 +1182,7 @@ function renderSpokeVerdict(hub, p) {
     ${sp.endInfo?.kind === 'tpu' ? `<div class="row"><span>Practice weight</span><span>Ø${sp.endInfo.D.toFixed(0)} × ${sp.endInfo.L} mm · ${sp.endInfo.g.toFixed(0)} g TPU</span></div>` : ''}
     ${sp.endInfo?.kind === 'led' ? `<div class="row"><span>LED end</span><span>holds a Ø${p.capD} × ${p.capL} capsule · ${sp.endInfo.g.toFixed(0)} g with it</span></div>` : ''}
     <div class="row"><span>Sockets</span><span>${sp.n} × Ø${sp.socketD.toFixed(2)} × ${p.depth} mm</span></div>
-    <div class="row"><span>Spoke clamp screws</span><span>${sp.n} × ${sp.grub} ${cnc ? `(tap drill Ø${sp.tap})` : 'grub screws + nuts in the traps'}</span></div>
+    <div class="row"><span>Spoke clamp screws</span><span>${sp.n * sp.perSpoke} × ${sp.grub} (${sp.perSpoke} a spoke) ${cnc ? `(tap drill Ø${sp.tap})` : 'grub screws + nuts in the traps'}</span></div>
     <div class="row"><span>On the pole</span><span>${sp.grip.startsWith('inside') ? `expanding spigot inside the pole end · 1 × M6 × 40 bolt` : sp.grip.startsWith('split') ? `split clamp · 1 × ${sp.grub} pinch bolt · bore Ø${sp.boreD.toFixed(2)}` : `2 × ${sp.grub} grub screws · bore Ø${sp.boreD.toFixed(2)}`}</span></div>
     <div class="row"><span>Across the spoke tips</span><span>Ø${s.overD.toFixed(0)} mm</span></div>
     <div class="row"><span>Thinnest wall</span><span>${sp.minWall < 4 ? pill('warn', sp.minWall.toFixed(1) + ' mm') : sp.minWall.toFixed(1) + ' mm'}</span></div>
@@ -1442,7 +1442,7 @@ function spokeHowTo(d, cnc) {
   const fire = ek === 'store' || ek === 'fist'
   const buy = [
     `${n} fire spokes with an ${p.rodD} mm rod, about ${p.spokeLen} mm long (the common 2" dragon fire spoke), or ${p.rodD} mm rod to make your own`,
-    `${n + 2} × ${g} stainless grub screws, cup point, ${Math.round(p.hubT / 2)} mm long, and the hex key for them`,
+    `${n * ((p.screwsV === 'none' ? 0 : (p.screwsV || '').includes('bottom') ? 2 : 1) + (p.screwsH === 'both sides' ? 2 : p.screwsH === 'one side' ? 1 : 0)) + ((p.poleGrip || '').startsWith('grub') ? 2 : 0)} × ${g} stainless grub screws, cup point, ${Math.round(p.hubT / 2)} mm long, and the hex key for them`,
     `a staff that is Ø${p.poleOD} mm (two hubs for a dragon staff: one each end, or both near the middle)`,
     ...(ek === 'tpu' || ek === 'led' ? [`practice spokes: print them (the Practice spokes designs) or use ${p.rodD} mm aluminium rod, ${n} pieces ${p.spokeLen - 30} mm long`] : []),
     (p.poleGrip || '').startsWith('inside') ? 'one M6 × 40 bolt per hub for the expanding spigot (it grips the inside of the pole end: safe for carbon)' : 'a carbon or hollow pole? a Pole Insert under each hub, so the clamp cannot crush it',
@@ -1459,7 +1459,7 @@ function spokeHowTo(d, cnc) {
   ]
   const fit = [
     `Slide the hub onto the staff and tighten the two pole grub screws.`,
-    `Push each spoke in until it stops, then tighten its grub screw onto the rod. Snug, not crushing.`,
+    `Push each spoke in until it stops, then tighten its grub screws onto the rod (the top one first, then the sides). Snug, not crushing.`,
     ...(ek === 'tpu' ? ['Print the practice ends (download below), push one onto each rod end, and weigh them: all within 2 g.'] : []),
     ...(ek === 'led' ? ['Print the LED ends, push one onto each rod, switch the capsules on and push them in.'] : []),
     ...(ek === 'fist' ? ['Tie a monkey fist in Kevlar round a steel core on each rod end (see the wicking and knots guide), and lock it with stainless wire.'] : []),
