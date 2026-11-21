@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hoop Making Guide</title>
+<meta name="description" content="How to make a hula hoop or dance hoop: what length of tubing to cut for every diameter, which tubing, joining, fixing and taping. With a cut length calculator.">
+<style>
+:root {
+  --bg: #0e0d12; --panel: #17151d; --raise: #201d28; --line: #2d2937;
+  --fg: #ece8f2; --muted: #958fa6;
+  --ember: #f0a23b; --ember-dim: #6b4a1e;
+  --good: #6cd39a; --warn: #f2c94c; --bad: #ff6070;
+  --steel: #9aa6b8; --kev: #e8c46a;
+  --display: "Unbounded", "Avenir Next", "Helvetica Neue", sans-serif;
+  --body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.6 var(--body); }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 90px; }
+h1 { font: 700 1.9rem/1.15 var(--display); margin: .2em 0 .3em; letter-spacing: .01em; }
+h1 span { color: var(--ember); }
+h2 { font: 700 1.4rem/1.2 var(--display); margin: 2.4em 0 .6em; padding-top: .8em; border-top: 1px solid var(--line); }
+h3 { font: 600 1.15rem/1.3 var(--body); margin: 1.4em 0 .4em; color: var(--ember); }
+a { color: var(--ember); word-break: break-word; }
+code { font: .88em var(--mono); background: var(--raise); padding: .1em .35em; border-radius: 4px; }
+.lede { color: var(--muted); font-size: 1.05rem; }
+.why { font-size: 1.02rem; margin: .3em 0 .8em; }
+.why b { color: var(--ember); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin: 14px 0; }
+.card > :first-child { margin-top: 0; }
+.card > :last-child { margin-bottom: 0; }
+.need { border-left: 4px solid var(--good); }
+.need b.t, .warn b.t, .safety b.t { display: block; font: 700 .8rem var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .3em; }
+.need b.t { color: var(--good); }
+.warn { border-left: 4px solid var(--warn); }
+.warn b.t { color: var(--warn); }
+.safety { border: 2px solid var(--bad); background: #24141a; }
+.safety b.t { color: var(--bad); font-size: .95rem; }
+.safety h2 { border: 0; margin-top: .2em; padding-top: 0; color: var(--bad); }
+ul, ol { padding-left: 1.4em; }
+input { font: inherit; background: var(--raise); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
+li { margin: .3em 0; }
+ol.steps { counter-reset: s; list-style: none; padding-left: 0; }
+ol.steps > li { counter-increment: s; position: relative; padding: .45em .6em .45em 3em; margin: .35em 0; background: var(--panel); border-radius: 8px; }
+ol.steps > li::before { content: counter(s); position: absolute; left: .55em; top: .4em; width: 1.75em; height: 1.75em; border-radius: 50%; background: var(--ember-dim); color: var(--ember); font: 700 .95rem/1.75em var(--mono); text-align: center; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+.stat { background: var(--raise); border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font: 700 1.2rem var(--display); color: var(--ember); }
+.stat small { color: var(--muted); }
+nav.toc { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+nav.toc ol { margin: 6px 0; padding-left: 22px; columns: 2 230px; }
+nav.toc a { text-decoration: none; }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px 14px; margin: 12px 0; }
+details[open] { padding-bottom: 12px; }
+summary { cursor: pointer; font: 600 1.12rem/1.4 var(--body); padding: 10px 0; color: var(--fg); }
+summary::marker { color: var(--ember); }
+summary small { color: var(--muted); font-weight: 400; font-size: .9rem; }
+details .card { background: var(--raise); }
+details ol.steps > li { background: var(--raise); }
+figure { margin: 14px 0; background: var(--raise); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+figure svg { width: 100%; height: auto; display: block; max-height: 340px; }
+figcaption { color: var(--muted); font-size: .9rem; padding: 6px 4px 0; }
+.svt { font: 13px var(--body); fill: var(--fg); }
+.svm { font: 12px var(--body); fill: var(--muted); }
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+th, td { text-align: left; vertical-align: top; padding: 7px 9px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; }
+.pill { display: inline-block; font: 700 .72rem var(--mono); padding: 1px 8px; border-radius: 99px; vertical-align: 2px; }
+.pill.d { background: rgba(108,211,154,.15); color: var(--good); }
+.pill.l { background: rgba(240,162,59,.15); color: var(--ember); }
+.sources li { font-size: .92rem; }
+.muted { color: var(--muted); }
+@media print { body { background: #fff; color: #000; } details { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Making a hoop: <span>what length to cut</span></h1>
+<p class="lede">How to make a hula hoop or a dance hoop from tubing. Covers how long to cut it for any size, which tubing to pick, and how to join, fix and tape it. Short steps, one job each.</p>
+
+<nav class="toc" aria-label="Contents">
+<b>On this page</b>
+<ol>
+<li><a href="#calc">Cut length calculator</a></li>
+<li><a href="#why">Why it isn't just π × the size</a></li>
+<li><a href="#size">Which size for you?</a></li>
+<li><a href="#tube">Which tubing?</a></li>
+<li><a href="#table">Every size, every tube</a></li>
+<li><a href="#buy">What to buy</a></li>
+<li><a href="#make">Making it</a></li>
+<li><a href="#collapse">Collapsible hoops</a></li>
+<li><a href="#fix">When it goes wrong</a></li>
+</ol>
+</nav>
+
+<h2 id="calc">Cut length calculator</h2>
+<div class="card need">
+<p><label>Hoop size (outside) <input id="cD" type="number" value="36" step="0.5" min="10" max="60" style="width:5em"> inches</label></p>
+<p><label>Tube outside <input id="cT" type="number" value="19.05" step="0.05" min="5" max="40" style="width:5.5em"> mm</label>
+<span class="muted">(3/4" polypro 19.05 · 5/8" 15.9 · 11/16" 17.5 · 7/8" 22.2 · 3/4" HDPE about 24 to 26: measure yours)</span></p>
+<p style="font-size:1.25rem"><b id="cOut">–</b></p>
+</div>
+<script>
+(function () {
+  var D = document.getElementById('cD'), T = document.getElementById('cT'), O = document.getElementById('cOut')
+  function go() {
+    var d = parseFloat(D.value) * 25.4, t = parseFloat(T.value)
+    if (!(d > t && t > 0)) { O.textContent = '–'; return }
+    var L = Math.PI * (d - t)
+    O.textContent = 'Cut ' + (L / 25.4).toFixed(2) + '" (' + (L / 10).toFixed(1) + ' cm)'
+  }
+  D.oninput = T.oninput = go; go()
+})()
+</script>
+
+<h2 id="why">Why it isn't just π × the size</h2>
+<p class="why">Hoops are sold by their <b>outside</b> diameter. The tube bends round its own <b>centre line</b>, and that line runs half a tube in from the outside all the way round. So the centre line's diameter is the hoop size minus one tube width:</p>
+<div class="card"><p style="font-size:1.15rem; margin:0"><b>cut length = π × (hoop outside − tube outside)</b></p>
+<p class="muted" style="margin:.4em 0 0">π is 3.1416. Work in one unit: all inches or all mm.</p></div>
+<p>Example: a 36" hoop in 3/4" tube. 36 − 0.75 = 35.25, and 35.25 × 3.1416 = <b>110.7"</b>, which is 281.3 cm. Plain π × 36 would give 113.1": 2.4" too long, and the hoop would come out nearly an inch too big.</p>
+<p>The connector goes <b>inside</b> the tube and the two ends butt together, so it adds nothing. Cut exactly the length.</p>
+
+<h2 id="size">Which size for you?</h2>
+<div class="tbl"><table>
+<tr><th>Hoop</th><th>For</th></tr>
+<tr><td><b>40–44"</b> heavy</td><td>Learning to hoop on the waist: big and heavy turns slowly, so you have time.</td></tr>
+<tr><td><b>36–40"</b></td><td>Waist and body hooping once you can keep it up.</td></tr>
+<tr><td><b>32–36"</b></td><td>Tricks, breaks, a mix of on and off body.</td></tr>
+<tr><td><b>28–32"</b></td><td>Fast off-body and hand hooping.</td></tr>
+<tr><td><b>20–28"</b></td><td>Minis and doubles (one in each hand). Make two the same.</td></tr>
+</table></div>
+<p>Quick check for a first hoop: stand it on the floor beside you. It should come up to somewhere between your belly button and your chest. Smaller and lighter is faster and harder.</p>
+
+<h2 id="tube">Which tubing?</h2>
+<div class="tbl"><table>
+<tr><th>Tube</th><th>Outside</th><th>Feels</th></tr>
+<tr><td><b>HDPE 3/4" 160 psi</b></td><td>≈ 26 mm (≈ 1")</td><td>Heaviest and slowest. Big beginner hoops.</td></tr>
+<tr><td><b>HDPE 3/4" 100 psi</b></td><td>≈ 24 mm</td><td>The classic learner and dance hoop.</td></tr>
+<tr><td><b>Polypro 7/8"</b></td><td>22.2 mm</td><td>Firm, light: big polypro and fire hoops.</td></tr>
+<tr><td><b>Polypro 3/4"</b></td><td>19.05 mm</td><td>Light and snappy, holds its round. The all-rounder.</td></tr>
+<tr><td><b>Polypro 11/16"</b></td><td>17.5 mm</td><td>Lighter still: tricks and off-body.</td></tr>
+<tr><td><b>Polypro 5/8"</b></td><td>15.9 mm</td><td>Lightest: minis and doubles.</td></tr>
+</table></div>
+<p>HDPE is sold by its inside size ("3/4 inch" is the bore), so its outside varies by maker and pressure rating: <b>measure the outside with calipers</b> and type it in. Polypro is sold by its outside size.</p>
+<div class="card warn"><b class="t">Fire hoops</b>Fire hoops need wicks bolted through the tube and the heat stays near the wicks. Make them from tubing sold for fire hoops, with Kevlar wicks and metal fixings only, as in the forge's <i>wicking guide</i>. A plain plastic hoop is never for fire.</div>
+
+<h2 id="table">Every size, every tube</h2>
+<p>The cut length in inches, then centimetres.</p>
+<div class="tbl"><table id="bigTable"></table></div>
+<script>
+(function () {
+  var tubes = [['5/8" PP', 15.9], ['11/16" PP', 17.5], ['3/4" PP', 19.05], ['7/8" PP', 22.2], ['HDPE 24 mm', 24.1], ['HDPE 26 mm', 26.2]]
+  var h = '<tr><th>Hoop</th>' + tubes.map(function (t) { return '<th>' + t[0] + '</th>' }).join('') + '</tr>'
+  for (var d = 16; d <= 48; d += 2) {
+    h += '<tr><td><b>' + d + '"</b><br><span class="muted">' + (d * 2.54).toFixed(1) + ' cm</span></td>' + tubes.map(function (t) {
+      var L = Math.PI * (d * 25.4 - t[1]); return '<td>' + (L / 25.4).toFixed(1) + '"<br><span class="muted">' + (L / 10).toFixed(1) + '</span></td>'
+    }).join('') + '</tr>'
+  }
+  document.getElementById('bigTable').innerHTML = h
+})()
+</script>
+<p class="muted">Odd sizes: use the calculator above, or the Hoops designs in the forge.</p>
+
+<h2 id="buy">What to buy</h2>
+<div class="card need"><b class="t">For one hoop</b>
+<ul>
+<li>Tubing: the cut length plus 5% for squaring the ends.</li>
+<li>A connector: print the forge one (PETG or nylon), or buy a push-in hoop connector the size of your tube's bore.</li>
+<li>A pipe cutter (the ratchet kind cuts clean and square), or a fine saw and sandpaper.</li>
+<li>2 small self-tapping screws (about 3 × 10 mm) or 2 small rivets, and a drill bit to match.</li>
+<li>Tape: grip tape for the inside, decorative tape (gaffer, glitter or holographic) for the outside.</li>
+<li>A pan or kettle of very hot water.</li>
+</ul></div>
+
+<h2 id="make">Making it</h2>
+<ol class="steps">
+<li><b>Uncoil</b> the tube and let it sit in the sun or a warm room for an hour: it relaxes and is easier to work.</li>
+<li><b>Measure</b> along the <b>outside</b> of the coil with a tape measure and mark the cut length. Measure twice.</li>
+<li><b>Cut square</b> with the pipe cutter. With a saw: sand the end flat and scrape off the burr.</li>
+<li><b>Soften</b> one end: hold it in just-boiled water for about a minute. Careful: hot.</li>
+<li><b>Push</b> it onto the connector until it reaches the notch in the middle. Twist as you push.</li>
+<li><b>Curve it</b> round the way the tube was coiled. Soften the other end and push it on until the two ends meet. No gap.</li>
+<li><b>Fix it:</b> drill a small hole 2 to 3 cm from the joint on each side, through the tube into the connector. Drive in a screw or set a rivet. Keep the heads flush so they don't catch your skin.</li>
+<li><b>Round it:</b> if the hoop is a bit oval, warm it in the sun and lay it flat on the floor under a light weight overnight.</li>
+<li><b>Tape:</b> grip tape on the inside where it rolls on you. Wind decorative tape round the outside at a slant. Start and finish over the joint, and pull it firm so it doesn't wrinkle.</li>
+<li><b>Weigh</b> it. Pairs (minis, doubles): weigh both and trim the tape until they match within 5 g.</li>
+</ol>
+
+<h2 id="collapse">Collapsible hoops</h2>
+<p>A hoop that comes apart travels in a car or a suitcase. Cut it into 2, 4 or 6 equal pieces (the cut length divided by the number of pieces). Put a connector in every joint, with a spring push-button through each one so it clicks together instead of being screwed. Sections from the same coil hold their curve best.</p>
+
+<h2 id="fix">When it goes wrong</h2>
+<div class="tbl"><table>
+<tr><th>Problem</th><th>Fix</th></tr>
+<tr><td>Hoop came out too big</td><td>You cut π × the size: cut the hoop open and take off π × one tube width (2.4" for 3/4" tube).</td></tr>
+<tr><td>Connector won't go in</td><td>Hotter water and longer; or set Connector fit lower in the forge and print again.</td></tr>
+<tr><td>Joint pulls apart</td><td>Add the screws or rivets; check the fit: the barbs must bite.</td></tr>
+<tr><td>Joint is a flat spot or kinked</td><td>The forge connector is curved to your hoop size: print it for the right size. Make sure the curve follows the coil.</td></tr>
+<tr><td>Hoop is oval</td><td>Warm it and lay it flat under a light weight overnight.</td></tr>
+</table></div>
+<p class="muted">These are starting points. Tubing differs between makers, so measure yours.</p>
+
+</main>
+</body>
+</html>

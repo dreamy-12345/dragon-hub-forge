@@ -83,6 +83,7 @@ export function buildDart(wasm, p, opts = {}) {
       // round ones: the ball sets the length (the Length slider is ignored)
       Lr = style === 'pod' ? 3 * R : 2 * R
     }
+    if (style === 'acorn') Lr = 2.4 * R
     if (round || style === 'pod') {
       body = k(k(k(Manifold.sphere(R, 96)).scale([1, 1, style === 'pod' ? 1.5 : 1])).translate([0, 0, Lr / 2]))
       if (style === 'saturn') {
@@ -127,6 +128,65 @@ export function buildDart(wasm, p, opts = {}) {
       const u = k(Manifold.union(bits))
       body = style === 'scales' ? k(body.add(u)) : k(body.subtract(u))
       prof = null // not a plain lathe job any more: the pattern needs a 4-axis mill or a metal print
+    } else if (style === 'leaf') {
+      // a leaf bud: a teardrop wrapped in rows of pointed leaves, each with a raised midrib, laid along the curve
+      prof = profile('glow', L, R)
+      const poly = [[0, 0], ...prof.filter(([r]) => r > 0), [0, L]]
+      body = k(k(new CrossSection([poly], 'Positive')).revolve(96))
+      const rAt = (z) => { for (let i = 1; i < prof.length; i++) if (prof[i][1] >= z) { const [r0, z0] = prof[i - 1], [r1, z1] = prof[i]; return r0 + ((r1 - r0) * (z - z0)) / Math.max(1e-6, z1 - z0) } return 0 }
+      const leaves = []
+      const rows = 4, per = 6
+      for (let row = 0; row < rows; row++) {
+        const zc = L * (0.2 + (0.52 * row) / (rows - 1)), r = rAt(zc)
+        if (r < 6) continue
+        const ll = Math.min(L * 0.34, r * 2.2), lw = Math.min(ll * 0.42, (TAU * r) / per * 0.95), t = Math.max(1.4, R * 0.08)
+        // a pointed leaf: two arcs crossing (a lens), in (width, length)
+        const half = lw / 2, len = ll / 2, rho = (half * half + len * len) / (2 * half), dd = rho - half
+        const lens = k(k(k(CrossSection.circle(rho, 64)).translate([dd, 0])).intersect(k(k(CrossSection.circle(rho, 64)).translate([-dd, 0]))))
+        let leaf = k(lens.extrude(t))
+        leaf = k(leaf.add(k(k(Manifold.cube([0.9, ll * 0.82, 0.7], true)).translate([0, 0, t + 0.2])))) // the midrib
+        leaf = k(k(leaf.rotate([90, 0, 0])).rotate([0, 0, 90])) // width round, length up the dart, thickness outwards
+        const slope = (rAt(zc + 1) - rAt(zc - 1)) / 2
+        for (let i = 0; i < per; i++) {
+          const a = (360 * i) / per + row * 30
+          leaves.push(k(k(k(leaf.rotate([0, (Math.atan(slope) * 180) / Math.PI, 0])).translate([r - t * 0.55, 0, zc])).rotate([0, 0, a])))
+        }
+      }
+      body = k(body.add(k(Manifold.union(leaves))))
+      prof = null
+    } else if (style === 'acorn') {
+      // an acorn: a smooth nut, and a scaly cup on top whose stem carries the eye
+      const nut = k(k(k(Manifold.sphere(R * 0.95, 96)).scale([1, 1, 1.2])).translate([0, 0, 1.15 * R]))
+      const cz = 1.4 * R
+      let cup = k(k(k(Manifold.sphere(R * 1.04, 96)).translate([0, 0, cz])).trimByPlane([0, 0, 1], cz + 0.05 * R))
+      const bumps = [], n = 70
+      for (let i = 0; i < n; i++) {
+        const zf = 0.08 + (0.85 * i) / n, ang = i * Math.PI * (3 - Math.sqrt(5))
+        const el = Math.asin(zf), rr = R * 1.04
+        bumps.push(k(k(k(Manifold.sphere(R * 0.11, 12)).scale([1, 1, 0.6])).translate([rr * Math.cos(el) * Math.cos(ang), rr * Math.cos(el) * Math.sin(ang), cz + rr * zf])))
+      }
+      cup = k(cup.add(k(k(Manifold.union(bumps)).trimByPlane([0, 0, 1], cz + 0.05 * R))))
+      const rim = k(k(k(k(CrossSection.circle(R * 0.07, 16)).translate([R * 1.02, 0])).revolve(96)).translate([0, 0, cz + 0.08 * R]))
+      body = k(Manifold.union([nut, cup, rim]))
+    } else if (style === 'gnome') {
+      // a garden gnome: round belly, a flowing beard, a big nose, a pointy hat; the rope eye is the hat's tip
+      const ell = (rx, ry, rz, x, z) => k(k(k(Manifold.sphere(1, 48)).scale([rx, ry, rz])).translate([x, 0, z]))
+      const sph = (r, x, y, z) => k(k(Manifold.sphere(r, 32)).translate([x, y, z]))
+      const belly = ell(R, R * 0.92, L * 0.3, 0, L * 0.3)
+      const beard = k(Manifold.hull([ell(R * 0.42, R * 0.7, L * 0.12, R * 0.38, L * 0.5), sph(R * 0.16, R * 0.62, 0, L * 0.16)]))
+      const head = sph(R * 0.52, 0, 0, L * 0.6)
+      const nose = sph(R * 0.2, R * 0.5, 0, L * 0.6)
+      const boots = [sph(R * 0.26, R * 0.3, R * 0.38, L * 0.07), sph(R * 0.26, R * 0.3, -R * 0.38, L * 0.07)]
+      const hz = L * 0.6 + R * 0.3 // the brim sits above the eyes
+      const hat = k(k(Manifold.cylinder(L - hz, R * 0.74, bossR * 0.75, 64)).translate([0, 0, hz]))
+      const brim = k(k(k(k(CrossSection.circle(R * 0.09, 16)).translate([R * 0.72, 0])).revolve(64)).translate([0, 0, hz + R * 0.04]))
+      // little eyes under the hat brim
+      const eyes = [1, -1].map((side) => {
+        const u = [0.8, 0.42 * side, 0.22], l = Math.hypot(...u)
+        return sph(R * 0.08, (R * 0.52 * u[0]) / l, (R * 0.52 * u[1]) / l, L * 0.6 + (R * 0.52 * u[2]) / l)
+      })
+      body = k(k(Manifold.union([belly, beard, head, nose, ...boots, hat, brim])).subtract(k(Manifold.union(eyes))))
+      warns.push('The gnome has overhangs (beard, nose, belly): print it with tree supports, eye down.')
     } else if (turned) {
       prof = profile(style, L, R)
       const poly = [[0, 0], ...prof.filter(([r]) => r > 0), [0, L]]
@@ -148,7 +208,7 @@ export function buildDart(wasm, p, opts = {}) {
       body = k(lower.add(upper))
     }
     // the eye: a round boss with a cross hole, the hole's edges rounded off
-    if (Lr) L = Lr - 1 // the eye sits on the top of the ball
+    if (Lr) L = Lr - 1 // the eye sits on the top of the ball (or the acorn's cup)
     const boss = k(k(Manifold.cylinder(bossH, bossR, bossR * 0.92, 48)).translate([0, 0, L - 2]))
     const top = k(k(Manifold.sphere(bossR * 0.92, 48)).translate([0, 0, L - 2 + bossH - bossR * 0.92 * 0.5]))
     let m = k(Manifold.union([body, boss]))
@@ -242,6 +302,12 @@ export function dartDesigns() {
     params: DART_PARAMS.map((x) => ({ ...x, ...(over[x.key] !== undefined ? { value: over[x.key] } : {}) })),
     draw: () => {},
   })
+  const ROUND = ['orb', 'geodesic', 'pod']
+  const p = (id, name, style, blurb, over) => {
+    const x = { ...d(id, name, style, 'Poi', blurb, over), poi: true }
+    x.params = x.params.filter((q) => !(q.key === 'length' && ROUND.includes(style))).map((q) => q.key === 'ropeD' ? { ...q, label: 'Leash cord', hint: 'The eye fits this cord with a millimetre to spare; clip a swivel through it.' } : q)
+    return x
+  }
   return [
     d('dartClassic', 'Classic Dart', 'classic', 'DartClassic', 'The traditional rope dart: a long cone with a blunt tip, a rounded shoulder and an eye for the rope. Turn it in brass or steel on a lathe, or print it in TPU to practise.'),
     d('dartBell', 'Meteor Bell', 'bell', 'DartClassic', 'A round, bell-shaped weight with its mass low and two rings under the eye: the meteor-hammer feel, smooth to wrap and unwrap.', { length: 95, maxD: 42 }),
@@ -254,6 +320,15 @@ export function dartDesigns() {
     d('dartScales', 'Dragon Scales', 'scales', 'DartPattern', 'A teardrop covered in hundreds of raised scales laid out on a golden-angle spiral, the way scales and seeds grow: dense, tactile, catches every bit of light.', { length: 125, maxD: 38 }),
     d('dartFibonacci', 'Fibonacci', 'fibonacci', 'DartPattern', 'Four hundred little dimples spiralling round a teardrop on the golden angle: look at it and the spirals run both ways at once.', { length: 125, maxD: 38 }),
     d('dartGeo', 'Geodesic Orb', 'geodesic', 'DartPattern', 'A ball wrapped in a fine raised geodesic web, hundreds of tiny triangles: a little planet on a rope. Print it fine (0.12 mm layers) to get every line.', { maxD: 48 }),
+    d('dartLeaf', 'Leaf Bud', 'leaf', 'DartNature', 'A teardrop bud wrapped in rows of pointed leaves, each with a raised midrib, laid along its curve like a closed spring bud. Soft in TPU, and it catches the light leaf by leaf.', { length: 120, maxD: 38 }),
+    d('dartAcorn', 'Acorn', 'acorn', 'DartNature', 'An acorn: a smooth nut with a scaly cup on top, and the rope eye is its stem. Size it with Widest.', { maxD: 40 }),
+    d('dartGnome', 'Garden Gnome', 'gnome', 'DartNature', 'A garden gnome on a rope: round belly, flowing beard, big nose, little boots, and a pointy hat whose tip is the rope eye. Print in TPU with tree supports.', { length: 120, maxD: 42 }),
     d('dartTwist', 'Twist', 'twist', 'DartModern', 'A six-pointed star twisted down to the tip: it looks like it is spinning even when it hangs still.', { length: 120, maxD: 34 }),
+    // poi heads: the same shapes, sized for poi, with the eye for the leash swivel
+    p('poiBall', 'Poi Ball', 'orb', 'A plain round poi head: rolls off the arms smoothly, the classic contact-poi feel. Print in TPU 95A at 100% for weight; clip the leash swivel through the eye.', { maxD: 70, ropeD: 5 }),
+    p('poiGeo', 'Geo Poi', 'geodesic', 'A poi head wrapped in a fine geodesic web: catches the light on every turn. Print fine (0.12 mm layers).', { maxD: 66, ropeD: 5 }),
+    p('poiPod', 'Seed Poi', 'pod', 'A long grooved seed-pod poi head: the grooves stripe the light as it spins, and it sits nicely in the hand.', { maxD: 50, ropeD: 5 }),
+    p('poiScales', 'Dragon Scale Poi', 'scales', 'A teardrop poi head covered in raised dragon scales on a golden-angle spiral.', { length: 95, maxD: 56, ropeD: 5 }),
+    p('poiGlow', 'Glow Poi', 'glow', 'A clear TPU teardrop that holds an LED capsule: slide it in from the tip and press the plug in. Glow poi you can print.', { length: 130, maxD: 36, ropeD: 5 }),
   ]
 }

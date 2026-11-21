@@ -32,11 +32,8 @@ export function buildBallEnd(wasm, p, opts = {}) {
     if (depth < p.depth) warns.push(`Socket depth is held to ${depth.toFixed(0)} mm so it stops short of the centre.`)
     const style = opts.style || 'smooth'
 
-    // outer surface
-    let outer
-    if (style === 'faceted') outer = k(Manifold.sphere(R, 14))
-    else outer = k(Manifold.sphere(R, 128))
-    let solid = k(outer.subtract(k(Manifold.sphere(ri, 96))))
+    // outer surface with its pattern (the same solid the silicone moulds are made round)
+    let solid = k(ballMaster(wasm, k, R, style, p).subtract(k(Manifold.sphere(ri, 96))))
     // socket tube from the bottom of the ball up to the equator (prints standing on the bed)
     solid = k(solid.add(k(k(Manifold.cylinder(R, tubeR, tubeR, 64)).translate([0, 0, -R]))))
     // bore with crush ribs, open at the bottom, closed with a cap at depth
@@ -54,46 +51,6 @@ export function buildBallEnd(wasm, p, opts = {}) {
     const capT = 3
     solid = k(solid.subtract(k(k(Manifold.cylinder(R - depth - capT, boreR, boreR, 48)).translate([0, 0, -R + depth + capT]))))
 
-    // surface styles
-    if (style === 'dimpled') {
-      const n = p.dimples || 70, dr = R * 0.12
-      const cuts = []
-      for (let i = 0; i < n; i++) {
-        const z = 1 - (2 * (i + 0.5)) / n, r = Math.sqrt(1 - z * z), a = i * Math.PI * (3 - Math.sqrt(5))
-        if (z < -0.72) continue // keep the neck round the socket solid
-        const d = R + dr * 0.45
-        cuts.push(k(k(Manifold.sphere(dr, 24)).translate([d * r * Math.cos(a), d * r * Math.sin(a), d * z])))
-      }
-      if (cuts.length) solid = k(solid.subtract(k(Manifold.union(cuts))))
-    } else if (style === 'geo') {
-      // raised geometric lines laid over the ball: ridges along the edges of a polyhedron
-      const edges = geoEdges(p.pattern || 'geodesic')
-      const rr = Math.max(1.2, (p.ridge || 3) / 2), rad = R - rr * 0.35, ball = k(Manifold.sphere(rr, 12))
-      const bits = []
-      for (const [a, b] of edges) {
-        const ang = Math.acos(Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])))
-        const n = Math.max(2, Math.ceil((ang * R) / 6))
-        const pts = []
-        for (let i = 0; i <= n; i++) {
-          // slerp along the great circle
-          const t = i / n, s0 = Math.sin((1 - t) * ang) / Math.sin(ang), s1 = Math.sin(t * ang) / Math.sin(ang)
-          pts.push([(a[0] * s0 + b[0] * s1) * rad, (a[1] * s0 + b[1] * s1) * rad, (a[2] * s0 + b[2] * s1) * rad])
-        }
-        for (let i = 0; i < n; i++) {
-          if (pts[i][2] < -0.8 * R && pts[i + 1][2] < -0.8 * R) continue // keep clear of the socket neck
-          bits.push(k(Manifold.hull([k(ball.translate(pts[i])), k(ball.translate(pts[i + 1]))])))
-        }
-      }
-      if (bits.length) solid = k(solid.add(k(Manifold.union(bits))))
-    } else if (style === 'grip') {
-      // grip rings: shallow grooves round the ball, like a tennis ball seam turned into rings
-      const rings = []
-      for (const z of [-0.45, -0.15, 0.15, 0.45, 0.72].map((f) => f * R)) {
-        const rr = Math.sqrt(R * R - z * z)
-        rings.push(k(k(k(CrossSection.circle(1.4, 16)).translate([rr + 0.3, z])).revolve(128)))
-      }
-      solid = k(solid.subtract(k(Manifold.union(rings))))
-    }
 
     // split at the equator; a joiner ring presses into both halves
     const big = R * 3
@@ -138,6 +95,53 @@ export function buildBallEnd(wasm, p, opts = {}) {
   } finally {
     for (const o of live) o.delete?.()
   }
+}
+
+/** The ball's outer solid with its surface pattern, centred on the origin, the socket neck at the bottom. */
+export function ballMaster(wasm, k, R, style, p) {
+  const { CrossSection, Manifold } = wasm
+  let solid = k(Manifold.sphere(R, style === 'faceted' ? 14 : 128))
+  if (style === 'dimpled') {
+    const n = p.dimples || 70, dr = R * 0.12
+    const cuts = []
+    for (let i = 0; i < n; i++) {
+      const z = 1 - (2 * (i + 0.5)) / n, r = Math.sqrt(1 - z * z), a = i * Math.PI * (3 - Math.sqrt(5))
+      if (z < -0.72) continue // keep the neck round the socket solid
+      const d = R + dr * 0.45
+      cuts.push(k(k(Manifold.sphere(dr, 24)).translate([d * r * Math.cos(a), d * r * Math.sin(a), d * z])))
+    }
+    if (cuts.length) solid = k(solid.subtract(k(Manifold.union(cuts))))
+  } else if (style === 'geo') {
+    // raised geometric lines laid over the ball: ridges along the edges of a polyhedron
+    const edges = geoEdges(p.pattern || 'geodesic')
+    const rr = Math.max(1.2, (p.ridge || 3) / 2), rad = R - rr * 0.35, ball = k(Manifold.sphere(rr, 12))
+    const bits = []
+    for (const [a, b] of edges) {
+      const ang = Math.acos(Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])))
+      const n = Math.max(2, Math.ceil((ang * R) / 6))
+      const pts = []
+      for (let i = 0; i <= n; i++) {
+        // slerp along the great circle
+        const t = i / n, s0 = Math.sin((1 - t) * ang) / Math.sin(ang), s1 = Math.sin(t * ang) / Math.sin(ang)
+        pts.push([(a[0] * s0 + b[0] * s1) * rad, (a[1] * s0 + b[1] * s1) * rad, (a[2] * s0 + b[2] * s1) * rad])
+      }
+      for (let i = 0; i < n; i++) {
+        if (pts[i][2] < -0.8 * R && pts[i + 1][2] < -0.8 * R) continue // keep clear of the socket neck
+        bits.push(k(Manifold.hull([k(ball.translate(pts[i])), k(ball.translate(pts[i + 1]))])))
+      }
+    }
+    if (bits.length) solid = k(solid.add(k(Manifold.union(bits))))
+  } else if (style === 'grip') {
+    // grip rings: shallow grooves round the ball, like a tennis ball seam turned into rings
+    const rings = []
+    for (const z of [-0.45, -0.15, 0.15, 0.45, 0.72].map((f) => f * R)) {
+      const rr = Math.sqrt(R * R - z * z)
+      rings.push(k(k(k(CrossSection.circle(1.4, 16)).translate([rr + 0.3, z])).revolve(128)))
+    }
+    solid = k(solid.subtract(k(Manifold.union(rings))))
+  }
+
+  return solid
 }
 
 export function ballDesigns() {

@@ -26,6 +26,10 @@ import { practiceDesigns } from './practice.js'
 import { noveltyDesigns } from './novelty.js'
 import { dartDesigns } from './darts.js'
 import { gripDesigns } from './grip.js'
+import { mouldDesigns } from './moulds.js'
+import { hoopDesigns } from './hoops.js'
+import { bubblePoiDesigns } from './bubblepoi.js'
+import { swordDesigns } from './swords.js'
 import { TAU, rot, place, ccw, cw, rng, voronoi, pointInPoly, circlePts, HEART, wingPoly, logoDragonfly, Canvas } from './geom.js'
 
 const deg = (d) => (d * Math.PI) / 180
@@ -3294,6 +3298,14 @@ DESIGNS.push(...ballDesigns(), ...noveltyDesigns())
 DESIGNS.push(...practiceDesigns(), ...sleeveDesigns(), ...gripDesigns())
 // rope dart heads (print or lathe)
 DESIGNS.push(...dartDesigns())
+// silicone and rubber moulds for balls, rope darts and poi
+DESIGNS.push(...mouldDesigns())
+// hoops: cut lengths for every size and a printed connector
+DESIGNS.push(...hoopDesigns())
+// bubble poi heads, with printed loops or loops to wrap in cotton yarn
+DESIGNS.push(...bubblePoiDesigns())
+// fire contact swords: cut from metal, Kevlar wicks
+DESIGNS.push(...swordDesigns())
 
 const polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)]
 

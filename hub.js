@@ -24,6 +24,10 @@ import { buildPracticeSpoke } from './practice.js'
 import { buildNovelty } from './novelty.js'
 import { buildDart } from './darts.js'
 import { buildGrip } from './grip.js'
+import { buildMould } from './moulds.js'
+import { buildHoop } from './hoops.js'
+import { buildBubblePoi } from './bubblepoi.js'
+import { buildSword } from './swords.js'
 
 export { DESIGNS }
 
@@ -227,7 +231,11 @@ export function buildHub(wasm, design, p, opts = {}) {
   if (design.adaptor) return buildAdaptor(wasm, p, opts)
   if (design.grip) return buildGrip(wasm, p, { kind: design.kind, density: opts.material?.density })
   if (design.dart) return buildDart(wasm, p, { style: design.style, density: opts.material?.density })
-  if (design.novelty) return buildNovelty(wasm, p, { kind: design.kind, density: opts.material?.density })
+  if (design.sword) return buildSword(wasm, p, { style: design.style }) // the preview in print mode: 5 mm aluminium
+  if (design.bubblePoi) return buildBubblePoi(wasm, p, { density: opts.material?.density })
+  if (design.hoop) return buildHoop(wasm, p, { density: opts.material?.density })
+  if (design.mould) return buildMould(wasm, p, { kind: design.kind, style: design.style })
+  if (design.novelty) return buildNovelty(wasm, p, { kind: design.kind, density: opts.material?.density, axe: design.axe })
   if (design.sleeve) return buildSleeve(wasm, p, { style: design.style, density: opts.material?.density })
   if (design.practiceSpoke) return buildPracticeSpoke(wasm, p, { head: design.head, density: opts.material?.density })
   if (design.ballEnd) return buildBallEnd(wasm, p, { style: design.style, density: opts.material?.density })

@@ -25,8 +25,18 @@ browser; saved designs stay in that browser).
 - **Fire spoke hubs**: machined hubs for 8 mm fire spokes, with a drawing for the
   machine shop, a printable practice version, practice ends and a step-by-step guide.
 - **Contact staff ends**: push-on balls in three flat parts (weight them with steel shot)
-  and fun ends (trident, heart, mace, axe), balanced over the pole.
-- **Rope dart heads**: 3 classic (with a lathe drawing for metal) and 3 modern.
+  and fun ends (trident, heart, mace), balanced over the pole.
+- **Battle axe ends**: double axe, war axe, halberd, moon axe and great axe, each with a
+  matched steel-shot counterweight or contact ball for the other end so the staff balances.
+- **Rope dart heads**: classic (with a lathe drawing for metal), modern, round, detailed
+  patterns, and nature (leaf bud, acorn, garden gnome).
+- **Poi**: printable poi heads, and bubble poi with printed loops or loops to wrap in cotton yarn.
+- **Silicone and rubber moulds** for contact balls, rope darts and poi: a printed two-part
+  mould to cast the end, or a mould box to make a rubber mould and cast copies. With a guide.
+- **Hoops**: the exact tubing length to cut for any hoop size, a printable curved
+  connector, and a hoop making guide.
+- **Fire contact swords** (CNC, metal only): four blades cut from one plate with Kevlar
+  wicks on tabs or a laced Kevlar rope, balance point and pommel weight worked out.
 - **Pole fittings**: pole inserts, an internal End Expander and a Clamp Collar so
   rigid hubs grip without crushing carbon, and collapsible staff joints (screw,
   twist-lock, snap-button). Type your pole's inside and outside size once.

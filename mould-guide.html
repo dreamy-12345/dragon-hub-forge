@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mould Making Guide</title>
+<meta name="description" content="How to cast contact staff balls, rope dart heads and poi in silicone or urethane rubber with the Dragon Hub Forge moulds: printed moulds, mould boxes, rubbers, mixing, bubbles and safety.">
+<style>
+:root {
+  --bg: #0e0d12; --panel: #17151d; --raise: #201d28; --line: #2d2937;
+  --fg: #ece8f2; --muted: #958fa6;
+  --ember: #f0a23b; --ember-dim: #6b4a1e;
+  --good: #6cd39a; --warn: #f2c94c; --bad: #ff6070;
+  --steel: #9aa6b8; --kev: #e8c46a;
+  --display: "Unbounded", "Avenir Next", "Helvetica Neue", sans-serif;
+  --body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.6 var(--body); }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 90px; }
+h1 { font: 700 1.9rem/1.15 var(--display); margin: .2em 0 .3em; letter-spacing: .01em; }
+h1 span { color: var(--ember); }
+h2 { font: 700 1.4rem/1.2 var(--display); margin: 2.4em 0 .6em; padding-top: .8em; border-top: 1px solid var(--line); }
+h3 { font: 600 1.15rem/1.3 var(--body); margin: 1.4em 0 .4em; color: var(--ember); }
+a { color: var(--ember); word-break: break-word; }
+code { font: .88em var(--mono); background: var(--raise); padding: .1em .35em; border-radius: 4px; }
+.lede { color: var(--muted); font-size: 1.05rem; }
+.why { font-size: 1.02rem; margin: .3em 0 .8em; }
+.why b { color: var(--ember); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin: 14px 0; }
+.card > :first-child { margin-top: 0; }
+.card > :last-child { margin-bottom: 0; }
+.need { border-left: 4px solid var(--good); }
+.need b.t, .warn b.t, .safety b.t { display: block; font: 700 .8rem var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .3em; }
+.need b.t { color: var(--good); }
+.warn { border-left: 4px solid var(--warn); }
+.warn b.t { color: var(--warn); }
+.safety { border: 2px solid var(--bad); background: #24141a; }
+.safety b.t { color: var(--bad); font-size: .95rem; }
+.safety h2 { border: 0; margin-top: .2em; padding-top: 0; color: var(--bad); }
+ul, ol { padding-left: 1.4em; }
+li { margin: .3em 0; }
+ol.steps { counter-reset: s; list-style: none; padding-left: 0; }
+ol.steps > li { counter-increment: s; position: relative; padding: .45em .6em .45em 3em; margin: .35em 0; background: var(--panel); border-radius: 8px; }
+ol.steps > li::before { content: counter(s); position: absolute; left: .55em; top: .4em; width: 1.75em; height: 1.75em; border-radius: 50%; background: var(--ember-dim); color: var(--ember); font: 700 .95rem/1.75em var(--mono); text-align: center; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+.stat { background: var(--raise); border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font: 700 1.2rem var(--display); color: var(--ember); }
+.stat small { color: var(--muted); }
+nav.toc { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+nav.toc ol { margin: 6px 0; padding-left: 22px; columns: 2 230px; }
+nav.toc a { text-decoration: none; }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px 14px; margin: 12px 0; }
+details[open] { padding-bottom: 12px; }
+summary { cursor: pointer; font: 600 1.12rem/1.4 var(--body); padding: 10px 0; color: var(--fg); }
+summary::marker { color: var(--ember); }
+summary small { color: var(--muted); font-weight: 400; font-size: .9rem; }
+details .card { background: var(--raise); }
+details ol.steps > li { background: var(--raise); }
+figure { margin: 14px 0; background: var(--raise); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+figure svg { width: 100%; height: auto; display: block; max-height: 340px; }
+figcaption { color: var(--muted); font-size: .9rem; padding: 6px 4px 0; }
+.svt { font: 13px var(--body); fill: var(--fg); }
+.svm { font: 12px var(--body); fill: var(--muted); }
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+th, td { text-align: left; vertical-align: top; padding: 7px 9px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; }
+.pill { display: inline-block; font: 700 .72rem var(--mono); padding: 1px 8px; border-radius: 99px; vertical-align: 2px; }
+.pill.d { background: rgba(108,211,154,.15); color: var(--good); }
+.pill.l { background: rgba(240,162,59,.15); color: var(--ember); }
+.sources li { font-size: .92rem; }
+.muted { color: var(--muted); }
+@media print { body { background: #fff; color: #000; } details { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Silicone and rubber moulds: <span>cast your own ends</span></h1>
+<p class="lede">How to use the Dragon Hub Forge moulds to cast contact staff balls, rope dart heads and poi heads in silicone or urethane rubber. You can also make a flexible mould and cast as many copies as you like. Short steps, one job each.</p>
+
+<nav class="toc" aria-label="Contents">
+<b>On this page</b>
+<ol>
+<li><a href="#two">Two ways to make one</a></li>
+<li><a href="#rubber">Which rubber?</a></li>
+<li><a href="#buy">What to buy</a></li>
+<li><a href="#sticks">The one thing that ruins silicone</a></li>
+<li><a href="#print">Printing the mould</a></li>
+<li><a href="#cast">Way 1: printed mould, cast the end</a></li>
+<li><a href="#box">Way 2: mould box, make a rubber mould</a></li>
+<li><a href="#copies">Casting copies</a></li>
+<li><a href="#mix">Mixing and bubbles</a></li>
+<li><a href="#heavy">Making it heavier</a></li>
+<li><a href="#fit">Fitting the finished end</a></li>
+<li><a href="#fix">When it goes wrong</a></li>
+<li><a href="#safe">Safety</a></li>
+</ol>
+</nav>
+
+<h2 id="two">Two ways to make one</h2>
+<div class="grid">
+<div class="stat"><b>Printed mould</b><small>Print a hard two-part mould and pour rubber in. What comes out <i>is</i> your end: soft, grippy, heavy. One print, as many casts as you like. Best for silicone ends.</small></div>
+<div class="stat"><b>Mould box</b><small>Print the shape (the master) plus a box. Pour silicone round the master to make a flexible mould, then cast copies in resin, rubber, wax or pewter. Best for hard copies and fine detail.</small></div>
+</div>
+<p>Pick one in the forge with <b>Mould</b>. The forge gives you every part as an STL, and tells you how much rubber to mix.</p>
+<div class="card warn"><b class="t">Why not cast resin in the printed mould?</b>A hard cast in a hard mould gets stuck on the smallest undercut, and dimples or scales are full of them. One side must bend. Rubber in a printed mould works. A hard cast needs a rubber mould: use the mould box.</div>
+
+<h2 id="rubber">Which rubber?</h2>
+<div class="tbl"><table>
+<tr><th>Rubber</th><th>Feels like</th><th>Use it for</th><th>Watch out</th></tr>
+<tr><td><b>Platinum silicone 20A</b></td><td>Squishy, like a gel insole</td><td>The softest contact balls</td><td>Tears easily: not for cast-in nuts or eyes</td></tr>
+<tr><td><b>Platinum silicone 30A</b></td><td>Like a pencil eraser</td><td>Contact balls and poi heads. The all-rounder.</td><td>Easily stopped from curing (see below)</td></tr>
+<tr><td><b>Platinum silicone 50A</b></td><td>Like a shoe heel</td><td>Rope darts and poi with a cast-in nut or a moulded eye</td><td>Less bounce</td></tr>
+<tr><td><b>Tin silicone 25A</b></td><td>Like 30A</td><td>Mould boxes (the flexible mould itself). Cheaper and never stopped from curing.</td><td>Not skin safe, shrinks a little: not for ends you hold</td></tr>
+<tr><td><b>Urethane rubber 60A</b></td><td>Firm and tough</td><td>Hard-wearing ends; cheaper moulds</td><td>Sticks to almost everything: seal and release every time. Wear a respirator while mixing.</td></tr>
+<tr><td><b>Silicone + steel shot</b></td><td>Like 30A, twice the weight</td><td>The heaviest contact balls</td><td>Shot sinks: see <a href="#heavy">heavier</a></td></tr>
+</table></div>
+<p>The number with an "A" is the Shore hardness: higher is firmer. Platinum silicone is the one that is skin safe once it is fully cured. It is the right choice for anything you touch, spin or roll on your body.</p>
+<p class="muted">Liquid latex (brushed on in coats) also makes moulds, but it shrinks, smells and is not for ends people with latex allergy will touch. The forge moulds are made for pourable rubber.</p>
+
+<h2 id="buy">What to buy</h2>
+<div class="card need"><b class="t">For every cast</b>
+<ul>
+<li>The rubber, two-part (A and B). The forge says how many ml; buy at least 20% more.</li>
+<li>A digital kitchen scale (1 g steps). Mix by <b>weight</b>, not by eye.</li>
+<li>Clean plastic cups and flat wooden sticks. Nitrile gloves (<b>not latex</b>).</li>
+<li>Mould release spray, or petroleum jelly thinned with a little white spirit.</li>
+<li>Clear spray lacquer, or thin epoxy, to seal the print.</li>
+<li>Sharp scissors or a craft knife to trim the pour stubs.</li>
+</ul></div>
+<div class="card need"><b class="t">Printed mould</b>
+<ul>
+<li>4 × M5 bolts with washers and wing nuts (the forge gives the length), or two G-clamps or strong rubber bands.</li>
+<li>Rope dart or poi with a cast-in nut: one M8 nut, one big M8 washer (the forge says the size), one plain M8 bolt (the forge says the length). Then a stainless M8 swivel eye bolt and thread-locker.</li>
+</ul></div>
+<div class="card need"><b class="t">Mould box</b>
+<ul>
+<li>Sulfur-free plasticine (modelling clay), to seal round the master.</li>
+<li>4 × M4 bolts (or 4 mm dowels or skewers) to line the frames up, and 2 short pieces of 1.75 mm filament as dowels for the master.</li>
+<li>Fine sandpaper (400 to 800) and spray primer for the master.</li>
+</ul></div>
+
+<h2 id="sticks">The one thing that ruins silicone</h2>
+<div class="card safety"><b class="t">Platinum silicone stays sticky next to these</b>
+<p>Platinum silicone will not cure where it touches:</p>
+<ul>
+<li>sulfur (most cheap modelling clays);</li>
+<li>latex gloves;</li>
+<li>tin silicone;</li>
+<li>uncured resin prints;</li>
+<li>some tapes, paints and fresh superglue.</li>
+</ul>
+<p>The surface stays gooey forever. The fix:</p>
+<ul>
+<li>Wear nitrile gloves.</li>
+<li>Use sulfur-free clay.</li>
+<li>Seal the print and let the sealer dry fully (a day).</li>
+<li>Resin prints: wash them, then cure them under UV for twice as long as usual.</li>
+<li>Before a big pour, test a teaspoon of silicone on a scrap of the same print.</li>
+</ul></div>
+
+<h2 id="print">Printing the mould</h2>
+<ol class="steps">
+<li><b>PLA or PETG</b>, never TPU: the mould must stay rigid or the cast comes out lopsided.</li>
+<li>Print each half <b>split face up</b>, as the forge lays it out. No supports: the cavity is a bowl.</li>
+<li>3 walls, 20% infill, 0.16 mm layers or finer for the patterned ones (Geo, Dragon Scales). Every layer line shows on the cast.</li>
+<li>Check the split faces are flat: sand off any blobs, or the halves leak.</li>
+<li>Seal the cavity with two thin coats of clear lacquer or epoxy. Let it dry fully. This stops rubber soaking into the layer lines and sticking.</li>
+<li>Rope darts and poi: the halves carry the moulded eye pins, the nut channel and the vents. Clear any strings so the vents are open.</li>
+</ol>
+
+<h2 id="cast">Way 1: printed mould, cast the end</h2>
+<ol class="steps">
+<li><b>Release.</b> Spray or brush mould release on both halves, all of the cavity, the funnel, and the core pin. Let it flash off for a few minutes.</li>
+<li><b>Cast-in nut</b> (darts and poi): screw the M8 nut onto the plain bolt, big washer on top of the nut. Lay the bolt in the channel of one half, head on top of the mould. The washer and nut sit in the cavity.</li>
+<li><b>Close it.</b> Put the halves together on the keys. Bolt (or clamp) evenly, snug, not crushing.</li>
+<li><b>Core pin</b> (contact balls): push the printed pin down through the top until its flange sits on the mould. This makes the pole socket.</li>
+<li><b>Stand it</b> funnel up on a level tray lined with a bin bag.</li>
+<li><b>Mix</b> the rubber (see <a href="#mix">mixing</a>). The forge says how much: mix 15% extra for the funnel.</li>
+<li><b>Pour</b> slowly in a thin stream into the funnel, never straight in from the top of the cup. Keep going until rubber comes up the vents and sits in the funnel.</li>
+<li><b>Patterned ones</b> (Dimple, Geo, Dragon Scales, Geo Poi): open the mould first, brush a thin coat of rubber into every dip, wait 10 minutes, then close and pour. This stops air being trapped in the detail.</li>
+<li><b>Wait</b> the full cure time on the label (usually 4 to 24 hours), at room temperature. Cold makes it slower.</li>
+<li><b>Open it.</b> Pull out the core pin, or unscrew the bolt. Take out the bolts and lever the halves apart with a screwdriver in the slots at the bottom corners.</li>
+<li><b>Trim</b> the pour stub and the vent stubs flush with sharp scissors. A thin seam line is normal: trim it with the scissors flat.</li>
+<li><b>Cast-in nut:</b> screw in a stainless M8 swivel eye bolt with a drop of medium thread-locker. Tug it hard. It must not pull out.</li>
+</ol>
+
+<h2 id="box">Way 2: mould box, make a rubber mould</h2>
+<h3>Make the master</h3>
+<ol class="steps">
+<li>Print the two master halves split face down (they lie flat).</li>
+<li>Glue them together with superglue, a short piece of filament in each of the two dowel holes to line them up. Let it dry overnight. Fresh glue stops platinum silicone curing.</li>
+<li>Sand smooth (400 then 800 grit), spray primer, sand again. The rubber copies every scratch.</li>
+<li>Seal with clear coat and let it dry fully.</li>
+</ol>
+<h3>First pour</h3>
+<ol class="steps">
+<li>Put one frame flat on the table. Put the parting board on it. Line them up with the bolts or dowels through the corner ears.</li>
+<li>Press the master into the board's cut-out until its seam is level with the board's top face. Rope darts with a moulded eye: the little plug that printed with the board goes in the eye hole.</li>
+<li>Seal any gap round the master with a thin roll of sulfur-free plasticine, smoothed flat.</li>
+<li>Put the second frame on top of the board. Spray release on the board, the frame and the master.</li>
+<li>Mix the rubber and pour it into a low corner, letting it flow over the master. Fill until it covers the highest point by 10 mm. The forge gives the total for both halves: this pour is half.</li>
+<li>Let it cure fully.</li>
+</ol>
+<h3>Second pour</h3>
+<ol class="steps">
+<li>Turn the whole thing over. Lift off the bottom frame and the board. Pick out the plasticine. The master stays in the first rubber half, its seam level with the rubber.</li>
+<li>Put a frame back on top of the first one.</li>
+<li><b>Coat the rubber with release</b>: brush on a thin layer of petroleum jelly, or use a silicone-on-silicone release. Silicone sticks to silicone like glue. Miss this and you have a solid block.</li>
+<li>The registration keys are already there: little bumps the board's pits made. They will make sockets in the second half.</li>
+<li>Mix and pour the second half, 10 mm over the master. Let it cure fully.</li>
+<li>Take off the frames, peel the halves apart and lift out the master. Keep it: it can make another mould.</li>
+</ol>
+
+<h2 id="copies">Casting copies</h2>
+<ol class="steps">
+<li>Put the rubber halves together on their keys. Put a flat board on each side and wrap rubber bands round them (firm, not squashing). The pour channel and vents point up.</li>
+<li>Ball: push the printed core pin into its hole. Dart or poi with a nut: screw the nut and washer onto the bolt and set it in its channel.</li>
+<li>Pour your casting material slowly into the channel until the vents fill.</li>
+</ol>
+<div class="tbl"><table>
+<tr><th>Cast in</th><th>Notes</th></tr>
+<tr><td><b>Urethane resin</b></td><td>Hard, fast (minutes). Silicone needs no release for it. Good for a hard practice head.</td></tr>
+<tr><td><b>Urethane rubber</b></td><td>Tough soft copies. Fine in a silicone mould with no release.</td></tr>
+<tr><td><b>Silicone</b></td><td>Soft copies. Needs a release coat on the silicone mould every time.</td></tr>
+<tr><td><b>Casting wax</b></td><td>For brass or bronze: a foundry or jewellery-casting shop takes your wax copy, invests it and pours the metal (lost wax). Ask them what sprue they want.</td></tr>
+<tr><td><b>Lead-free pewter</b></td><td>A heavy metal head without a foundry. Only in a high-heat silicone rated over 300 °C. Dry the mould in a warm oven first: any water spits molten metal.</td></tr>
+</table></div>
+
+<h2 id="mix">Mixing and bubbles</h2>
+<ol class="steps">
+<li>Read the label: it gives the mix ratio (often 1:1 or 10:1 by weight), working time and cure time.</li>
+<li>Weigh part A into a cup, then part B into the same cup.</li>
+<li>Stir slowly for 3 minutes, scraping the sides and the bottom. Unmixed streaks never cure.</li>
+<li>Pour it into a second clean cup and stir another minute. This gets the sticky bit off the first cup's walls.</li>
+<li>Let it sit a minute so bubbles rise. A vacuum chamber (degassing) removes them all, but you do not need one.</li>
+<li>Pour from high up in a thin stream: the stream stretches and pops the bubbles.</li>
+<li>Colour: a few drops of silicone pigment, mixed into part A before adding B. Glow powder works too.</li>
+</ol>
+
+<h2 id="heavy">Making it heavier</h2>
+<ul>
+<li><b>Silicone with steel shot:</b> weigh the mixed silicone. Stir in about twice its weight of fine steel shot (0.5 to 1 mm), then pour at once. The shot sinks, so turn the mould slowly end over end for the first 10 minutes, until the silicone thickens. Pick "heavy: silicone 30A with steel shot" in the forge to see the weight.</li>
+<li><b>A weight inside:</b> hang a steel nut stack or a ball bearing on the core pin, or on the bolt, so rubber surrounds it.</li>
+<li><b>Bigger:</b> a solid 85 mm silicone ball is already about 330 g; 100 mm is about 550 g.</li>
+<li>Steel, not lead: lead is toxic to handle.</li>
+</ul>
+
+<h2 id="fit">Fitting the finished end</h2>
+<ul>
+<li><b>Contact balls:</b> the socket is a millimetre under your pole so the rubber grips it. Wet the pole end with a drop of soapy water and push the ball on with a twist. Once dry it holds. For a permanent fit, use a silicone-safe adhesive.</li>
+<li><b>Rope darts:</b> tie the rope to the swivel with a figure-eight loop or a bowline. Check the swivel and the nut before every session.</li>
+<li><b>Poi:</b> clip the leash to the swivel. Make a pair from the same mix and weigh them: within 5 g of each other.</li>
+<li><b>Moulded eye:</b> only in 50A silicone or urethane rubber. Check it for splits every session and retire it at the first crack.</li>
+</ul>
+
+<h2 id="fix">When it goes wrong</h2>
+<div class="tbl"><table>
+<tr><th>Problem</th><th>Cause</th><th>Fix</th></tr>
+<tr><td>Sticky surface that never cures</td><td>Inhibition (sulfur, latex, uncured resin, fresh glue) or a bad mix</td><td>Seal the print, nitrile gloves, sulfur-free clay; weigh and mix for longer</td></tr>
+<tr><td>Holes and bubbles on the surface</td><td>Air trapped in the detail</td><td>Brush a first coat into the detail; pour thinner and slower; degas</td></tr>
+<tr><td>Rubber leaks out of the seam</td><td>Split faces not flat, bolts uneven</td><td>Sand the faces flat; tighten in a cross pattern; a smear of petroleum jelly on the faces</td></tr>
+<tr><td>Cast stuck in the printed mould</td><td>No release, or the print was not sealed</td><td>Seal, release every time; urethane needs release always</td></tr>
+<tr><td>The two silicone halves bonded into one</td><td>No release between the pours</td><td>Release coat on the first half before the second pour</td></tr>
+<tr><td>Lopsided or flashy cast</td><td>Halves not on their keys, soft mould</td><td>Close on the keys; print in PLA or PETG, not TPU</td></tr>
+<tr><td>The nut pulls out of a dart</td><td>Rubber too soft, washer too small</td><td>Cast it in 50A or urethane rubber; use the big washer the forge says</td></tr>
+</table></div>
+
+<h2 id="safe">Safety</h2>
+<div class="card safety"><b class="t">Safety</b>
+<ul>
+<li>Work in fresh air, with nitrile gloves and glasses.</li>
+<li>Urethane resin and urethane rubber give off fumes while you mix them: wear an organic-vapour respirator, keep the room aired, and keep them off your skin.</li>
+<li>Molten pewter: outdoors, leather gloves, goggles, closed shoes, a bone-dry mould, and never near water.</li>
+<li>Keep it all away from children, pets and food: use cups and sticks only for casting.</li>
+<li>Read the safety sheet that comes with your rubber.</li>
+</ul></div>
+
+<p class="muted">These are starting points. Every rubber is a little different, so the label on yours wins.</p>
+
+</main>
+</body>
+</html>
