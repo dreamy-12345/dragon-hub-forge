@@ -16,19 +16,22 @@ const KEVLAR = 1.44 * 0.6 // woven Kevlar tape, g/cm³
 const WET = 1.3 // fuel soaked in, spun off
 const ROPE_G_PER_M = { 6: 25, 8: 42, 10: 62, 12: 90 } // braided Kevlar rope, about
 
-export const SWORD_WICKS = ['tip and edges', 'tip only', 'edges only', 'Kevlar rope down the blade']
+export const SWORD_WICKS = ['Kevlar wrapped the full blade', 'Kevlar along both edges, full length', 'tip and edges', 'tip only', 'edges only', 'Kevlar rope down the blade']
+const FULL = (w) => (w || '').startsWith('Kevlar wrapped') || (w || '').startsWith('Kevlar along')
 export const SWORD_PARAMS = [
   { key: 'bladeL', label: 'Blade length', unit: 'mm', min: 350, max: 900, step: 5, value: 620 },
   { key: 'bladeW', label: 'Blade width', unit: 'mm', min: 25, max: 80, step: 1, value: 44 },
   { key: 'handleL', label: 'Handle', unit: 'mm', min: 120, max: 320, step: 5, value: 210, hint: 'Two hands: 250 mm or more.' },
   { key: 'guardW', label: 'Crossguard', unit: 'mm', min: 50, max: 180, step: 1, value: 120 },
-  { key: 'wicks', label: 'Fire', options: SWORD_WICKS, value: 'tip and edges', rerender: true, hint: 'Tabs: wrap 2" Kevlar tape round each tab and bolt through. Rope: lace 10 mm Kevlar rope in and out of the slots down the middle of the blade, both ends wired to the end holes.' },
+  { key: 'wicks', label: 'Fire', options: SWORD_WICKS, value: 'Kevlar wrapped the full blade', rerender: true, hint: 'Full blade: 2" Kevlar tape wound in a spiral the whole length of the blade, so the whole sword burns. Both edges: tape folded over each edge, bolted through, full length. Tabs: wrap 2" Kevlar tape round each tab and bolt through. Rope: lace 10 mm Kevlar rope in and out of the slots down the middle of the blade, both ends wired to the end holes.' },
   { key: 'perEdge', showIf: (p) => p.wicks === 'tip and edges' || p.wicks === 'edges only', label: 'Wicks per edge', unit: '', min: 1, max: 5, step: 1, value: 1, hint: '1 per edge plus the tip makes 3 wicks; 2 per edge makes 5.' },
   { key: 'wickW', showIf: (p) => !p.wicks.startsWith('Kevlar rope'), label: 'Wick tape', unit: 'mm', min: 25, max: 75, step: 1, value: 50, presets: [25, 38, 50], hint: 'Tape width: 50 mm is 2". The tab pad is this long.' },
-  { key: 'tabW', showIf: (p) => !p.wicks.startsWith('Kevlar rope'), label: 'Tab width', unit: 'mm', min: 14, max: 40, step: 1, value: 22 },
-  { key: 'neck', showIf: (p) => !p.wicks.startsWith('Kevlar rope'), label: 'Tab neck', unit: 'mm', min: 10, max: 60, step: 1, value: 22, hint: 'Keeps the flame off the blade edge and your hands.' },
-  { key: 'tapeLen', showIf: (p) => !p.wicks.startsWith('Kevlar rope'), label: 'Tape per wick', unit: 'mm', min: 150, max: 700, step: 10, value: 380 },
+  { key: 'bare', showIf: (p) => FULL(p.wicks), label: 'Bare above the guard', unit: 'mm', min: 0, max: 200, step: 5, value: 10, hint: 'How much bare metal is left above the guard before the Kevlar starts. 10 mm wraps the whole blade right up to the guard, so the whole sword burns; leave more if you want the flame further from your hands.' },
+  { key: 'tabW', showIf: (p) => !p.wicks.startsWith('Kevlar rope') && !FULL(p.wicks), label: 'Tab width', unit: 'mm', min: 14, max: 40, step: 1, value: 22 },
+  { key: 'neck', showIf: (p) => !p.wicks.startsWith('Kevlar rope') && !FULL(p.wicks), label: 'Tab neck', unit: 'mm', min: 10, max: 60, step: 1, value: 22, hint: 'Keeps the flame off the blade edge and your hands.' },
+  { key: 'tapeLen', showIf: (p) => !p.wicks.startsWith('Kevlar rope') && !FULL(p.wicks), label: 'Tape per wick', unit: 'mm', min: 150, max: 700, step: 10, value: 380 },
   { key: 'ropeD', showIf: (p) => p.wicks.startsWith('Kevlar rope'), label: 'Rope', unit: 'mm', min: 6, max: 12, step: 2, value: 10, hint: 'Braided Kevlar rope for the laced blade.' },
+  { key: 'pomEye', label: 'End of the hilt', options: ['eye ring for a swivel', 'swivel hole (Ø8)', 'plain'], value: 'eye ring for a swivel', hint: 'An attachment point at the very end of the hilt for a swivel, a lanyard or a rope (rope-sword moves). Eye ring: sticks out past the pommel, clear of the pommel weights. Swivel hole: in the pommel itself; the weight washers then need to be Ø16 or smaller.' },
   { key: 'pommel', label: 'Pommel weight', options: ['balance it for me', 'none'], value: 'balance it for me', hint: 'Steel washers or discs bolted through the pommel on an M8 bolt, so the sword balances a hand in front of the guard: it rolls round your body under control.' },
 ]
 
@@ -83,6 +86,10 @@ export function buildSword(wasm, p, opts = {}) {
     const ccwP = (P) => { let a = 0; for (let i = 0; i < P.length; i++) { const [x1, y1] = P[i], [x2, y2] = P[(i + 1) % P.length]; a += x1 * y2 - x2 * y1 } return a < 0 ? [...P].reverse() : P }
     let plate = k(new CrossSection(shapes.map(ccwP), 'NonZero'))
     plate = k(plate.add(k(k(CrossSection.circle(pomR, 64)).translate([pomX, 0]))))
+    // the end of the hilt: an eye ring that sticks out past the pommel, for a swivel
+    const eyeRing = (p.pomEye || '').startsWith('eye')
+    const eyeX = pomX - pomR - 7
+    if (eyeRing) plate = k(plate.add(k(k(CrossSection.circle(11, 48)).translate([eyeX, 0])).add(k(k(CrossSection.square([16, 12], true)).translate([pomX - pomR - 1, 0])))))
 
     // wick tabs: a neck out from the edge, a pad the tape wraps round, 2 bolts through the pad
     const fire = p.wicks
@@ -114,7 +121,8 @@ export function buildSword(wasm, p, opts = {}) {
     // holes: handle scale rivets, pommel weight bolt, lanyard; rope slots down the blade
     for (const f of [0.2, 0.5, 0.8]) holes.push({ x: -gT - p.handleL * f, y: 0, r: 2.6 })
     holes.push({ x: pomX, y: 0, r: 4.3 })
-    holes.push({ x: pomX - pomR * 0.55, y: 0, r: 2.5 })
+    if (eyeRing) holes.push({ x: eyeX, y: 0, r: 5 })
+    else if ((p.pomEye || 'swivel').startsWith('swivel')) holes.push({ x: pomX - pomR * 0.58, y: 0, r: 4 })
     const slots = []
     let rope = null
     if (fire.startsWith('Kevlar rope')) {
@@ -136,6 +144,35 @@ export function buildSword(wasm, p, opts = {}) {
       const a = cl[Math.round(t0 * N) - 3], b = cl[Math.min(N - 4, Math.round(t1 * N) + 2)]
       holes.push({ x: a.x, y: a.y, r: 2 }, { x: b.x, y: b.y, r: 2 })
     }
+    // full length: Kevlar tape the whole length of the blade, wound round it or folded over both edges
+    let full = null
+    if (FULL(fire)) {
+      const x0 = Math.max(6, Math.min(p.bare ?? 10, L * 0.4)), wrap = fire.startsWith('Kevlar wrapped')
+      const blade2 = k(k(new CrossSection([ccwP(blade)], 'NonZero')).offset(0, 'Round'))
+      const zone = k(blade2.intersect(k(k(CrossSection.square([L + 40, W * 4], false)).translate([x0, -W * 2]))))
+      let along = 0, perim = 0
+      for (let i = 1; i <= N; i++) if (cl[i].x >= x0) { const dl = Math.hypot(cl[i].x - cl[i - 1].x, cl[i].y - cl[i - 1].y); along += dl; perim += dl * (2 * cl[i].hw + 2 * T) }
+      if (wrap) {
+        // a spiral, half-overlapped: each turn covers half a tape width of new blade
+        const tapeM = perim / (p.wickW * 0.5) / 1000
+        full = { kind: 'wrap', x0, along, tapeM, zone }
+        // stainless tie wire through small holes down the middle every 80 mm, M5 bolts at both ends to clamp the tape ends
+        for (let x = x0 + 40; x < L - 50; x += 80) { const c = cl[Math.round((x / L) * N)]; holes.push({ x: c.x, y: c.y, r: 1.3 }) }
+        for (const x of [x0 + 12, L - 40]) { const c = cl[Math.round((x / L) * N)]; holes.push({ x: c.x, y: c.y, r: bolt }) }
+      } else {
+        // a strip folded over each edge, bolted through every 70 mm
+        const inset = Math.min(11, W * 0.22)
+        const tapeM = (2 * along + 2 * 60) / 1000
+        full = { kind: 'edges', x0, along, tapeM, zone, inset }
+        for (let x = x0 + 25; x < L - 30; x += 70) {
+          const c = cl[Math.round((x / L) * N)]
+          if (c.hw < inset + 6) continue
+          for (const side of [1, -1]) holes.push({ x: c.x + side * c.nx * (c.hw - inset), y: c.y + side * c.ny * (c.hw - inset), r: 2.2 })
+        }
+        const tc = cl[N - 4]; holes.push({ x: tc.x, y: tc.y, r: 2.2 })
+      }
+      full.g = (full.tapeM * 1000 * p.wickW * tapeT / 1000) * KEVLAR * (full.kind === 'edges' ? 1 : 1)
+    }
     let cut = plate
     if (slots.length) cut = k(cut.subtract(k(CrossSection.union(slots))))
     cut = k(cut.subtract(k(CrossSection.union(holes.map((h) => k(k(CrossSection.circle(h.r, 24)).translate([h.x, h.y])))))))
@@ -156,6 +193,7 @@ export function buildSword(wasm, p, opts = {}) {
     const wickWet = wickDry * WET
     let fireG = 0, fireX = 0
     if (rope) { fireG = rope.g * WET; fireX = (0.22 + 0.95) / 2 * L }
+    else if (full) { fireG = full.g * WET; fireX = (full.x0 + L) / 2 - L * 0.04 }
     else if (tabs.length) { fireG = wickWet * tabs.length; fireX = wickBoxes.reduce((s, w) => s + w.c[0], 0) / wickBoxes.length }
     const handleG = 2 * (p.handleL * tangW * 6 / 1000) * 0.7 // two wooden scales
     const handleX = -gT - p.handleL / 2
@@ -188,10 +226,15 @@ export function buildSword(wasm, p, opts = {}) {
         kev.push(k(Manifold.hull([s1, s2])), k(Manifold.hull([s2, s3])))
       }
     }
+    if (full) {
+      const sk = full.kind === 'wrap' ? full.zone : k(full.zone.subtract(k(full.zone.offset(-full.inset - 4, 'Round', 2, 16))))
+      kev.push(k(k(k(sk.offset(tapeT, 'Round', 2, 16)).extrude(T + 2 * tapeT)).translate([0, 0, -T / 2 - tapeT])))
+    }
     if (kev.length) meshes.kevlar = meshData(k(Manifold.union(kev)))
     if (pomG > 0) {
       const disc = Math.PI * 15 ** 2 * 7.85 / 1000 // g per mm of a Ø30 steel stack
       const h = Math.min(40, pomG / disc / 2)
+      if ((p.pomEye || '').startsWith('swivel')) warns.push('The pommel weights cover the swivel hole at Ø30: use Ø16 washers (a taller stack), or pick the eye ring.')
       meshes.rods = meshData(k(k(Manifold.cylinder(2 * h + T, 15, 15, 32)).translate([pomX, 0, -h - T / 2])))
     }
     // the DXF: the outline and the rope slots on CUT, the round holes as true circles on HOLES
@@ -200,7 +243,7 @@ export function buildSword(wasm, p, opts = {}) {
     return {
       sword: {
         style, mat: mat.name, T, L, total, plateG, fireG, handleG, pomG, balance, target, pomX,
-        tabs: tabs.length, wickDry, wickWet, rope, tapeTotal: tabs.length * p.tapeLen,
+        tabs: tabs.length, wickDry, wickWet, rope, tapeTotal: tabs.length * p.tapeLen, full: full ? { kind: full.kind, x0: full.x0, along: full.along, tapeM: full.tapeM, g: full.g } : null,
         length: box.max[0] - box.min[0], width: box.max[1] - box.min[1],
       },
       meshes,
@@ -227,6 +270,6 @@ export function swordDesigns() {
     d('swordBroad', 'Fire Broadsword', 'broad', 'A straight, double-edged fire contact sword cut from one plate: blade, crossguard, full-tang handle and pommel. Kevlar wicks on tabs at the tip and along both edges, every edge round so it rolls on the body.'),
     d('swordScimitar', 'Fire Scimitar', 'scimitar', 'A curved fire contact sword that widens towards the tip, wicked along both edges and at the point. The curve makes it roll and flow off the arms.', { bladeL: 600, bladeW: 46 }, [{ key: 'curve', label: 'Curve', unit: '%', min: 0, max: 25, step: 1, value: 12 }]),
     d('swordFlame', 'Flame Blade', 'flame', 'A wavy flame-edged blade: the waves throw the light as it spins, and the flames from the wicks follow the edge.', { bladeL: 640, bladeW: 46 }, [{ key: 'waves', label: 'Waves', unit: '', min: 2, max: 9, step: 1, value: 5 }]),
-    d('swordLeaf', 'Leaf Blade', 'leaf', 'A short, wide leaf-shaped blade, light and quick in the hand: easy to learn contact moves with. Kevlar rope laced down the blade, or tabs.', { bladeL: 480, bladeW: 56, wicks: 'Kevlar rope down the blade', perEdge: 1 }),
+    d('swordLeaf', 'Leaf Blade', 'leaf', 'A short, wide leaf-shaped blade, light and quick in the hand: easy to learn contact moves with. Kevlar the full length of the blade, and an eye at the end of the hilt for a swivel.', { bladeL: 480, bladeW: 56, perEdge: 1 }),
   ]
 }

@@ -27,9 +27,13 @@ import { noveltyDesigns } from './novelty.js'
 import { dartDesigns } from './darts.js'
 import { gripDesigns } from './grip.js'
 import { mouldDesigns } from './moulds.js'
-import { hoopDesigns } from './hoops.js'
+import { hoopDesigns, jointDesigns } from './hoops.js'
 import { bubblePoiDesigns } from './bubblepoi.js'
 import { swordDesigns } from './swords.js'
+import { acroDesigns } from './acro.js'
+import { pineHubDesigns } from './pinecone.js'
+import { dowelDesigns } from './dowel.js'
+import { tubeSwordDesigns, tubeAxeDesigns } from './tubeswords.js'
 import { TAU, rot, place, ccw, cw, rng, voronoi, pointInPoly, circlePts, HEART, wingPoly, logoDragonfly, Canvas } from './geom.js'
 
 const deg = (d) => (d * Math.PI) / 180
@@ -3302,10 +3306,20 @@ DESIGNS.push(...dartDesigns())
 DESIGNS.push(...mouldDesigns())
 // hoops: cut lengths for every size and a printed connector
 DESIGNS.push(...hoopDesigns())
+// collapsible (travel) hoops: push-button and pin joints
+DESIGNS.push(...jointDesigns())
 // bubble poi heads, with printed loops or loops to wrap in cotton yarn
 DESIGNS.push(...bubblePoiDesigns())
 // fire contact swords: cut from metal, Kevlar wicks
 DESIGNS.push(...swordDesigns())
+// acro staff ends: printed (coin + steel shot) and turned metal
+DESIGNS.push(...acroDesigns())
+// pine cones: three flat hubs (the cone ends, darts and poi live with their own kinds)
+DESIGNS.push(...pineHubDesigns())
+// locking dowels for the pole end (turned metal); hubs opt in with Lock onto a metal dowel
+DESIGNS.push(...dowelDesigns())
+// tube fire swords and axes: a machined connector on the staff pole, Kevlar-wound tubes, a Kevlar ball pommel
+DESIGNS.push(...tubeSwordDesigns(), ...tubeAxeDesigns())
 
 const polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)]
 

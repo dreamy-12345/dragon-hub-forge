@@ -25,9 +25,12 @@ import { buildNovelty } from './novelty.js'
 import { buildDart } from './darts.js'
 import { buildGrip } from './grip.js'
 import { buildMould } from './moulds.js'
-import { buildHoop } from './hoops.js'
+import { buildHoop, buildHoopJoint } from './hoops.js'
 import { buildBubblePoi } from './bubblepoi.js'
 import { buildSword } from './swords.js'
+import { buildAcro, buildAcroMetal } from './acro.js'
+import { buildTubeSword, buildTubeAxe } from './tubeswords.js'
+import { buildDowel, LOCK_PARAMS, LOCKS, lockKey, hubLockZ } from './dowel.js'
 
 export { DESIGNS }
 
@@ -106,6 +109,7 @@ export const COMMON_PARAMS = [
   { key: 'collarOD', label: 'Collar OD', unit: 'mm', min: 26, max: 70, step: 0.5, value: 38, group: 'Fit' },
   { key: 'collarH', label: 'Collar length', unit: 'mm', min: 4, max: 60, step: 0.5, value: 26, group: 'Fit', hint: 'Longer collar keeps the disc square to the staff.' },
   { key: 'flareW', label: 'Collar flare', unit: 'mm', min: 0, max: 20, step: 0.5, value: 8, group: 'Fit', hint: 'Cone where the collar meets the web, so a hit on the rim does not snap the collar off.' },
+  ...LOCK_PARAMS,
   { key: 'screw', label: 'Set-screw pilot', unit: 'mm', min: 0, max: 5, step: 0.1, value: 0, group: 'Fit', hint: '0 = none. 3.3 for an M4 screw tapped straight into TPU.' },
 ]
 
@@ -231,8 +235,14 @@ export function buildHub(wasm, design, p, opts = {}) {
   if (design.adaptor) return buildAdaptor(wasm, p, opts)
   if (design.grip) return buildGrip(wasm, p, { kind: design.kind, density: opts.material?.density })
   if (design.dart) return buildDart(wasm, p, { style: design.style, density: opts.material?.density })
+  if (design.tsword) return buildTubeSword(wasm, p, {})
+  if (design.taxe) return buildTubeAxe(wasm, p, { style: design.style })
+  if (design.dowel) return buildDowel(wasm, p, { lock: design.lock }) // print-mode preview: aluminium
+  if (design.acroMetal) return buildAcroMetal(wasm, p, { plugIn: design.plugIn }) // print-mode preview: aluminium
+  if (design.acro) return buildAcro(wasm, p, { density: opts.material?.density, cone: design.cone })
   if (design.sword) return buildSword(wasm, p, { style: design.style }) // the preview in print mode: 5 mm aluminium
   if (design.bubblePoi) return buildBubblePoi(wasm, p, { density: opts.material?.density })
+  if (design.joint) return buildHoopJoint(wasm, p, { style: design.joint, density: opts.material?.density, materialName: opts.material?.name })
   if (design.hoop) return buildHoop(wasm, p, { density: opts.material?.density })
   if (design.mould) return buildMould(wasm, p, { kind: design.kind, style: design.style })
   if (design.novelty) return buildNovelty(wasm, p, { kind: design.kind, density: opts.material?.density, axe: design.axe })
@@ -649,6 +659,28 @@ export function buildHub(wasm, design, p, opts = {}) {
       const z = sz
       solid = k(solid.subtract(k(k(k(Manifold.cylinder(R, p.screw / 2, p.screw / 2, 24)).rotate([0, 90, 0])).translate([0, 0, z]))))
     }
+    // optional: lock onto a metal Locking Dowel in the pole end (dowel.js)
+    let lockInfo = null
+    if (p.lockOn) {
+      const lk = lockKey(p.lockType), zL = hubLockZ(p, T)
+      const lockWarns = [], lockWarn = (t) => lockWarns.push(t)
+      lockInfo = { type: lk, name: LOCKS[lk], zL: null, fromCollarEnd: null, stub: p.collarH, warns: lockWarns }
+      if (lk !== 'bolt' && zL == null) lockWarn(`The collar is too short to lock onto the dowel: make Collar length at least ${Math.ceil(T + 10)} mm.`)
+      else {
+        const along = (r, len, x0, z) => k(k(k(Manifold.cylinder(len, r, r, 24)).rotate([0, 90, 0])).translate([x0, 0, z]))
+        const turn = (m) => k(m.rotate([0, 0, (g.rot * 180) / Math.PI + 90])) // between the first spokes, off the set-screw line
+        if (lk === 'grub') {
+          // M5 clearance through the collar wall, an M5 nut trapped in the wall, loaded from the collar end
+          const rm = (boreR + Rc) / 2
+          if (Rc - boreR < 7) lockWarn(`The collar wall is ${(Rc - boreR).toFixed(1)} mm: make Collar OD at least ${Math.ceil(2 * boreR + 14)} mm to hold the grub screw's nut.`)
+          const slot = k(k(Manifold.cube([4.4, 9.6, p.collarH - zL + 4.8 + 1], false)).translate([rm - 2.2, -4.8, zL - 4.8]))
+          solid = k(solid.subtract(turn(k(along(2.7, Rc + 2, boreR - 1, zL).add(slot)))))
+        } else if (lk === 'pin') {
+          solid = k(solid.subtract(turn(along(2.75, 2 * Rc + 4, -Rc - 2, zL))))
+        }
+        Object.assign(lockInfo, { zL, fromCollarEnd: zL == null ? null : p.collarH - zL })
+      }
+    }
 
     // drop zero-volume slivers that boolean rounding can leave where surfaces graze
     {
@@ -730,6 +762,7 @@ export function buildHub(wasm, design, p, opts = {}) {
       podH,
       ring: ringInfo,
       snap: snapInfo,
+      lock: lockInfo,
       colourChangeAt: zoneB.length ? T : null, // one-nozzle trick: swap filament at this height
       stats: {
         grams: gBody,

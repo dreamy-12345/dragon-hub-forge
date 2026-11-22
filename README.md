@@ -8,7 +8,7 @@ Made at [Dreamscape](https://dream.sc).
 browser; saved designs stay in that browser).
 
 ## What it does
-- 80+ parametric hub designs: glowing capsule lanterns, creatures, organic veins,
+- 90+ parametric hub designs: glowing capsule lanterns, creatures, organic veins,
   spin illusions (zoetropes, moiré, hidden rings), fractals, melted punk and more.
 - Real solid geometry with [manifold-3d](https://github.com/elalish/manifold):
   two print levels (low frame + raised shapes) for two-colour prints, crush-rib
@@ -30,13 +30,27 @@ browser; saved designs stay in that browser).
   matched steel-shot counterweight or contact ball for the other end so the staff balances.
 - **Rope dart heads**: classic (with a lathe drawing for metal), modern, round, detailed
   patterns, and nature (leaf bud, acorn, garden gnome).
-- **Poi**: printable poi heads, and bubble poi with printed loops or loops to wrap in cotton yarn.
+- **Poi**: printable poi heads, and classic bubble poi (stacked circles and a big one, swivel eyes top and bottom).
 - **Silicone and rubber moulds** for contact balls, rope darts and poi: a printed two-part
   mould to cast the end, or a mould box to make a rubber mould and cast copies. With a guide.
 - **Hoops**: the exact tubing length to cut for any hoop size, a printable curved
   connector, and a hoop making guide.
 - **Fire contact swords** (CNC, metal only): four blades cut from one plate with Kevlar
-  wicks on tabs or a laced Kevlar rope, balance point and pommel weight worked out.
+  wound the full length of the blade (or on edges, tabs or a laced rope), an eye at the
+  end of the hilt, balance point and pommel weight worked out.
+- **Tube fire swords and axes**: a machined hilt connector on your 19/22 mm staff pole,
+  Kevlar-wound blade and guard tubes, a burning Kevlar pommel ball sized to balance it;
+  Viking and anime axe heads bent from tube, with a matched Kevlar ball for the other end.
+- **Acro staff ends**: printed (dome, ball, balance foot, grip, hex, mushroom, pine cones)
+  with a coin at the socket bottom so the pole edge can't cut in, a steel-shot chamber
+  sized to the weight you want, every size and shape adjustable; turned metal ends
+  (grub-screw socket, or plug-in with an allen-key expander and a lip); acro end moulds.
+- **Locking dowels**: a metal dowel for the pole end that every hub can lock onto
+  (grub screw, cross pin or end bolt): tick the box in any hub.
+- **Collapsible hoops**: push-button, flex-button, double-button and clip-pin joints,
+  a drill guide, section lengths and a materials list; a cut table beside every hoop.
+- **Pine cones**: rope darts, poi, staff ends and three hubs.
+- A size reference (a person of any height, or a lighter) next to any design.
 - **Pole fittings**: pole inserts, an internal End Expander and a Clamp Collar so
   rigid hubs grip without crushing carbon, and collapsible staff joints (screw,
   twist-lock, snap-button). Type your pole's inside and outside size once.

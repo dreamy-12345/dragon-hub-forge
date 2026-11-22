@@ -149,7 +149,8 @@ export function buildNovelty(wasm, p, opts = {}) {
       const T = 14 * s, w = 12 * s
       const top = z0 + 40 * s, bar = top + 12 * s
       const polys = [rect(-w / 2, z0 - 4, w / 2, top + 2), rect(-36 * s, top, 36 * s, bar)]
-      for (const [x, L] of [[-30 * s, 42 * s], [0, 58 * s], [30 * s, 42 * s]]) {
+      const sl = (p.spikeLen ?? 100) / 100, sm = (p.midLen ?? 100) / 100
+      for (const [x, L] of [[-30 * s, 42 * s * sl], [0, 58 * s * sl * sm], [30 * s, 42 * s * sl]]) {
         const tipZ = bar + L
         polys.push(rect(x - 5 * s, bar - 1, x + 5 * s, tipZ - 14 * s))
         // a fat arrow head with blunt barbs
@@ -352,7 +353,7 @@ export function noveltyDesigns() {
   })
   const a = (id, name, kind, blurb) => ({ ...d(id, name, kind, blurb), group: 'Axes', axe: true, params: AXE_PARAMS.map((x) => ({ ...x })) })
   return [
-    d('endTrident', 'Trident End', 'trident', 'A sea-god trident for the end of your contact staff: three prongs with fat, blunt barbs, all edges rounded. Prints standing on its socket in TPU.'),
+    { ...d('endTrident', 'Trident End', 'trident', 'A sea-god trident for the end of your contact staff: three prongs with fat, blunt barbs, all edges rounded. Make the spikes as long as you like. Prints standing on its socket in TPU.'), params: [...NOVELTY_PARAMS.map((x) => ({ ...x })), { key: 'spikeLen', label: 'Spike length', unit: '%', min: 60, max: 300, step: 5, value: 100, hint: 'All three prongs. 100% is the standard; 200% doubles them.' }, { key: 'midLen', label: 'Middle spike', unit: '%', min: 70, max: 200, step: 5, value: 100, hint: 'The middle prong compared with the outer two.' }] },
     d('endHeart', 'Big Heart End', 'heart', 'A big chunky heart on the end of the staff. Soft TPU, prints standing on its point, no supports.'),
     d('endMace', 'Mace End', 'mace', 'A medieval mace head with soft, round-tipped spikes: looks fierce, bounces off you in TPU.'),
     { ...d('endAxe', 'Axe End', 'axe', 'A bearded battle-axe head with a back spike. The blade is thick and round-edged (it is a toy), and its lower edge climbs at 45° so it prints without supports. Comes with a matched counterweight for the other end.'), group: 'Axes', axe: true, params: [...NOVELTY_PARAMS.map((x) => ({ ...x })), ...AXE_PARAMS.slice(2).map((x) => ({ ...x }))] },

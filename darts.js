@@ -10,6 +10,7 @@
  */
 import { TAU } from './geom.js'
 import { geoEdges } from './balls.js'
+import { coneScales, CONE_SHAPES, CONE_PARAMS } from './pinecone.js'
 
 export const DART_PARAMS = [
   { key: 'length', label: 'Length', unit: 'mm', min: 60, max: 180, step: 1, value: 110, hint: 'Tip to the top of the eye.' },
@@ -128,6 +129,18 @@ export function buildDart(wasm, p, opts = {}) {
       const u = k(Manifold.union(bits))
       body = style === 'scales' ? k(body.add(u)) : k(body.subtract(u))
       prof = null // not a plain lathe job any more: the pattern needs a 4-axis mill or a metal print
+    } else if (style.startsWith('cone-')) {
+      // a pine cone hanging from the eye: golden-angle scales, their ends pointing down to the tip
+      const shape = style.slice(5)
+      const Lb = shape === 'stone' ? (Lr = 2.3 * R) : L
+      const f = CONE_SHAPES[shape] || CONE_SHAPES.pine
+      const rAt = (z) => R * 0.8 * f(Math.min(1, Math.max(0, z / Lb)))
+      const pr = []
+      for (let i = 1; i <= 64; i++) pr.push([rAt((Lb * i) / 64), (Lb * i) / 64])
+      body = k(k(new CrossSection([[[0, 0], [rAt(0), 0], ...pr, [0, Lb]]], 'Positive')).revolve(96))
+      const sc = coneScales(wasm, k, { rAt, z0: Lb * 0.02, z1: Lb * 0.94, N: p.scales ?? 120, open: p.open ?? 0.3, dir: -1, minR: 2.5 })
+      if (sc) body = k(body.add(sc))
+      warns.push('Pine cone scales overhang: print with tree supports touching the bed only, or print it in two halves.')
     } else if (style === 'leaf') {
       // a leaf bud: a teardrop wrapped in rows of pointed leaves, each with a raised midrib, laid along the curve
       prof = profile('glow', L, R)
@@ -302,7 +315,7 @@ export function dartDesigns() {
     params: DART_PARAMS.map((x) => ({ ...x, ...(over[x.key] !== undefined ? { value: over[x.key] } : {}) })),
     draw: () => {},
   })
-  const ROUND = ['orb', 'geodesic', 'pod']
+  const ROUND = ['orb', 'geodesic', 'pod', 'cone-stone']
   const p = (id, name, style, blurb, over) => {
     const x = { ...d(id, name, style, 'Poi', blurb, over), poi: true }
     x.params = x.params.filter((q) => !(q.key === 'length' && ROUND.includes(style))).map((q) => q.key === 'ropeD' ? { ...q, label: 'Leash cord', hint: 'The eye fits this cord with a millimetre to spare; clip a swivel through it.' } : q)
@@ -323,12 +336,22 @@ export function dartDesigns() {
     d('dartLeaf', 'Leaf Bud', 'leaf', 'DartNature', 'A teardrop bud wrapped in rows of pointed leaves, each with a raised midrib, laid along its curve like a closed spring bud. Soft in TPU, and it catches the light leaf by leaf.', { length: 120, maxD: 38 }),
     d('dartAcorn', 'Acorn', 'acorn', 'DartNature', 'An acorn: a smooth nut with a scaly cup on top, and the rope eye is its stem. Size it with Widest.', { maxD: 40 }),
     d('dartGnome', 'Garden Gnome', 'gnome', 'DartNature', 'A garden gnome on a rope: round belly, flowing beard, big nose, little boots, and a pointy hat whose tip is the rope eye. Print in TPU with tree supports.', { length: 120, maxD: 42 }),
+    ...[
+      ['dartPine', 'Pine Cone', 'cone-pine', 'A pine cone on a rope: a fat cone hanging from the eye by its stem, covered in scales on the golden-angle spirals real cones grow. Soft and grippy in TPU.', { length: 120, maxD: 40, scales: 120, open: 0.3 }],
+      ['dartPineOpen', 'Open Pine Cone', 'cone-pine', 'A dry, open pine cone: the scale ends stand right out. Lots of grip to catch, and it throws the light about as it spins.', { length: 115, maxD: 44, scales: 90, open: 0.9 }],
+      ['dartFir', 'Fir Cone', 'cone-fir', 'A long, slim fir cone with fine, tight scales: fast through the air and easy on the hands.', { length: 140, maxD: 30, scales: 170, open: 0.15 }],
+      ['dartStonePine', 'Stone Pine', 'cone-stone', 'A round stone-pine cone: a ball of chunky scales that rolls off the body. Size it with Widest.', { maxD: 44, scales: 110, open: 0.35 }],
+    ].map(([id, name, st, blurb, o]) => { const x = d(id, name, st, 'DartPine', blurb, o); x.params = [...x.params.filter((q) => !(q.key === 'length' && st === 'cone-stone')), ...CONE_PARAMS.map((q) => ({ ...q, value: o[q.key] ?? q.value }))]; return x }),
     d('dartTwist', 'Twist', 'twist', 'DartModern', 'A six-pointed star twisted down to the tip: it looks like it is spinning even when it hangs still.', { length: 120, maxD: 34 }),
     // poi heads: the same shapes, sized for poi, with the eye for the leash swivel
     p('poiBall', 'Poi Ball', 'orb', 'A plain round poi head: rolls off the arms smoothly, the classic contact-poi feel. Print in TPU 95A at 100% for weight; clip the leash swivel through the eye.', { maxD: 70, ropeD: 5 }),
     p('poiGeo', 'Geo Poi', 'geodesic', 'A poi head wrapped in a fine geodesic web: catches the light on every turn. Print fine (0.12 mm layers).', { maxD: 66, ropeD: 5 }),
     p('poiPod', 'Seed Poi', 'pod', 'A long grooved seed-pod poi head: the grooves stripe the light as it spins, and it sits nicely in the hand.', { maxD: 50, ropeD: 5 }),
     p('poiScales', 'Dragon Scale Poi', 'scales', 'A teardrop poi head covered in raised dragon scales on a golden-angle spiral.', { length: 95, maxD: 56, ropeD: 5 }),
+    ...[
+      ['poiPine', 'Pine Cone Poi', 'cone-pine', 'A pine cone poi head hanging from the leash by its stem: golden-angle scales all over, soft in TPU. Make a pair.', { length: 105, maxD: 56, ropeD: 5, scales: 120, open: 0.3 }],
+      ['poiStonePine', 'Stone Pine Poi', 'cone-stone', 'A round stone-pine poi head of chunky scales: rolls off the arms, and the scales give the light something to play on.', { maxD: 64, ropeD: 5, scales: 120, open: 0.35 }],
+    ].map(([id, name, st, blurb, o]) => { const x = p(id, name, st, blurb, o); x.params = [...x.params, ...CONE_PARAMS.map((q) => ({ ...q, value: o[q.key] ?? q.value }))]; return x }),
     p('poiGlow', 'Glow Poi', 'glow', 'A clear TPU teardrop that holds an LED capsule: slide it in from the tip and press the plug in. Glow poi you can print.', { length: 130, maxD: 36, ropeD: 5 }),
   ]
 }

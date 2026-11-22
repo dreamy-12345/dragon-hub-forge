@@ -20,6 +20,7 @@
 import { TAU } from './geom.js'
 import { ballMaster, BALL_PARAMS } from './balls.js'
 import { buildDart, DART_PARAMS } from './darts.js'
+import { acroOuter, ACRO_SHAPE_PARAMS, ACRO_POLE_PARAMS, ACRO_COIN_PARAMS, PROFILES } from './acro.js'
 
 export const RUBBERS = {
   'platinum silicone 30A': { d: 1.08, silicone: true, note: 'The all-rounder: soft, grippy, lasts for years, skin safe once cured. Mix 1:1.' },
@@ -106,6 +107,35 @@ export function buildMould(wasm, p, opts = {}) {
       sprR = 4; sprX = pinR + 0.5 * (R - pinR); sprZ = 0
       vents.push([-sprX, 0])
       pin = { z0: R - depth }
+    } else if (kind === 'acro') {
+      // an acro staff end, mouth up: the core pin makes the socket, coins taped to its end are cast in
+      pinR = (p.poleOD - (p.squeeze ?? 1)) / 2
+      const O = acroOuter(wasm, k, p, { rb: pinR, print: false })
+      master = k(O.m.rotate([180, 0, 0]))
+      top = 0
+      R = O.R * O.f
+      const L = O.L
+      const coinOn = p.coin === 'yes', stack = coinOn ? p.coinN * p.coinT : 0
+      const depth = Math.min(p.grip, L - stack - 6)
+      if (depth < p.grip) warns.push(`The end is too short for a ${p.grip} mm socket: it is ${depth.toFixed(0)} mm. Make it longer.`)
+      bore = { d: 2 * pinR, depth }
+      pin = { z0: -depth }
+      if (coinOn) {
+        hw.push(cyl(p.coinD / 2, -depth - stack, -depth, 0, 48))
+        cavityExtra.push(cyl(p.coinD / 2, -depth - stack, -depth + 0.01, 0, 48))
+        if (p.coinD < p.poleOD - 0.5) warns.push(`The coin (Ø${p.coinD}) is narrower than the pole: use one at least Ø${Math.ceil(p.poleOD)} so the pole edge lands on metal.`)
+        if (p.coinD / 2 + 3 > O.R * O.ins) warns.push('The coin is nearly as wide as the end: use a smaller coin or a bigger end.')
+      }
+      // pour in where it is widest, between the pin and the outside
+      let zMax = -L / 2, rMax = 0
+      for (let i = 1; i < 40; i++) { const z = -(L * i) / 40, r = sliceR(master, z); if (r > rMax) (rMax = r), (zMax = z) }
+      sprR = 3; sprX = Math.min(rMax - sprR - 1.2, pinR + sprR + 2 + (rMax - pinR - 2 * sprR - 3.2) / 2); sprZ = zMax
+      if (sprX - sprR < pinR + 1) warns.push('Little room for the pour between the pole socket and the outside: make the end wider.')
+      vents.push([-sprX, zMax])
+      // the mouth face is the top of the cavity: two fine vents through it so no air ring is left there
+      const mw = O.Rm * O.ins - pinR
+      if (mw >= 2.6) for (const s of [1, -1]) vents.push([s * (pinR + mw / 2), -0.5, Math.min(1.1, mw / 2 - 0.3)])
+      else warns.push('The wall at the pole is thin: tilt the mould a little as you pour so air leaves the rim.')
     } else {
       // rope dart or poi head from the dart builder, eye up, tip down
       const nutWay = (p.attach || '').startsWith('cast-in')
@@ -142,16 +172,17 @@ export function buildMould(wasm, p, opts = {}) {
     // pour funnel, sprue and vents, all on the split plane so each half carries half of them
     const funnelH = Math.min(10, W)
     channels.push(cyl(sprR, sprZ, z1 + 1, sprX), cyl(sprR, z1 - funnelH, z1 + 0.01, sprX, 32, sprR + funnelH * 0.9))
-    for (const [vx, vz] of vents) channels.push(cyl(1.6, vz, z1 + 1, vx, 16))
+    for (const [vx, vz, vr] of vents) channels.push(cyl(vr || 1.6, vz, z1 + 1, vx, 16))
     if (pin) {
       pin.top = z1
-      channels.push(cyl(pinR + 0.15, R - 1, z1 + 1, 0, 64))
+      channels.push(cyl(pinR + 0.15, top - 1, z1 + 1, 0, 64))
     }
     const cavity = k(Manifold.union([master, ...channels]))
 
     // the cast part (what comes out of a printed mould): the master less the pin's socket
     let cast = master
-    if (pin) cast = k(master.subtract(cyl(pinR, pin.z0, R + 1, 0, 64)))
+    if (pin) cast = k(master.subtract(cyl(pinR, pin.z0, top + 1, 0, 64)))
+    if (cavityExtra.length) cast = k(cast.subtract(k(Manifold.union(cavityExtra)))) // the cast-in coins
 
     // where the bolts and keys can go: clear of the cavity on the split face
     const face = k(k(cavity.rotate([90, 0, 0])).slice(0)).toPolygons().map((poly) => poly.map(([x, y]) => [x, -y]))
@@ -245,7 +276,7 @@ export function buildMould(wasm, p, opts = {}) {
       const dowels = []
       for (let z = bb.min[2] + 4; z < top - 4; z += 2) for (const x of [0]) if (clearance(mface, x, z) < -3.5) dowels.push([x, z])
       const dw = dowels.length ? [dowels[Math.floor(dowels.length * 0.2)], dowels[Math.floor(dowels.length * 0.8)]] : []
-      if (pin) dw.splice(0, dw.length, ...[[R * 0.45, -R * 0.2], [-R * 0.45, -R * 0.2]].filter(([x, z]) => clearance(mface, x, z) < -3.5))
+      if (pin) dw.splice(0, dw.length, ...(kind === 'acro' ? [[R * 0.5, bb.min[2] * 0.55], [-R * 0.5, bb.min[2] * 0.55]] : [[R * 0.45, -R * 0.2], [-R * 0.45, -R * 0.2]]).filter(([x, z]) => clearance(mface, x, z) < -3.5))
       for (const [x, z] of dw) {
         mA = k(mA.subtract(k(along(1.0, x, z, 6).translate([0, -6, 0]))))
         mB = k(mB.subtract(along(1.0, x, z, 6)))
@@ -351,6 +382,16 @@ export function mouldDesigns() {
     { key: 'attach', label: 'Rope or leash fixes to', options: ['cast-in M8 nut (screw in a swivel)', 'moulded eye'], value: over.attach || 'cast-in M8 nut (screw in a swivel)', hint: 'Cast-in nut: an M8 nut and a big washer are set in the rubber, then you screw in a stainless swivel eye bolt. Strongest. Moulded eye: a hole through the rubber head; cast it in 50A silicone or urethane rubber so it does not tear.' },
     ...MOULD_PARAMS.map((x) => ({ ...x })),
   ]
+  const acroP = (over = {}) => {
+    const keep = (list, keys) => list.filter((x) => keys.includes(x.key)).map((x) => ({ ...x, ...(over[x.key] !== undefined ? { value: over[x.key] } : {}) }))
+    return [
+      ...keep(ACRO_SHAPE_PARAMS, ['profile', 'circ', 'len', 'mouthWall', 'tipR', 'tipFlat', 'sides', 'twist', 'ribs', 'ribDepth']),
+      ...keep(ACRO_POLE_PARAMS, ['poleOD', 'grip']).map((x) => (x.key === 'poleOD' ? { ...x, hint: 'The core pin is a little under this so the rubber grips the pole.' } : x)),
+      { key: 'squeeze', label: 'Grip', unit: 'mm', min: 0, max: 3, step: 0.1, value: 1, hint: 'The socket is this much under the pole. Rubber stretches: 1 mm holds firm and still pushes on by hand.' },
+      ...keep(ACRO_COIN_PARAMS, ['coin', 'coinD', 'coinT', 'coinN']).map((x) => (x.key === 'coin' ? { ...x, hint: 'Tape the coins to the end of the core pin with a small piece of double-sided tape: the rubber flows round them and locks them in at the bottom of the socket.' } : x)),
+      ...MOULD_PARAMS.map((x) => ({ ...x, ...(x.key === 'rubber' && over.rubber ? { value: over.rubber } : {}), ...(x.key === 'mwall' ? { value: 13 } : {}) })),
+    ]
+  }
   const d = (id, name, kind, style, group, blurb, params) => ({ id, name, group, blurb, mould: true, kind, style, added: '2026-11-21', params, draw: () => {} })
   return [
     d('mouldBall', 'Contact Ball Mould', 'ball', 'smooth', 'MouldContact', 'A mould for a solid silicone contact ball: print the two halves and the core pin, bolt it shut, and pour. The ball comes out soft, grippy and heavy, with the pole socket made by the pin. Or switch to Mould box to make a rubber mould and cast copies.', ballP()),
@@ -363,6 +404,10 @@ export function mouldDesigns() {
     d('mouldOrb', 'Orb Dart Mould', 'dart', 'orb', 'MouldDart', 'Cast a round rubber rope dart head: rolls off the body, kind to the floor.', dartP({ maxD: 46 }, true)),
     d('mouldScales', 'Dragon Scales Mould', 'dart', 'scales', 'MouldDart', 'Cast the dragon-scale teardrop: hundreds of scales come out of the mould in one pour. Brush a thin first coat into the scales so no air is trapped.', dartP({ length: 125, maxD: 38 })),
     d('mouldPoi', 'Poi Ball Mould', 'dart', 'orb', 'MouldPoi', 'A mould for a soft rubber poi head: a heavy, grippy ball with a cast-in nut for the leash swivel. Make a pair.', dartP({ maxD: 70, ropeD: 5 }, true)),
+    d('mouldAcroDome', 'Acro Dome Mould', 'acro', 'acro', 'MouldAcro', 'Cast a soft silicone acro staff end: a round dome that rolls kindly over the body, with a coin cast into the bottom of the socket so the pole edge never cuts it. Every size and shape setting is here.', acroP({ len: 66, rubber: 'platinum silicone 30A' })),
+    d('mouldAcroBall', 'Acro Ball Mould', 'acro', 'acro', 'MouldAcro', 'A solid rubber ball end on a neck: heavy, grippy and soft. Pour it in steel-shot silicone for a really weighty end.', acroP({ profile: PROFILES.ball, circ: 176, len: 74, grip: 30, rubber: 'heavy: silicone 30A with steel shot' })),
+    d('mouldAcroFoot', 'Balance Foot Mould', 'acro', 'acro', 'MouldAcro', 'Cast the flat-footed bell in firm rubber: stands on a hand or the floor for balances, rubber grip on the foot.', acroP({ profile: PROFILES.bell, circ: 170, len: 58, tipR: 6, tipFlat: 40, mouthWall: 3, rubber: 'platinum silicone 50A (firm)' })),
+    d('mouldAcroHex', 'Hex Roller Mould', 'acro', 'acro', 'MouldAcro', 'Six twisted faces cast in urethane rubber: rolls in clicks and stays put when you set the staff down.', acroP({ sides: 6, twist: 30, circ: 160, len: 66, tipR: 18, rubber: 'urethane rubber 60A (tough, cheaper)' })),
     d('mouldPoiGeo', 'Geo Poi Mould', 'dart', 'geodesic', 'MouldPoi', 'Cast a geodesic-web poi head in rubber: hundreds of tiny raised triangles. Make a pair; brush the first coat in.', dartP({ maxD: 66, ropeD: 5 }, true)),
   ]
 }

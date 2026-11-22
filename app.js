@@ -8,6 +8,9 @@ import { createLikes } from './likes.js'
 import { initHelp } from './help.js'
 import { CNC_PARAMS, PROCESSES, cncDefaults, matOf, matKey, procKey, endsKey, ENDS, SPOKE_ENDS, toDXF, toCutSVG, spokeDrawingSVG } from './cnc.js'
 import { dartDrawingSVG } from './darts.js'
+import { acroDrawingSVG } from './acro.js'
+import { dowelDrawingSVG } from './dowel.js'
+import { connectorSheetSVG } from './tubeswords.js'
 
 const $ = (id) => document.getElementById(id)
 // UV colours glow under the blacklight view; the others stay dark
@@ -20,7 +23,7 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', Swords: '⚙️ CNC cut: fire contact swords', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
@@ -51,7 +54,7 @@ state.cncp = {}
 for (const d of DESIGNS) state.cncp[d.id] = { ...cncDefaults(d), ...(saved.cncp?.[d.id] || {}) }
 const isCnc = () => state.mode === 'cnc'
 const cncOnly = (d) => !!d.cncOnly // fire swords: metal, cut on a CNC, never printed
-const printOnly = (d) => !!(d.bubblePoi || d.hoop || d.mould || d.adaptor || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.grip) // always 3D printed, in either mode
+const printOnly = (d) => !!((d.acro && !d.acroMetal) || d.bubblePoi || d.hoop || d.mould || d.adaptor || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.grip) // always 3D printed, in either mode
 const cncp = () => state.cncp[state.design]
 const design = () => DESIGNS.find((d) => d.id === state.design)
 const params = () => state.params[state.design]
@@ -176,6 +179,48 @@ const weakGroup = new THREE.Group()
 spinner.add(weakGroup)
 
 const bubbles = new BubbleSim(scene, spinner)
+
+// size reference: a person (any height) or a lighter (about 8 cm), stood next to the design
+const refGroup = new THREE.Group()
+scene.add(refGroup)
+const refMat = new THREE.MeshStandardMaterial({ color: 0x8fa3c8, roughness: 0.6, transparent: true, opacity: 0.55, depthWrite: false })
+const REFS = ['off', 'person', 'lighter']
+state.ref = REFS.includes(saved.ref) ? saved.ref : 'off'
+state.refH = saved.refH || 170
+function buildRef() {
+  refGroup.clear()
+  const kind = state.ref
+  if (kind === 'off') return null
+  const add = (geo, x, y, z, rx = 0) => { const m = new THREE.Mesh(geo, refMat); m.position.set(x, y, z); m.rotation.x = rx; refGroup.add(m); return m }
+  if (kind === 'lighter') {
+    // a refillable lighter: 81 × 26 × 12 mm body with its hood on top
+    add(new THREE.BoxGeometry(26, 12, 64), 0, 0, 32)
+    add(new THREE.BoxGeometry(22, 11, 17), 0, 0, 72.5)
+    return { w: 26, h: 81 }
+  }
+  // a simple standing person, H mm tall, facing the viewer
+  const H = state.refH * 10, cap = (r, len) => new THREE.CapsuleGeometry(r, Math.max(1, len - 2 * r), 6, 12)
+  const legL = 0.47 * H, torsoL = 0.3 * H, headR = 0.065 * H, armL = 0.36 * H
+  for (const s of [-1, 1]) {
+    add(cap(0.045 * H, legL), s * 0.055 * H, 0, legL / 2, Math.PI / 2)
+    add(cap(0.032 * H, armL), s * 0.135 * H, 0, legL + torsoL - armL / 2, Math.PI / 2)
+  }
+  add(cap(0.11 * H, torsoL + 0.05 * H), 0, 0, legL + torsoL / 2, Math.PI / 2).scale.set(1, 1, 0.6)
+  add(new THREE.SphereGeometry(headR, 20, 14), 0, 0, legL + torsoL + headR * 1.1)
+  return { w: 0.32 * H, h: H }
+}
+function placeRef() {
+  const r = buildRef()
+  $('vRef').textContent = 'Size: ' + (state.ref === 'off' ? 'off' : state.ref === 'person' ? `person ${state.refH} cm` : 'lighter')
+  $('vRef').setAttribute('aria-pressed', String(state.ref !== 'off'))
+  $('refHRow').hidden = state.ref !== 'person'
+  if (!r) return
+  // beside the design, standing on the same floor
+  const box = new THREE.Box3()
+  for (const m of [frameMesh, glowMesh, rodMesh, kevMesh, pracMesh]) if (m.visible && m.geometry.attributes.position) { m.geometry.computeBoundingBox(); box.union(m.geometry.boundingBox) }
+  if (box.isEmpty()) box.set(new THREE.Vector3(-50, -50, 0), new THREE.Vector3(50, 50, 10))
+  refGroup.position.set(box.max.x + 20 + r.w / 2, (box.min.y + box.max.y) / 2, box.min.z)
+}
 
 const pole = new THREE.Mesh(
   new THREE.CylinderGeometry(11, 11, 320, 48, 1, true),
@@ -404,7 +449,10 @@ function control(def, get, set) {
   const id = 'p_' + def.key
   const wrap = document.createElement('div')
   wrap.className = 'ctl'
-  if (def.options) {
+  if (def.check) {
+    wrap.innerHTML = `<label class="check" for="${id}"><input type="checkbox" id="${id}"${get() ? ' checked' : ''}> ${def.label}</label>`
+    wrap.querySelector('input').onchange = (e) => set(e.target.checked)
+  } else if (def.options) {
     wrap.innerHTML = `<label for="${id}">${def.label}</label><select id="${id}">${def.options.map((o) => `<option${o === get() ? ' selected' : ''}>${o}</option>`).join('')}</select>`
     wrap.querySelector('select').onchange = (e) => set(e.target.value)
   } else {
@@ -482,6 +530,13 @@ function renderCncParams(d, cp, set) {
     sec('Material', C(['material']), true)
     return
   }
+  if (d.acroMetal || d.dowel || d.tsword || d.taxe) {
+    const metal = C(['material'])
+    metal[0][0] = { ...metal[0][0], options: metal[0][0].options.filter((o) => matOf({ material: o }).kind === 'metal') }
+    if (!metal[0][0].options.includes(c.material)) c.material = metal[0][0].options[0]
+    sec(d.tsword || d.taxe ? 'Connector machined from' : 'Turned from metal bar', metal, true)
+    return
+  }
   if (d.sword) {
     const metal = C(['material', 'process', 'thick'])
     metal[0][0] = { ...metal[0][0], options: metal[0][0].options.filter((o) => matOf({ material: o }).kind === 'metal') }
@@ -536,13 +591,16 @@ function renderParams() {
   cp.innerHTML = ''
   $('matSection').hidden = isCnc() && !printOnly(d)
   if (isCnc() && !printOnly(d)) renderCncParams(d, cp, set)
-  const groups = d.adaptor || (isCnc() && !printOnly(d)) ? [] : d.sleeve || d.practiceSpoke || d.dart || d.cage || d.grip || d.mould || d.hoop || d.bubblePoi ? [] : d.spokeHub || d.ballEnd || d.novelty ? ['Fit'] : [...new Set(COMMON_PARAMS.map((p) => p.group))].filter((g) => g !== 'Glow' || d.pods)
-  const label = { Fit: 'Pole size and fit', Glow: 'Lanterns and capsules', 'Weight ring': 'Bubble weight ring', 'Snap weight': 'Snap-on weight ring' }
+  const groups = d.adaptor || (isCnc() && !printOnly(d)) ? [] : d.sleeve || d.practiceSpoke || d.dart || d.cage || d.grip || d.mould || d.hoop || d.bubblePoi || d.acro ? [] : d.spokeHub || d.ballEnd || d.novelty ? ['Fit'] : [...new Set(COMMON_PARAMS.map((p) => p.group))].filter((g) => g !== 'Glow' || d.pods)
+  const label = { Lock: 'Lock onto a metal dowel (optional)', Fit: 'Pole size and fit', Glow: 'Lanterns and capsules', 'Weight ring': 'Bubble weight ring', 'Snap weight': 'Snap-on weight ring' }
   for (const g of groups) {
     const det = document.createElement('details')
-    if (g === 'Levels' || g === 'Fit') det.open = true
+    if (g === 'Levels' || g === 'Fit' || (g === 'Lock' && params().lockOn)) det.open = true
     det.innerHTML = `<summary>${label[g] || g}</summary><div></div>`
-    for (const def of COMMON_PARAMS.filter((p) => p.group === g)) det.lastChild.append(control(def, () => params()[def.key], set(def.key)))
+    for (const def of COMMON_PARAMS.filter((p) => p.group === g)) {
+      if (def.showIf && !def.showIf(params())) continue
+      det.lastChild.append(control(def, () => params()[def.key], def.rerender ? (v) => { set(def.key)(v); renderParams() } : set(def.key)))
+    }
     cp.append(det)
   }
   const reset = document.createElement('button')
@@ -669,14 +727,14 @@ function entries() {
 }
 
 // the big folders in the design list, and which groups live in each
-const SECTIONS = { hubs: 'Dragon staff hubs', fire: 'Fire and metal (CNC)', sparks: 'Spark cages (charcoal, CNC only)', rope: 'Rope dart heads', poi: 'Poi', contact: 'Contact staff ends', moulds: 'Silicone and rubber moulds', hoops: 'Hoops', fittings: 'Pole fittings' }
+const SECTIONS = { hubs: 'Dragon staff hubs', fire: 'Fire and metal (CNC)', sparks: 'Spark cages (charcoal, CNC only)', rope: 'Rope dart heads', poi: 'Poi', contact: 'Contact staff ends', acro: 'Acro staff ends', moulds: 'Silicone and rubber moulds', hoops: 'Hoops', collapse: 'Collapsible hoops', fittings: 'Pole fittings' }
 const SECTION_OF = {
-  Fire: 'fire', Swords: 'fire', SpokeHubs: 'fire', PracticeSpokes: 'fire',
-  Contact: 'contact', Axes: 'contact',
+  Fire: 'fire', Swords: 'fire', TubeSwords: 'fire', TubeAxes: 'fire', SpokeHubs: 'fire', PracticeSpokes: 'fire',
+  Contact: 'contact', Axes: 'contact', Acro: 'acro', AcroMetal: 'acro', PineContact: 'contact', DartPine: 'rope', MouldAcro: 'moulds',
   DartClassic: 'rope', DartModern: 'rope', DartRound: 'rope', DartPattern: 'rope', DartNature: 'rope',
-  Poi: 'poi', BubblePoi: 'poi', Hoops: 'hoops', MouldContact: 'moulds', MouldDart: 'moulds', MouldPoi: 'moulds',
+  Poi: 'poi', BubblePoi: 'poi', Hoops: 'hoops', HoopJoints: 'collapse', MouldContact: 'moulds', MouldDart: 'moulds', MouldPoi: 'moulds',
   SparkDragon: 'sparks', SparkRope: 'sparks', SparkStaff: 'sparks',
-  Adaptors: 'fittings', Sleeves: 'fittings', Grips: 'fittings', Collapsible: 'fittings',
+  Adaptors: 'fittings', Sleeves: 'fittings', Dowels: 'fittings', Grips: 'fittings', Collapsible: 'fittings',
 }
 for (const d of DESIGNS) if (!d.custom && d.group !== 'Creations' && !SECTION_OF[d.group]) SECTION_OF[d.group] = 'hubs'
 // first time with folders: hub styles start folded, except the one you are on, so the list is short
@@ -694,7 +752,7 @@ function renderGallery() {
   for (const b of $('listChips').children) b.setAttribute('aria-pressed', b.dataset.f === listUI.filter)
   const { list, all, grouped, mine } = entries()
   // folders: every group sits in a big folder (Dragon staff hubs, Fire and metal, ...)
-  const secOrder = isCnc() ? ['fire', 'sparks', 'hubs', 'rope', 'poi', 'hoops', 'contact', 'moulds', 'fittings'] : ['hubs', 'fire', 'rope', 'poi', 'hoops', 'contact', 'moulds', 'sparks', 'fittings'] // CNC mode: metal first
+  const secOrder = isCnc() ? ['fire', 'acro', 'sparks', 'hubs', 'rope', 'poi', 'hoops', 'collapse', 'contact', 'moulds', 'fittings'] : ['hubs', 'fire', 'rope', 'poi', 'hoops', 'collapse', 'contact', 'acro', 'moulds', 'sparks', 'fittings'] // CNC mode: metal first
   const order0 = [...new Set(DESIGNS.map((d) => d.group))]
   const secRank = (g) => (SECTION_OF[g] ? 1 + secOrder.indexOf(SECTION_OF[g]) : 0)
   const order = [...order0].sort((a, b) => secRank(a) - secRank(b) || order0.indexOf(a) - order0.indexOf(b))
@@ -978,7 +1036,7 @@ function show(hub, d, p, t0) {
   setGeo(kevMesh, m.kevlar)
   setGeo(pracMesh, m.practice)
   $('vSpokes').hidden = !(m.rods || m.kevlar || m.practice)
-  $('vSpokes').textContent = hub.spoke ? 'Spokes' : hub.mould ? (hub.mould.box ? 'Master' : 'Cast part') : hub.novelty?.counter ? 'Counterweight' : hub.hoop ? 'Connector' : 'Wicks / ends'
+  $('vSpokes').textContent = hub.acro ? (hub.acro.metal ? (hub.acro.plugIn ? 'Bolt, wedge, O-rings' : 'O-rings') : 'Coins') : hub.dowel ? 'Bolt and wedge' : hub.spoke ? 'Spokes' : hub.mould ? (hub.mould.box ? 'Master' : 'Cast part') : hub.novelty?.counter ? 'Counterweight' : hub.hoop ? 'Connector' : 'Wicks / ends'
   if (view.spokes === false) for (const x of [rodMesh, kevMesh, pracMesh]) x.visible = false
   $('ringColourRow').hidden = !(m.ring || m.snap)
   $('glowRow').hidden = $('ledRow').hidden = !hasLeds() // the LED ring can switch them on for any design
@@ -989,9 +1047,19 @@ function show(hub, d, p, t0) {
     weakGroup.add(w)
   }
   drawHalo(hub, p)
-  pole.visible = !(hub.bubblePoi || hub.hoop || hub.mould || hub.ball || hub.novelty || hub.dart || hub.cage || hub.sleeve || hub.practiceSpoke || hub.grip) && $('vPole').getAttribute('aria-pressed') === 'true' // a ball end sits on the pole's tip
+  // no staff through things held by a hilt, or ends that sit on the pole's tip
+  const noPole = !!(hub.sword || hub.tsword || hub.taxe || hub.acro || hub.dowel || hub.bubblePoi || hub.hoop || hub.mould || hub.ball || hub.novelty || hub.dart || hub.cage || hub.sleeve || hub.practiceSpoke || hub.grip)
+  $('vPole').hidden = noPole
+  // swords, poi and rope darts are not spun on a staff: no spin controls
+  const noSpin = !!(hub.sword || hub.tsword || hub.dart || hub.bubblePoi)
+  $('vSpin').hidden = noSpin
+  $('spinRate').closest('.ctl').hidden = noSpin
+  if (noSpin && view.spin) $('vSpin').click()
+  pole.visible = !noPole && $('vPole').getAttribute('aria-pressed') === 'true'
   const poleD = hub.adaptor ? p.small : p.poleOD // an adaptor shows its thin pole running through it
-  frameView(hub.viewR || p.diameter / 2)
+  placeRef()
+  frameView(Math.max(hub.viewR || p.diameter / 2, state.ref === 'person' ? state.refH * 10 * 0.6 : 0))
+  if (state.ref !== 'off' || hub.tsword || hub.taxe) setMain(false) // standing things and the size reference read from the side
   pole.scale.set(poleD / 22, 1, poleD / 22)
   if (!hub.cnc && !(hub.spoke && hub.spoke.mode === 'cnc')) setThumb(d, hub.polygons, hub.viewR || p.diameter / 2)
   applyLook()
@@ -1147,7 +1215,7 @@ const M5 = [40, 50, 60, 70, 80, 100, 120, 150]
 function renderMouldVerdict(hub, p, mat) {
   const s = hub.stats, v = hub.mould, bed = Number(state.bed)
   const [fw, fh] = v.footprint, fits = Math.max(fw, fh) <= bed - 2
-  const what = v.kind === 'ball' ? 'contact ball' : design().group === 'MouldPoi' ? 'poi head' : 'rope dart head'
+  const what = v.kind === 'ball' ? 'contact ball' : v.kind === 'acro' ? 'acro staff end' : design().group === 'MouldPoi' ? 'poi head' : 'rope dart head'
   const rubberName = v.rubber.replace(/ \(.*\)/, '')
   const boltL = M5.find((x) => x >= v.size[1] + 8) || 150
   $('verdict').innerHTML = v.box ? `
@@ -1165,7 +1233,7 @@ function renderMouldVerdict(hub, p, mat) {
     <div class="big">${v.castG.toFixed(0)} g<small>the ${what} in ${rubberName} · ${(v.castG * 2).toFixed(0)} g a pair</small></div>
     <div class="row"><span>Rubber to mix</span><span>${(v.castMl * 1.15).toFixed(0)} ml (${(v.castG * 1.15).toFixed(0)} g) with spare for the funnel</span></div>
     ${v.bore ? `<div class="row"><span>Pole socket</span><span>Ø${v.bore.d.toFixed(1)} × ${v.bore.depth.toFixed(0)} mm: ${p.squeeze} mm under a Ø${p.poleOD} pole, the rubber grips it</span></div>` : ''}
-    ${v.nut ? `<div class="row"><span>Rope or leash</span><span>M8 nut + Ø${2 * v.nut.washer} mm washer cast in, held by an M8 × ${v.nut.bolt} bolt; then screw in a stainless M8 swivel eye bolt</span></div>` : v.kind !== 'ball' ? `<div class="row"><span>Rope or leash</span><span>moulded eye for ${p.ropeD} mm cord</span></div>` : ''}
+    ${v.nut ? `<div class="row"><span>Rope or leash</span><span>M8 nut + Ø${2 * v.nut.washer} mm washer cast in, held by an M8 × ${v.nut.bolt} bolt; then screw in a stainless M8 swivel eye bolt</span></div>` : v.kind === 'dart' ? `<div class="row"><span>Rope or leash</span><span>moulded eye for ${p.ropeD} mm cord</span></div>` : ''}
     <div class="row"><span>Same mould, other rubbers</span><span>${Object.entries({ '30A': 1.08, '50A': 1.15, urethane: 1.04, 'with steel shot': 2.4 }).map(([n, d]) => `${n} ${((v.castMl * d)).toFixed(0)} g`).join(' · ')}</span></div>
     <div class="row"><span>Print</span><span>2 halves${v.pin ? ' + core pin' : ''}, split face up, no supports · about ${(s.grams * 0.4).toFixed(0)} g</span></div>
     <div class="row"><span>Hold shut</span><span>${v.bolts ? `${v.bolts} × M5 × ${boltL} bolts + wing nuts` : 'two clamps or strong rubber bands'} · ${v.keys} keys line it up</span></div>
@@ -1183,7 +1251,22 @@ function openHoopGuide() {
   if (!w) return status('Allow pop-ups to open the hoop guide.')
   w.document.open(); w.document.write(window.__HOOP_GUIDE_HTML); w.document.close()
 }
+function renderJointVerdict(hub, p) {
+  const v = hub.hoop, j = v.joint, t = v.tube, s = hub.stats
+  const inch = (mm) => (mm / 25.4).toFixed(2) + '"'
+  const metal = j.style === 'button' || j.style === 'double'
+  $('verdict').innerHTML = `
+    <div class="big">${j.N} × ${inch(j.seg)}<small>${(j.seg / 10).toFixed(1)} cm per section · ${j.N} joints</small></div>
+    <div class="row"><span>Total to cut</span><span>${inch(v.L)} (${(v.L / 10).toFixed(1)} cm) of ${p.tube.startsWith('my own') ? 'your tube' : p.tube}, cut into ${j.N} equal pieces</span></div>
+    <div class="row"><span>Joint</span><span>${j.name}</span></div>
+    <div class="row"><span>Holes</span><span>${j.style === 'clip' ? `Ø3.2 straight through ${j.sB} mm from the sliding end` : `Ø${p.btnD} button hole ${j.sB} mm from the end, on the inside of the hoop`}${j.style !== 'double' ? ` · Ø3.3 rivet ${j.sR.toFixed(0)} mm from the fixed end` : ''}</span></div>
+    <div class="row"><span>You need</span><span>${j.N} printed connectors${metal ? ` · ${j.N * (j.style === 'double' ? 2 : 1)} V-spring push buttons with a ${p.btnD} mm button (core Ø${j.core.toFixed(1)})` : ''}${j.style === 'clip' ? ` · ${j.N} × 3 mm stainless clevis pins with clips, or hairpin clips` : ''}${j.style !== 'double' ? ` · ${j.N} × 3.2 mm aluminium pop rivets (short)` : ''}</span></div>
+    <div class="row"><span>Weight</span><span>${s.gramsTotal.toFixed(0)} g (tube ${v.tubeG.toFixed(0)} g + connectors ${v.connG.toFixed(0)} g)</span></div>
+    ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+}
+
 function renderHoopVerdict(hub, p, mat) {
+  if (hub.hoop.joint) return renderJointVerdict(hub, p)
   const v = hub.hoop, t = v.tube, s = hub.stats
   const inch = (mm) => (mm / 25.4).toFixed(2) + '"'
   const cm = (mm) => (mm / 10).toFixed(1) + ' cm'
@@ -1207,18 +1290,66 @@ function renderHoopVerdict(hub, p, mat) {
   $('hoopGuideBtn').onclick = openHoopGuide
 }
 
+// Hoops are about one number: how much tube to cut. A table of every size sits next to the view.
+function renderCutPanel(hub, p) {
+  const box = $('cutPanel')
+  if (!hub?.hoop) { box.hidden = true; return }
+  const v = hub.hoop, t = v.tube, j = v.joint
+  const inch = (mm) => (mm / 25.4).toFixed(2) + '"'
+  const rows = []
+  for (let d = 16; d <= 50; d += 1) {
+    const L = Math.PI * (d * 25.4 - t.od)
+    rows.push(`<tr data-in="${d}"${Math.abs(d - p.hoopIn) < 0.01 ? ' class="on"' : ''}><td>${d}"</td><td>${(d * 2.54).toFixed(1)}</td><td>${inch(L)}</td><td>${(L / 10).toFixed(1)}</td>${j ? `<td>${(L / 10 / j.N).toFixed(1)}</td>` : ''}</tr>`)
+  }
+  box.innerHTML = `<h3>${inch(v.L)} to cut</h3>
+    <p>for a ${p.hoopIn}" hoop on ${p.tube.startsWith('my own') ? `Ø${t.od} mm tube` : p.tube.split(' (')[0]}${j ? `: ${j.N} pieces of ${(v.L / j.N / 10).toFixed(1)} cm` : ''}. Cut length = π × (hoop size − tube width). Tap a row to pick that size.</p>
+    <table><thead><tr><th>Hoop</th><th>cm</th><th>Cut</th><th>cm</th>${j ? '<th>each</th>' : ''}</tr></thead><tbody>${rows.join('')}</tbody></table>`
+  box.hidden = false
+  box.querySelectorAll('tbody tr').forEach((tr) => (tr.onclick = () => { params().hoopIn = Number(tr.dataset.in); renderParams(); schedule(0) }))
+  box.querySelector('tr.on')?.scrollIntoView({ block: 'center' })
+}
+
 function renderBubblePoiVerdict(hub, p, mat) {
   const s = hub.stats, v = hub.bubblePoi
   $('verdict').innerHTML = `
-    <div class="big">${s.gramsTotal.toFixed(0)} g<small>each${v.gShot ? ' with its steel shot' : ''} · make a pair</small></div>
-    ${v.gShot ? `<div class="row"><span>Print · steel shot</span><span>${s.grams.toFixed(0)} g · ${v.gShot.toFixed(0)} g</span></div>
-    <div class="row"><span>Pause the print at</span><span>${v.pauseAt.toFixed(1)} mm: fill the stem with steel shot, carry on</span></div>` : ''}
-    <div class="row"><span>Loops</span><span>${v.loops} (${v.fins} round${v.tiers > 1 ? ` × ${v.tiers} rows` : ''}) · Ø${p.loopD} mm inside</span></div>
-    <div class="row"><span>Film</span><span>${v.yarn ? `wrap each loop in 100% cotton yarn · about ${Math.ceil(v.yarnM)} m for one head` : 'printed notches hold the mix: just dip'}</span></div>
-    <div class="row"><span>Size</span><span>${v.span.toFixed(0)} across × ${v.height.toFixed(0)} mm tall</span></div>
-    <div class="row"><span>Prints</span><span>standing on its base, no supports</span></div>
+    <div class="big">${s.gramsTotal.toFixed(0)} g<small>each · make a pair</small></div>
+    <div class="row"><span>Circles</span><span>${v.small} × Ø${p.smallD} stacked, then Ø${p.bigD} at the bottom (inside sizes)</span></div>
+    <div class="row"><span>Film</span><span>${v.yarn ? `wrap each circle in 100% cotton yarn · about ${Math.ceil(v.yarnM)} m for one head` : 'printed notches hold the mix: just dip'}</span></div>
+    <div class="row"><span>Eyes</span><span>top Ø${p.ropeD} for the leash swivel${v.link ? ` · bottom Ø${p.linkD} for a small swivel to link more on` : ''}</span></div>
+    <div class="row"><span>Size</span><span>${v.len.toFixed(0)} × ${v.wid.toFixed(0)} mm, ${p.thick} mm thick</span></div>
+    <div class="row"><span>Prints</span><span>lying flat, no supports</span></div>
     <div class="row"><span>Material</span><span>${pill(state.material.startsWith('tpu') ? 'warn' : 'good', mat.name)}</span></div>
     ${state.material.startsWith('tpu') ? '<div class="warnline">TPU loops flop and drop the film: print bubble poi in PETG.</div>' : ''}
+    ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+}
+
+function renderAcroVerdict(hub, p, mat) {
+  const s = hub.stats, a = hub.acro
+  const rows = []
+  if (a.metal) {
+    rows.push(['Body · ' + (a.plugIn ? 'steel wedge and bolt' : 'grub screw'), a.plugIn ? `${a.g.toFixed(0)} g · about ${(a.wedgeG + 12).toFixed(0)} g` : `${a.g.toFixed(0)} g · M5 cup point`])
+    rows.push(['Size', `Ø${a.D.toFixed(1)} (${p.circ} mm round) × ${a.L} mm`])
+    rows.push(['On the pole', a.plugIn ? `spigot Ø${(2 * a.sr).toFixed(1)} × ${a.sL} mm inside, ${a.lipL ? `lip ${a.lipL} mm over the outside` : 'flat shoulder'} · ${a.bolt}` : `socket Ø${(p.poleOD + 0.16).toFixed(2)} × ${a.grip.toFixed(0)} mm, M5 grub screw`])
+    if (a.grooves.length) rows.push(['O-rings', `${a.grooves.length} × ${p.oRingCS} mm cross-section, inside Ø${a.grooves[0].d.toFixed(1)} (buy that size, stretched on)`])
+  } else {
+    rows.push(['TPU', `${a.g.toFixed(0)} g at 100% infill`])
+    if (a.coin) rows.push(['Coins', `${a.coin.n} × Ø${a.coin.d} · about ${a.coin.g.toFixed(0)} g (weigh yours)`])
+    if (a.shot) rows.push(['Steel shot', `${a.shot.g.toFixed(0)} g${a.shot.full ? ' (all that fits)' : ''}`])
+    rows.push(['Size', `Ø${a.D.toFixed(1)} (${p.circ} mm round${a.sides ? `, ${a.sides} faces` : ''}) × ${a.L} mm`])
+    rows.push(['Socket', `Ø${(2 * a.rb).toFixed(1)} × ${a.grip.toFixed(0)} mm deep · wall ${Math.max(0, a.wallS).toFixed(1)} mm${a.plug ? ` · plug Ø${a.plug.d.toFixed(1)} inside the pole` : ''}`])
+    const pauses = []
+    if (a.coin?.pauseAt) pauses.push(`${a.coin.pauseAt.toFixed(1)} mm: drop the coin${a.coin.n > 1 ? 's' : ''} in`)
+    if (a.shot) pauses.push(`${a.shot.pauseAt.toFixed(1)} mm: pour in ${a.shot.g.toFixed(0)} g of shot`)
+    if (pauses.length) rows.push(['Pause the print at', pauses.join('; ')])
+    if (a.coin && a.coin.push) rows.push(['Coins go in', 'after printing: push them down the socket'])
+    rows.push(['Prints', 'standing on its mouth, no supports'])
+    rows.push(['Material', pill(state.material.startsWith('tpu') ? 'good' : 'warn', mat.name)])
+  }
+  $('verdict').innerHTML = `
+    <div class="big">${a.total.toFixed(0)} g<small>each, all in · ${(2 * a.total).toFixed(0)} g a pair</small></div>
+    ${rows.map(([k, v]) => `<div class="row"><span>${k}</span><span>${v}</span></div>`).join('')}
+    <div class="row"><span>Balance</span><span>make both ends the same weight, within 5 g: weigh them and add or take out a coin or some shot</span></div>
+    ${!a.metal && !state.material.startsWith('tpu') ? '<div class="warnline">Acro ends take hits: print them in TPU (95A, or 85A for softer).</div>' : ''}
     ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
 }
 
@@ -1227,7 +1358,7 @@ function renderSwordVerdict(hub, p) {
   $('verdict').innerHTML = `
     <div class="big">${kg(v.total)}<small>ready to burn: wet wicks${v.pomG ? ' and the pommel weight' : ''} on</small></div>
     <div class="row"><span>Plate</span><span>${v.T} mm ${v.mat} · ${v.plateG.toFixed(0)} g · ${v.length.toFixed(0)} × ${v.width.toFixed(0)} mm</span></div>
-    <div class="row"><span>Fire</span><span>${v.rope ? `${p.ropeD} mm Kevlar rope laced through ${v.rope.n} slots · ${(v.rope.len / 1000).toFixed(1)} m` : `${v.tabs} Kevlar wicks · ${p.wickW} mm tape × ${p.tapeLen} mm each (${(v.tapeTotal / 1000).toFixed(1)} m)`} · ${v.fireG.toFixed(0)} g wet</span></div>
+    <div class="row"><span>Fire</span><span>${v.full ? (v.full.kind === 'wrap' ? `${p.wickW} mm Kevlar tape wound the full blade (${v.full.along.toFixed(0)} mm from ${v.full.x0} mm above the guard to the tip), half-overlapped · ${v.full.tapeM.toFixed(1)} m of tape` : `${p.wickW} mm Kevlar tape folded over both edges, full length, bolted every 70 mm · ${v.full.tapeM.toFixed(1)} m of tape`) : v.rope ? `${p.ropeD} mm Kevlar rope laced through ${v.rope.n} slots · ${(v.rope.len / 1000).toFixed(1)} m` : `${v.tabs} Kevlar wicks · ${p.wickW} mm tape × ${p.tapeLen} mm each (${(v.tapeTotal / 1000).toFixed(1)} m)`} · ${v.fireG.toFixed(0)} g wet</span></div>
     <div class="row"><span>Pommel weight</span><span>${v.pomG ? `${v.pomG.toFixed(0)} g of steel washers on an M8 bolt` : 'none'}</span></div>
     <div class="row"><span>Balance point</span><span>${v.balance.toFixed(0)} mm in front of the guard ${Math.abs(v.balance - v.target) < 15 ? pill('good', 'rolls under control') : v.balance > v.target ? pill('warn', 'tip-heavy') : pill('warn', 'handle-heavy')}</span></div>
     <div class="row"><span>Handle</span><span>${p.handleL} mm: rivet on wooden scales (3 × Ø5 rivets) or wrap it</span></div>
@@ -1322,11 +1453,51 @@ function renderSpokeVerdict(hub, p) {
 }
 
 function renderVerdict(hub, p) {
+  renderCutPanel(hub, p)
   const s = hub.stats
   const mat = MATERIALS[state.material]
   if (hub.adaptor) return renderAdaptorVerdict(hub, p, mat)
   if (hub.cage) return renderCageVerdict(hub, p)
   if (hub.grip) return renderGripVerdict(hub, p, mat)
+  if (hub.tsword) {
+    const v = hub.tsword, s = hub.stats
+    $('verdict').innerHTML = `
+      <div class="big">${kg(v.total)}<small>ready to burn: Kevlar wet, pommel core in</small></div>
+      <div class="row"><span>Balance point</span><span>${v.balance.toFixed(0)} mm up the blade from the connector ${Math.abs(v.balance - v.target) < 8 ? pill('good', 'as you set it') : pill('warn', 'off target')}</span></div>
+      <div class="row"><span>Pommel</span><span>Ø${p.ballD} ${(p.pommel || '').startsWith('Kevlar') ? 'Kevlar ball' : 'steel ball'} on a ${(p.poleOD - 2 * p.poleWall).toFixed(1)} mm end plug with an M8 stud · steel core ${v.coreG.toFixed(0)} g (discs Ø${(v.coreR * 1.6).toFixed(0)} on the stud)${v.ballKevG ? ` · ${(v.ballTape / 1000).toFixed(1)} m of tape wound round` : ''}</span></div>
+      <div class="row"><span>Connector</span><span>${v.connG.toFixed(0)} g, ${v.c.toFixed(0)} mm block · ${v.through ? '4 × M5 bolts through block and tube, all-metal lock nuts' : '8 × M5 set screws'}</span></div>
+      <div class="row"><span>Cut list</span><span>blade tube Ø${p.bladeOD} × ${p.bladeWall} wall, ${v.bladeTube.toFixed(0)} mm · 2 guard tubes Ø${p.guardOD}, ${v.guardTube.toFixed(0)} mm each, bent ${p.guardUp}° · your Ø${p.poleOD} pole, ${v.poleLen.toFixed(0)} mm</span></div>
+      <div class="row"><span>Kevlar tape</span><span>${((v.tapeTotal + v.ballTape) / 1000).toFixed(1)} m of ${p.wickW} mm (${(v.tapeTotal / 1000).toFixed(1)} m for the blade${(p.guardFire || '').startsWith('Kevlar') ? ' and guard' : ''})</span></div>
+      <div class="row"><span>Weights</span><span>blade ${(v.bladeG + v.bladeKevG).toFixed(0)} g · guard ${(v.guardG + v.guardKevG).toFixed(0)} g · handle ${v.poleG.toFixed(0)} g · pommel ${(v.ballKevG + v.coreG + v.plugG).toFixed(0)} g</span></div>
+      <div class="row"><span>Size</span><span>${v.len.toFixed(0)} mm long, guard ${v.width.toFixed(0)} mm across</span></div>
+      ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+    return
+  }
+  if (hub.taxe) {
+    const v = hub.taxe, s = hub.stats
+    $('verdict').innerHTML = `
+      <div class="big">${v.total.toFixed(0)} g<small>the axe head, wet · ${v.counter ? kg(v.total + v.counter.kev + v.counter.core + v.counter.plug) + ' both ends' : ''}</small></div>
+      <div class="row"><span>Block</span><span>${v.blockG.toFixed(0)} g machined · M5 bolts through every socket</span></div>
+      <div class="row"><span>Bits</span><span>${v.bits} crescent${v.bits > 1 ? 's' : ''} bent from Ø${p.bitOD} tube · ${v.tubeLen.toFixed(0)} mm of tube in all</span></div>
+      <div class="row"><span>Kevlar tape</span><span>${(v.tape / 1000).toFixed(1)} m of ${p.wickW} mm on the edges${p.spikeL ? ' and the spike' : ' and the top ball'}</span></div>
+      ${v.counter ? `<div class="row"><span>Other end</span><span>Ø${v.counter.D} Kevlar ball: steel core ${v.counter.core.toFixed(0)} g on an M8 stud in an end plug, ${(v.counter.tape / 1000).toFixed(1)} m of tape · weighs the same as the head, so the staff balances</span></div>` : ''}
+      <div class="row"><span>Size</span><span>${v.width.toFixed(0)} wide × ${v.height.toFixed(0)} mm tall (head and the pole stub shown)</span></div>
+      ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+    return
+  }
+  if (hub.acro) return renderAcroVerdict(hub, p, mat)
+  if (hub.dowel) {
+    const v = hub.dowel, s = hub.stats
+    $('verdict').innerHTML = `
+      <div class="big">${v.g.toFixed(0)} g<small>the dowel, ${matOf(cncp()).name}</small></div>
+      <div class="row"><span>In the pole</span><span>${v.expand ? `spigot Ø${(2 * v.rs).toFixed(1)} × ${p.inL} mm, expands on an ${v.bolt}` : `spigot Ø${(2 * v.rs).toFixed(1)} × ${p.inL} mm, epoxy and a Ø3.2 rivet across`}</span></div>
+      <div class="row"><span>On the pole end</span><span>${p.lipL > 0 ? `lip Ø${v.D.toFixed(1)} wraps ${p.lipL} mm down the outside` : `flat flange Ø${v.D.toFixed(1)}`}</span></div>
+      <div class="row"><span>The hub sits on</span><span>a Ø${p.poleOD} stub, ${v.stubL.toFixed(1)} mm long</span></div>
+      <div class="row"><span>Locked by</span><span>${v.lock === 'grub' ? `an M5 cup-point grub screw in the hub collar, into a groove ${(v.zL - p.flangeT).toFixed(1)} mm up` : v.lock === 'pin' ? `an M5 bolt with an all-metal lock nut (or a 5 mm clevis pin and R-clip) through collar and stub, ${(v.zL - p.flangeT).toFixed(1)} mm up` : `the same bolt through a Ø${v.washer?.od || 30} mm washer on the hub face`}</span></div>
+      <div class="row"><span>In the hub</span><span>tick <b>Lock onto a metal dowel</b> and pick the same lock: the forge cuts the ${v.lock === 'grub' ? 'grub screw hole and nut trap' : v.lock === 'pin' ? 'cross hole' : 'nothing extra; the washer does it'}</span></div>
+      ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+    return
+  }
   if (hub.sword) return renderSwordVerdict(hub, p)
   if (hub.dart) return renderDartVerdict(hub, p, mat)
   if (hub.mould) return renderMouldVerdict(hub, p, mat)
@@ -1364,6 +1535,7 @@ function renderVerdict(hub, p) {
     <div class="row"><span>Material</span><span>${pill(matPill, mat.name)}</span></div>
     <div class="row"><span>Fits ${bedMax} mm bed</span><span>${p.diameter <= bedMax - 2 ? pill('good', `${p.diameter} mm`) : pill('bad', `${p.diameter} mm, too big`)}</span></div>
     <div class="row"><span>Grip on Ø${p.poleOD} pole</span><span>${squeeze > 0 ? squeeze.toFixed(2) + ' mm squeeze' : pill('bad', 'loose')}</span></div>
+    ${hub.lock ? `<div class="row"><span>Locks onto a dowel</span><span>${hub.lock.name}${hub.lock.fromCollarEnd != null ? ` · set the dowel's Stub to ${p.collarH} mm and Lock from the flange to ${hub.lock.fromCollarEnd.toFixed(1)} mm` : hub.lock.type === 'bolt' ? ` · set the dowel's Stub to ${p.collarH} mm` : ''}. Fit it with the flat face out, collar end on the dowel's flange.</span></div>${hub.lock.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}` : ''}
     ${p.screw > 0 ? insertTip('The set screw presses on the pole.') : ''}
     ${caps ? `<div class="row"><span>Lantern height</span><span>${hub.podH.toFixed(1)} mm</span></div>` : ''}
     ${s.parts > 1 ? `<div class="row"><span>Separate solids</span><span>${pill('bad', String(s.parts))}</span></div>` : ''}
@@ -1418,6 +1590,41 @@ function renderCutExports(d) {
     $('exportNote').innerHTML = attach + lock + `<b>Send the DXF</b> to a laser or waterjet shop: ${c.thick} mm ${matOf(c).name}. Layers: <b>CUT</b> outline, <b>HOLES</b> spark holes and fixings, <b>BEND</b> fold lines (not cut: ask them to fold on these, or fold it yourself in a vice, every fold 90° the same way). ${d.kind === 'diamond' ? 'Fold every BEND line to make the diamond, then stitch the open edges with 1 mm stainless wire through the small holes; leave one edge as the loading door, tied with a twist of wire.' : d.kind === 'tube' ? `${d.sides ? 'Fold the big rectangle on every BEND line into a six-sided tube' : 'Roll the big rectangle into a tube round a pipe'}, overlap the seam and rivet it; fold the cap tabs down and bolt the caps in with M4 stainless bolts (one cap comes off to load). ${d.mount === 'spoke' ? 'The spoke tip goes through the bottom cap: nut and washer inside and out.' : 'An M8 stainless eye bolt through the top cap takes the rope.'}` : 'Fold the sides up, fold the tabs in and pop-rivet them (3.2 mm stainless rivets), then fold the lid over and bolt its tab to the front with an M5 bolt. ' + (d.kind === 'box' && d.mount !== 'spoke' ? 'The floor bolts to a flange collar on the staff end.' : 'Each cube goes on a spoke tip: an 8 mm threaded spoke end through the floor hole, a nut and washer inside and out.')}`
     return
   }
+  if (d.tsword || d.taxe) {
+    const nm = `${d.tsword ? 'fire-sword' : 'fire-axe'}-${d.id}-connector-${p.poleOD}pole-${matKey(c)}`
+    exportButtons([
+      ['Connector for the machine shop (STL)', 'primary', () => download(toSTL(hub.meshes.connFlat, d.name + ' connector'), nm + '.stl'), !ready],
+      ...(d.tsword ? [['Connector sizes sheet (SVG)', '', txt(() => connectorSheetSVG(hub, p, matOf(c).name, d.name), nm + '-sheet.svg', 'image/svg+xml'), !ready]] : []),
+      ...(hub?.meshes.plugFlat ? [['Pommel end plug (STL)', '', () => download(toSTL(hub.meshes.plugFlat, d.name + ' pommel plug'), nm + '-pommel-plug.stl'), !ready]] : []),
+      ['Wicking and knots guide', '', openWickGuide],
+    ])
+    $('exportNote').innerHTML = d.tsword
+      ? `Send the connector STL and the sizes sheet to a machine shop (a CNC mill, or a lathe and a mill); ${matOf(c).name}. For a practice sword print it in PETG or nylon, 100% infill. <b>Build:</b> cut the tubes to the cut list, bend the guard tubes round a former (fill them with dry sand first so they do not kink), push every tube into its socket, drill through the block's holes and bolt each one with an M5 bolt and an all-metal lock nut. Wind the Kevlar tape in a tight spiral from the bare section to the tip and over it, each turn half over the last, and tie it off with stainless wire; same on the guard arms. The pommel: glue or rivet the end plug into the pole end, screw in an M8 stud, stack the steel discs on it, and wind Kevlar round them into a tight ball, finishing with stainless wire.`
+      : `Send the block STL to a machine shop, ${matOf(c).name} (or print it in PETG or nylon for a practice axe). <b>Build:</b> bend each bit from one length of tube round a former to the shape shown (fill it with dry sand first so it does not kink), push both ends into their sockets, drill through the block's holes and bolt them. Wind Kevlar tape tight round the outer edge, each turn half over the last, wire the ends. The block goes on the pole end with an M5 bolt through. Make the matched ball for the other end the same way as a sword pommel, and weigh both ends: they should match within 10 g.`
+    return
+  }
+  if (d.dowel) {
+    const v = hub?.dowel, nm = `locking-dowel-${d.lock}-${p.poleOD}pole-${matKey(c)}`
+    exportButtons([
+      ['Lathe drawing (SVG)', 'primary', txt(() => dowelDrawingSVG(hub, p, matOf(c).name, d.name), nm + '-lathe.svg', 'image/svg+xml'), !ready],
+      ['Side profile (DXF)', '', txt(() => toDXF(hub.layers, d.name), nm + '-profile.dxf', 'application/dxf'), !ready],
+      ['3D model for the machinist (STL)', '', () => download(toSTL(hub.meshes.combined, d.name), nm + '.stl'), !ready],
+      ...(hub?.meshes.wedgeFlat ? [['Wedge (STL)', '', () => download(toSTL(hub.meshes.wedgeFlat, d.name + ' wedge'), nm + '-wedge.stl'), !ready]] : []),
+    ])
+    $('exportNote').innerHTML = `Send the lathe drawing and the STL to a machine shop: a small lathe turns it from Ø${v ? Math.ceil(v.D + 2) : ''} bar, then a drill press for the cross holes. ${matOf(c).name}, ${v ? v.g.toFixed(0) : ''} g. <b>Fitting:</b> ${v?.expand ? `push the spigot into the pole until the lip sits on the end, drop the ${v.bolt} down the middle into the wedge and tighten with a 5 mm allen key` : 'mix epoxy, coat the spigot, push it home, let it cure, then drill through the pole at the rivet hole and pop a 3.2 mm rivet through'}. ${d.lock === 'grub' ? 'Push an M5 nut into the slot in the hub collar, slide the hub on (flat face out), and screw an M5 × 10 cup-point grub screw in through the collar until it bites in the groove.' : d.lock === 'pin' ? 'Slide the hub on (flat face out), line up the holes, push an M5 bolt through and fit an all-metal lock nut (or a clevis pin and R-clip for quick changes).' : 'Slide the hub on (flat face out), put the big washer on the bolt, and tighten it all with the one allen key.'} Check it before every session.`
+    return
+  }
+  if (d.acroMetal) {
+    const a = hub?.acro, nm = `acro-end-${d.id}-${p.circ}mm-${p.poleOD}pole-${matKey(c)}`
+    exportButtons([
+      ['Lathe drawing (SVG)', 'primary', txt(() => acroDrawingSVG(hub, p, matOf(c).name, d.name), nm + '-lathe.svg', 'image/svg+xml'), !ready],
+      ['Side profile (DXF)', '', txt(() => toDXF(hub.layers, d.name), nm + '-profile.dxf', 'application/dxf'), !ready],
+      ['3D model for the machinist (STL)', '', () => download(toSTL(hub.meshes.combined, d.name), nm + '.stl'), !ready],
+      ...(hub?.meshes.wedgeFlat ? [['Wedge (STL)', '', () => download(toSTL(hub.meshes.wedgeFlat, d.name + ' wedge'), nm + '-wedge.stl'), !ready]] : []),
+    ])
+    $('exportNote').innerHTML = `Send the lathe drawing and the STL to a machine shop (any small lathe can turn it from Ø${a ? Math.ceil(a.D + 3) : ''} bar). ${matOf(c).name}: ${a ? a.g.toFixed(0) : ''} g. ${d.plugIn ? `To fit it: push the spigot into the pole until the lip sits on the pole end, put the ${a?.bolt || 'M6 cap screw'} down the middle into the wedge, and turn the allen key until it is tight: the wedge pulls up and the spigot grips the inside of the pole. Press the rubber cap into the tip.` : 'To fit it: slide it on the pole and tighten the M5 grub screw. In a carbon or thin-walled pole, put a Pole Insert inside under the screw (Pole fittings) so it cannot crush the tube.'} ${a?.grooves.length ? 'Roll the O-rings into the grooves.' : ''}`
+    return
+  }
   if (d.sword) {
     const v = hub?.sword, nm = `fire-sword-${d.id}-${c.thick}mm-${matKey(c)}`
     exportButtons([
@@ -1426,7 +1633,7 @@ function renderCutExports(d) {
       ['3D model (STL)', '', () => download(toSTL(hub.meshes.combined, d.name), nm + '.stl'), !ready],
       ['Wicking and knots guide', '', openWickGuide],
     ])
-    $('exportNote').innerHTML = `<b>Send the DXF</b> to a laser, waterjet or plasma shop: ${c.thick} mm ${matOf(c).name}, ${v ? v.length.toFixed(0) + ' × ' + v.width.toFixed(0) + ' mm' : ''}. Layers: <b>CUT</b> the outline${v?.rope ? ' and the rope slots' : ''}, <b>HOLES</b> wick bolts (M5), handle rivets (Ø5.2), pommel bolt (M8) and lanyard. Ask for every edge deburred and rounded: it is a contact prop. Then: ${v?.rope ? `lace ${(v.rope.len / 1000).toFixed(1)} m of ${p.ropeD} mm Kevlar rope over and under through the slots and wire both ends to the tie holes with stainless wire` : `wrap ${p.tapeLen} mm of ${p.wickW} mm Kevlar tape round each tab and bolt through with M5 stainless bolts and all-metal lock nuts`}; rivet wooden handle scales (or wrap it in leather or cotton tape); bolt ${v?.pomG ? `about ${Math.round(v.pomG)} g of steel washers` : 'any weight'} to the pommel on an M8 bolt.`
+    $('exportNote').innerHTML = `<b>Send the DXF</b> to a laser, waterjet or plasma shop: ${c.thick} mm ${matOf(c).name}, ${v ? v.length.toFixed(0) + ' × ' + v.width.toFixed(0) + ' mm' : ''}. Layers: <b>CUT</b> the outline${v?.rope ? ' and the rope slots' : ''}, <b>HOLES</b> wick bolts (M5), handle rivets (Ø5.2), pommel bolt (M8) and lanyard. Ask for every edge deburred and rounded: it is a contact prop. Then: ${v?.full ? (v.full.kind === 'wrap' ? `bolt the start of ${v.full.tapeM.toFixed(1)} m of ${p.wickW} mm Kevlar tape under the M5 bolt just above the bare section, wind it up the blade in a tight spiral, each turn half over the last, to the tip and back down a little, bolt the end under the top M5 bolt, and stitch it to the blade with stainless lock wire through the small holes down the middle` : `fold ${p.wickW} mm Kevlar tape over each edge (${v.full.tapeM.toFixed(1)} m in all) and bolt it through every 70 mm with M4 stainless bolts and all-metal lock nuts, heads on one side`) : v?.rope ? `lace ${(v.rope.len / 1000).toFixed(1)} m of ${p.ropeD} mm Kevlar rope over and under through the slots and wire both ends to the tie holes with stainless wire` : `wrap ${p.tapeLen} mm of ${p.wickW} mm Kevlar tape round each tab and bolt through with M5 stainless bolts and all-metal lock nuts`}; rivet wooden handle scales (or wrap it in leather or cotton tape); bolt ${v?.pomG ? `about ${Math.round(v.pomG)} g of steel washers` : 'any weight'} to the pommel on an M8 bolt.`
     return
   }
   if (d.dart) {
@@ -1474,12 +1681,31 @@ function renderExports() {
   const box = $('exports')
   const m = current && current.design === d ? current.hub.meshes : null
   if ((isCnc() && !printOnly(d)) || d.spokeHub) return renderCutExports(d)
+  if (d.acro) {
+    const p = params(), a = current?.hub.acro
+    exportButtons([
+      ['STL (print standing on its mouth)', 'primary', () => download(toSTL(m.combined, d.name), `acro-end-${d.id}-${p.circ}mm-${p.poleOD}pole.stl`), !m],
+      ['Fit-test ring', '', async () => download(toSTL(await work('fit', { params: { ...params(), fit: p.fit } }), 'fit test'), `fit-test-${p.poleOD}pole-${p.fit}.stl`)],
+    ])
+    $('exportNote').innerHTML = `Print in TPU 95A, 100% infill (or 6 walls and 40% gyroid if you want it lighter), 0.2 mm layers, standing on its open end as it comes. ${a?.coin?.pauseAt ? `Add a <b>pause at ${a.coin.pauseAt.toFixed(1)} mm</b> in your slicer and drop the coins in flat. ` : ''}${a?.shot ? `Add a <b>pause at ${a.shot.pauseAt.toFixed(1)} mm</b> and pour in ${a.shot.g.toFixed(0)} g of steel shot, tap it level, then carry on. ` : ''}Print two and weigh them: match them within 5 g.`
+    return
+  }
   if (d.bubblePoi) {
     const p = params()
-    exportButtons([['STL (print standing on its base)', 'primary', () => download(toSTL(m.combined, d.name), `bubble-poi-${d.id}-${p.loopD}mm${(p.film || '').startsWith('string') ? '-string' : ''}.stl`), !m]])
+    exportButtons([['STL (print lying flat)', 'primary', () => download(toSTL(m.combined, d.name), `bubble-poi-${d.id}-${p.smallN}x${p.smallD}-${p.bigD}mm${(p.film || '').startsWith('string') ? '-string' : ''}.stl`), !m]])
     $('exportNote').innerHTML = (p.film || '').startsWith('string')
-      ? 'Print standing up as shown, PETG, 3 walls. Tie the yarn through a tie hole, wind it round the loop in tight turns about 3 mm apart, and tie off through the other hole. 100% cotton yarn only: acrylic does not soak up the mix. Clip a swivel through the top eye to your leash; make two.'
-      : 'Print standing up as shown, PETG, 3 walls, 0.2 mm layers. Clip a swivel through the top eye to your leash; make two. Dip in a tray of bubble mix, lift out slowly, and spin.'
+      ? 'Print lying flat as shown, PETG, 100% infill. Tie the yarn round the wire at a joint, wind it round each circle in tight turns about 3 mm apart, and tie off. 100% cotton yarn only: acrylic does not soak up the mix. Clip a swivel through the top eye to your leash, and a small one through the bottom eye to link more on; make two.'
+      : 'Print lying flat as shown, PETG, 100% infill, 0.2 mm layers. Clip a swivel through the top eye to your leash; a small swivel through the bottom eye links another head, a weight or a tail below. Make two. Dip in a tray of bubble mix, lift out slowly, and spin.'
+    return
+  }
+  if (d.joint) {
+    const p = params(), v = current?.design === d ? current.hub.hoop : null, j = v?.joint
+    exportButtons([
+      [`Connector STL (print ${p.sections})`, 'primary', () => download(toSTL(m.connFlat, d.name + ' connector'), `hoop-joint-${d.joint}-${(v?.id || 0).toFixed(1)}mm-bore.stl`), !m?.connFlat],
+      ['Drill guide STL', '', () => download(toSTL(m.guideFlat, d.name + ' drill guide'), `hoop-drill-guide-${v ? v.tube.od.toFixed(1) : ''}mm.stl`), !m?.guideFlat],
+      ['Hoop making guide', '', openHoopGuide],
+    ])
+    $('exportNote').innerHTML = `Print the connectors lying flat as they come, PETG or nylon, 100% infill, and the drill guide in anything. Cut the tube into ${p.sections} pieces of ${j ? (j.seg / 25.4).toFixed(2) + '"' : 'equal length'}. The steps are under the 3D view.`
     return
   }
   if (d.hoop) {
@@ -1493,7 +1719,7 @@ function renderExports() {
   }
   if (d.mould) {
     const p = params(), v = current?.design === d ? current.hub.mould : null
-    const nm = `mould-${d.id}-${d.kind === 'ball' ? p.ballD : p.maxD}mm`
+    const nm = `mould-${d.id}-${d.kind === 'ball' ? p.ballD : d.kind === 'acro' ? p.circ + 'round' : p.maxD}mm`
     const st = (key, label, file, prim = 'primary') => [label, prim, () => download(toSTL(m[key], d.name + ' ' + file), `${nm}-${file}.stl`), !m?.[key]]
     exportButtons(v?.box ? [
       st('masterAFlat', 'Master, half 1 STL', 'master-1'),
@@ -1664,7 +1890,7 @@ function renderCutGuide() {
   if (design().sword) {
     $('guide').innerHTML = `<h2>Fire contact sword</h2><ol>
       <li><b>Cut</b> from the DXF in ${matOf(cncp()).name}. Ask for every edge deburred and rounded over: it rolls on your body.</li>
-      <li><b>Wicks:</b> 100% Kevlar only. Wrap the tape tight round each tab, the end tucked under, and bolt through both holes with M5 stainless bolts, big washers and all-metal lock nuts. Never nylon-insert nuts or paracord: nylon melts.</li>
+      <li><b>Wicks:</b> 100% Kevlar only. ${(params().wicks || '').startsWith('Kevlar wrapped') ? 'Bolt the start of the tape under the lower M5 bolt, wind it up the whole blade in a tight spiral, each turn half over the last, over the tip and back, bolt the end under the top bolt and stitch it down with stainless lock wire through the small holes. ' : (params().wicks || '').startsWith('Kevlar along') ? 'Fold the tape over each edge, the full length, and bolt through every hole with M4 stainless bolts and all-metal lock nuts. ' : ''}Wrap the tape tight round each tab, the end tucked under, and bolt through both holes with M5 stainless bolts, big washers and all-metal lock nuts. Never nylon-insert nuts or paracord: nylon melts.</li>
       <li><b>Rope blade:</b> lace the Kevlar rope over and under through the slots, pull it snug, and wire each end through its tie hole with stainless wire.</li>
       <li><b>Handle:</b> rivet on two wooden scales, or wrap it in leather or cotton tape. It must stay cool and dry: no plastic grips near the flame.</li>
       <li><b>Balance:</b> bolt the pommel weight on (steel washers on an M8 bolt) until it balances where the forge says, a hand in front of the guard.</li>
@@ -1710,14 +1936,58 @@ function renderCutGuide() {
 }
 
 function renderGuide() {
-  if (isCnc() && !printOnly(design())) return renderCutGuide()
+  const dg = design()
+  if (isCnc() && !printOnly(dg) && !dg.dowel && !dg.acro && !dg.tsword && !dg.taxe) return renderCutGuide()
+  if (dg.tsword || dg.taxe) {
+    $('guide').innerHTML = `<h2>${dg.tsword ? 'Building a tube fire sword' : 'Building a tube fire axe'}</h2><ol>
+      <li><b>Buy:</b> ${dg.tsword ? 'aluminium tube for the blade and the guard (or stainless for the toughest)' : 'aluminium tube for the bits and the spike'}, 50 mm (2") Kevlar wick tape, Kevlar thread or stainless lock wire for tying off, M5 stainless bolts with all-metal lock nuts, an M8 stud and steel washers for the ${dg.tsword ? 'pommel' : 'counterweight ball'}. Never nylon-insert nuts, cotton or paracord near the flame.</li>
+      <li><b>The block:</b> have it machined from the STL (and the sizes sheet), or print it in PETG or nylon for a practice prop that never sees fire.</li>
+      <li><b>Bending:</b> fill the tube with dry sand, cap both ends, and bend it slowly round a former (a wheel, a pipe, a piece of plywood cut to the curve). Heating the sand first (in an old pan, about 150 °C) and bending while warm makes aluminium tube easier still. Pour the sand out after.</li>
+      <li><b>Fitting:</b> push each tube home in its socket, drill through the block's hole and through the tube, and bolt it. Every socket bolted: nothing can fly off.</li>
+      <li><b>Wicking:</b> start the tape at the end of the bare section with a few turns of wire, wind it in a tight spiral, each turn half over the last, over the tip and back, and wire it off. Tight wicks burn longer and do not unravel.</li>
+      <li><b>Balance:</b> ${dg.tsword ? 'stack the steel discs on the pommel stud, check the balance point on one finger, add or take off a disc, then wind the Kevlar ball round them' : 'make the matched ball for the other end of the staff and weigh both ends: within 10 g'}.</li>
+      <li><b>Fire:</b> soak, spin off the extra fuel well away from the flame, light, and keep a fire blanket and a safety person by you. Check every bolt before each burn.</li></ol>`
+    return
+  }
+  if (design().dowel) {
+    $('guide').innerHTML = `<h2>Locking dowels</h2><ul>
+      <li><b>What it is:</b> a short metal dowel for the pole end. The spigot goes inside the pole, the lip sits on the pole end, and the stub that sticks out is the same size as the pole, so a hub slides onto it like onto the pole.</li>
+      <li><b>Why:</b> a push-on hub holds by grip alone. Locked to a dowel it cannot fly off however hard it is thrown, dropped or wrapped.</li>
+      <li><b>The hub:</b> open the hub you want, tick <b>Lock onto a metal dowel</b> under its settings, pick the same lock, and it tells you the two numbers to set here (Stub and Lock from the flange). Off by default: every hub stays a normal push-on hub unless you choose this.</li>
+      <li><b>Three locks:</b> grub screw (quick, adjustable, any angle), cross pin (the most positive, an M5 bolt or a clevis pin), end bolt (one allen key does the dowel and the hub at once).</li>
+      <li><b>Carbon poles:</b> the expanding spigot presses evenly on the inside of the tube and the lip holds the end from outside: nothing crushes it. Do not overtighten: firm with the short end of the key.</li></ul>`
+    return
+  }
+  if (design().acro) {
+    $('guide').innerHTML = `<h2>Acro staff ends</h2><ul>
+      <li><b>Why the coin:</b> the end of a pole is a thin ring, and it cuts into soft TPU or rubber a little more with every drop. A coin or steel washer at the bottom of the socket, at least as wide as the pole, takes that ring instead and spreads the hit over the whole end. A plug inside the pole keeps the end centred and the tube round, but the coin is what stops the cutting.</li>
+      <li><b>Coin size:</b> measure it with calipers and set Coin width and thickness. If it is no more than about 2 mm wider than the socket, push it down the socket after printing; wider coins drop in at the pause and are locked in for good.</li>
+      <li><b>Weight:</b> the chamber is sized to the steel shot you ask for, so it packs full and cannot rattle. Pause where the forge says, pour, tap level, carry on. Coins add weight right at the very end too.</li>
+      <li><b>Balance:</b> both ends must weigh the same. Weigh them on kitchen scales; add a coin or a little shot to the light one.</li>
+      <li><b>Shape:</b> round tips roll; a flat on the tip (Balance Foot) stands on a hand or the floor; faces stop it rolling away when you put the staff down. Circumference is what your hand feels: 150–190 mm suits most people.</li>
+      <li><b>Fit:</b> print the fit-test ring first. It should push on firmly by hand and not twist.</li></ul>`
+    return
+  }
   if (design().bubblePoi) {
     $('guide').innerHTML = `<h2>Bubble poi</h2><ul>
       <li><b>Mix:</b> 1 litre of water, about 150 ml of plain washing-up liquid, 1 tablespoon of glycerine (or 2 of sugar). Stir gently, no froth. Left overnight it makes bigger, stronger bubbles.</li>
       <li><b>Dip</b> in a wide tray so every loop goes under. Lift slowly so the film forms, then spin. Slow spins make big bubbles; fast spins make clouds of small ones.</li>
       <li><b>String loops:</b> 100% cotton yarn, wound tight about 3 mm apart, both ends tied through the tie holes. Rinse in fresh water after use and let it dry, or it goes mouldy.</li>
-      <li><b>Weight:</b> pause the print where it says and fill the stem with steel shot, so the poi keep their spin.</li>
+      <li><b>Linking:</b> the small eye under the big circle takes a small swivel: chain a second head, a weight or a ribbon tail below for more spin and more bubbles.</li>
       <li>Outside, away from faces: the mix stings eyes.</li></ul>`
+    return
+  }
+  if (design().joint) {
+    const p = params(), j = current?.hub?.hoop?.joint, st = design().joint
+    $('guide').innerHTML = `<h2>Making a collapsible hoop</h2>
+      <p><b>Materials:</b> hoop tubing (polypro 5/8" or 3/4" for travel hoops; HDPE is heavier and kinks less when coiled); ${st === 'button' || st === 'double' ? `stainless V-spring push buttons with a ${p.btnD} mm button (sold for collapsible hoops and tent poles: the small ones for 5/8" tubing, the bigger for 3/4")` : st === 'clip' ? '3 mm stainless clevis pins with R-clips, or hairpin (cotter) clips' : 'nothing metal: the button is printed'}; 3.2 mm aluminium pop rivets and a rivet gun${st === 'double' ? ' (not needed for this one)' : ''}; PETG or nylon filament for the connectors; a pipe cutter, a drill with ${st === 'clip' ? '3.2' : p.btnD} mm and 3.3 mm bits, and some fine sandpaper. Optional: hoop tape, grip tape.</p><ol>
+      <li><b>Cut</b> the tube into ${p.sections} equal pieces of ${j ? (j.seg / 25.4).toFixed(2) + '" (' + (j.seg / 10).toFixed(1) + ' cm)' : 'the length shown'}, square, and sand off the burr inside and out.</li>
+      <li><b>Print</b> ${p.sections} connectors and the drill guide.</li>
+      ${st === 'double' ? '' : `<li><b>Fix one half:</b> soften a tube end in just-boiled water for a minute, push the barbed half of a connector in up to the centre ring, slide the drill guide over (lip against the tube end) and drill the 3.3 mm hole through its rivet guide, into the connector. Pop a rivet in. Do the same at one end of every section.</li>`}
+      <li><b>Mark the button:</b> push the next section onto the connector up to the ring, slide the drill guide over its end and drill through the ${st === 'clip' ? '3.2 mm' : 'button'} guide hole, through the tube and the connector wall${st === 'flex' ? ' (just the tube: the connector already has its button)' : ''}. Keep every hole on the inside of the hoop.</li>
+      ${st === 'button' || st === 'double' ? '<li><b>Fit the button:</b> squeeze the V-spring, slide it into the open end of the connector core, and let the button pop out of its hole. Push the tube on; the button clicks out through the tube.</li>' : st === 'clip' ? '<li><b>Pin it:</b> push the pin through tube and connector and fit the clip.</li>' : '<li><b>Click it:</b> press the printed button in and slide the tube on until it clicks out through the hole.</li>'}
+      <li><b>Taking it apart:</b> press the button${st === 'clip' ? ' (or pull the pin)' : ''} and pull the sections straight apart. Coil them in a figure-eight or pack them in a bag.</li>
+      <li><b>Tape:</b> tape over the joints last, leaving the buttons clear.</li></ol>`
     return
   }
   if (design().hoop) {
@@ -1744,10 +2014,10 @@ function renderGuide() {
       <li><b>Cast copies:</b> halves together between two boards with rubber bands, pour into the funnel.</li></ol>
       <p><a href="#" class="mouldLink">Full mould making guide</a>: rubbers, mixing, bubbles, what sticks to what.</p>`
       : `<h2>Casting it</h2><ol>
-      <li><b>Print</b> both halves${d.kind === 'ball' ? ' and the core pin' : ''} in PLA or PETG. Seal the cavity with clear coat and let it dry fully.</li>
-      <li><b>Release:</b> spray or brush mould release (or a thin smear of petroleum jelly) on everything the rubber will touch${d.kind === 'ball' ? ', the core pin too' : ''}.</li>
-      ${d.kind !== 'ball' && (p.attach || '').startsWith('cast-in') ? '<li><b>The nut:</b> screw the M8 nut onto the bolt with the big washer on top of it; lay the bolt in one half so its head sits on the top of the mould.</li>' : ''}
-      <li><b>Close it</b> on the keys, bolt or clamp it, ${d.kind === 'ball' ? 'push in the core pin, ' : ''}stand it funnel up.</li>
+      <li><b>Print</b> both halves${d.kind !== 'dart' ? ' and the core pin' : ''} in PLA or PETG. Seal the cavity with clear coat and let it dry fully.</li>
+      <li><b>Release:</b> spray or brush mould release (or a thin smear of petroleum jelly) on everything the rubber will touch${d.kind !== 'dart' ? ', the core pin too' : ''}.</li>
+      ${d.kind === 'acro' && p.coin === 'yes' ? `<li><b>The coin${p.coinN > 1 ? 's' : ''}:</b> stick ${p.coinN > 1 ? 'the stack' : 'it'} flat on the end of the core pin with a small square of double-sided tape, centred. The rubber flows round and locks ${p.coinN > 1 ? 'them' : 'it'} in at the bottom of the socket.</li>` : ''}${d.kind === 'dart' && (p.attach || '').startsWith('cast-in') ? '<li><b>The nut:</b> screw the M8 nut onto the bolt with the big washer on top of it; lay the bolt in one half so its head sits on the top of the mould.</li>' : ''}
+      <li><b>Close it</b> on the keys, bolt or clamp it, ${d.kind !== 'dart' ? 'push in the core pin, ' : ''}stand it funnel up.</li>
       <li><b>Mix</b> the two parts by weight, scraping the sides; let bubbles rise (or degas). Pour slowly in a thin stream into the funnel until rubber comes up the vents.</li>
       <li><b>Wait</b> the full cure time, then open it, trim the pour and vent stubs flush with sharp scissors${(p.attach || '').startsWith('cast-in') ? ', unscrew the bolt and screw in a stainless swivel eye bolt with thread-locker' : ''}.</li></ol>
       <p><a href="#" class="mouldLink">Full mould making guide</a>: rubbers, mixing, bubbles, what sticks to what.</p>`
@@ -1860,6 +2130,10 @@ setInterval(() => {
 setMain(true)
 toggle('vWeak', true, () => applyLook())
 toggle('vPole', true, (on) => (pole.visible = on))
+$('vRef').onclick = () => { state.ref = REFS[(REFS.indexOf(state.ref) + 1) % REFS.length]; persist(); placeRef(); if (current) { frameView(Math.max(current.hub.viewR || 140, state.ref === 'person' ? state.refH * 10 * 0.6 : 0)); setMain(state.ref === 'off' && framedR >= 140 && !current.hub.tsword && !current.hub.taxe) } }
+$('refH').value = state.refH
+$('refHOut').textContent = state.refH + ' cm'
+$('refH').oninput = (e) => { state.refH = Number(e.target.value); $('refHOut').textContent = state.refH + ' cm'; persist(); placeRef(); if (current) frameView(Math.max(current.hub.viewR || 140, state.refH * 6)) }
 toggle('vBed', true, () => applyLook())
 $('spinRate').oninput = (e) => { view.rate = Number(e.target.value); $('spinOut').textContent = `${view.rate} rev/s` }
 

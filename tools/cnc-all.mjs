@@ -10,7 +10,7 @@ wasm.setup()
 const [out, only] = process.argv.slice(2)
 let fails = 0
 for (const d of DESIGNS) {
-  if (d.adaptor || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.dart || d.cage || d.grip || d.mould || d.hoop || d.bubblePoi || d.sword || (only && !only.split(',').includes(d.id))) continue
+  if (d.adaptor || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.dart || d.cage || d.grip || d.mould || d.hoop || d.bubblePoi || d.sword || d.acro || d.dowel || d.tsword || d.taxe || (only && !only.split(',').includes(d.id))) continue
   const p = defaults(d), c = cncDefaults(d)
   const t0 = performance.now()
   try {

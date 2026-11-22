@@ -59,6 +59,16 @@ header .grow { flex: 1; }
 .chip { background: color-mix(in srgb, var(--panel) 85%, transparent); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 13px; }
 .chip[aria-pressed="true"] { border-color: var(--ember); color: var(--ember); }
 .presets { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.cutPanel { position: absolute; left: 14px; top: 58px; z-index: 5; width: min(300px, 42%); max-height: calc(100% - 150px); overflow: auto; background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 12px; }
+.cutPanel h3 { margin: 0 0 2px; font-size: 14px; }
+.cutPanel p { margin: 0 0 8px; color: var(--muted); }
+.cutPanel table { width: 100%; border-collapse: collapse; font: 12px var(--mono); font-variant-numeric: tabular-nums; }
+.cutPanel th { text-align: left; color: var(--muted); font-weight: 500; position: sticky; top: -10px; background: var(--panel); }
+.cutPanel td, .cutPanel th { padding: 3px 4px; border-bottom: 1px solid var(--line); }
+.cutPanel tr.on td { color: var(--ember); font-weight: 700; }
+.cutPanel tbody tr { cursor: pointer; }
+.cutPanel tbody tr:hover td { background: color-mix(in srgb, var(--ember) 10%, transparent); }
+@media (max-width: 700px) { .cutPanel { position: static; width: auto; max-height: 40vh; margin: 8px; } }
 .blurb { position: absolute; left: 14px; bottom: 14px; right: 14px; max-width: 60ch; color: var(--muted); font-size: 13px; pointer-events: none; }
 .blurb b { color: var(--fg); font: 700 15px var(--display); display: block; margin-bottom: 2px; }
 .busy { position: absolute; right: 14px; top: 14px; font: 12px var(--mono); color: var(--ember); }
@@ -98,6 +108,8 @@ canvas.gl.stale { opacity: .35; }
 section { display: grid; gap: 8px; }
 .ctl { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
 .ctl label { font-size: 13px; }
+.ctl label.check { display: flex; align-items: center; gap: 8px; cursor: pointer; grid-column: 1 / -1; }
+.ctl label.check input { width: 18px; height: 18px; accent-color: var(--ember); }
 .ctl output { font: 12px var(--mono); color: var(--ember); font-variant-numeric: tabular-nums; }
 .ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--ember); margin: 0; }
 .ctl select { grid-column: 2; background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
@@ -370,8 +382,12 @@ kbd { font: 13px var(--mono); border: 1px solid var(--line); border-radius: 5px;
       <button class="chip" id="vWeak" aria-pressed="true">Weak spots</button>
       <button class="chip" id="vPole" aria-pressed="true">Staff</button>
       <button class="chip" id="vBed" aria-pressed="true">Print bed</button>
+      <button class="chip" id="vRef" aria-pressed="false" title="Show something you know next to the design, for scale: a person or a lighter. Tap again to change, and again to hide.">Size: off</button>
     </div>
+    <aside class="cutPanel" id="cutPanel" hidden></aside>
     <div class="stagectl">
+      <div class="ctl" id="refHRow" hidden><label for="refH">Person</label><output id="refHOut">170 cm</output>
+        <input type="range" id="refH" min="90" max="210" step="1" value="170"></div>
       <div class="ctl"><label for="spinRate">Spin</label><output id="spinOut">1.5 rev/s</output>
         <input type="range" id="spinRate" min="0.2" max="5" step="0.1" value="1.5"></div>
       <div id="bubblePanel" class="ledrow" hidden>
