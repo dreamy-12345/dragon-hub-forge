@@ -32,6 +32,7 @@ import { buildAcro, buildAcroMetal } from './acro.js'
 import { buildTubeSword, buildTubeAxe, buildTubeMace, buildPlateAxe } from './tubeswords.js'
 import { buildFist } from './fist.js'
 import { buildHilt } from './hilt.js'
+import { buildCage } from './cages.js'
 import { buildDowel, LOCK_PARAMS, LOCKS, lockKey, hubLockZ } from './dowel.js'
 
 export { DESIGNS }
@@ -237,6 +238,7 @@ export function buildHub(wasm, design, p, opts = {}) {
   if (design.adaptor) return buildAdaptor(wasm, p, opts)
   if (design.grip) return buildGrip(wasm, p, { kind: design.kind, density: opts.material?.density })
   if (design.dart) return buildDart(wasm, p, { style: design.style, density: opts.material?.density })
+  if (design.cageBall) return buildCage(wasm, p, {})
   if (design.hilt) return buildHilt(wasm, p, { printed: true, density: opts.material?.density })
   if (design.fist) return buildFist(wasm, p, { use: design.use, density: opts.material?.density })
   if (design.tsword) return buildTubeSword(wasm, p, {})

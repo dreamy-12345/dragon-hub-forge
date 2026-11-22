@@ -8,6 +8,8 @@ import { buildAcroMetal } from './acro.js'
 import { buildDowel } from './dowel.js'
 import { buildTubeSword, buildTubeAxe, buildTubeMace, buildPlateAxe } from './tubeswords.js'
 import { buildHilt } from './hilt.js'
+import { buildCage } from './cages.js'
+import { applyFinish } from './finish.js'
 
 const ready = Module(self.__MANIFOLD_OPTS || {}).then((w) => (w.setup(), w))
 const design = (id) => DESIGNS.find((d) => d.id === id)
@@ -56,7 +58,8 @@ self.onmessage = async ({ data }) => {
     } else if (op === 'cnc') {
       // CNC: the design as drawn for print, flattened and fixed for the cutter
       const d = design(data.design), c = data.cnc
-      result = d.hilt ? buildHilt(wasm, data.params, { density: matOf(c).density })
+      result = d.cageBall ? buildCage(wasm, data.params, { mat: matOf(c), thick: c.thick })
+        : d.hilt ? buildHilt(wasm, data.params, { density: matOf(c).density })
         : d.tsword ? buildTubeSword(wasm, data.params, { density: matOf(c).density })
         : d.paxe ? buildPlateAxe(wasm, data.params, { style: d.style, mat: matOf(c), thick: c.thick })
         : d.tmace ? buildTubeMace(wasm, data.params, { style: d.style, density: matOf(c).density })
@@ -70,6 +73,7 @@ self.onmessage = async ({ data }) => {
         : buildPlate(wasm, buildHub(wasm, d, { ...data.params, ring: 'off', snap: 'off' }), data.params, c)
     } else if (op === 'fit') result = buildFitTest(wasm, data.params)
     else if (op === 'captest') result = buildCapsuleTest(wasm, data.params)
+    if ((op === 'build' || op === 'cnc') && data.finish && result) result = applyFinish(wasm, result, data.finish)
     self.postMessage({ id, result }, buffers(result))
   } catch (e) {
     self.postMessage({ id, error: String(e && e.message ? e.message : e) })

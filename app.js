@@ -3,7 +3,7 @@ import { OrbitControls } from './vendor/OrbitControls.js'
 import { DESIGNS, COMMON_PARAMS, MATERIALS, defaults, toSTL, toSVG, to3MF } from './hub.js'
 import { LED_MODES, PAGE_NAMES } from './leds.js'
 import { BubbleSim } from './bubbles.js'
-import { initCreate } from './create.js'
+import { initCreate, traceCanvas } from './create.js'
 import { createLikes } from './likes.js'
 import { initHelp } from './help.js'
 import { CNC_PARAMS, PROCESSES, cncDefaults, matOf, matKey, procKey, endsKey, ENDS, SPOKE_ENDS, toDXF, toCutSVG, spokeDrawingSVG } from './cnc.js'
@@ -23,7 +23,7 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
@@ -49,6 +49,8 @@ if ((saved.v || 1) < 3) for (const sp of Object.values(saved.params || {})) if (
 if ((saved.v || 1) < 4) for (const d of DESIGNS) if (d.sword && saved.params?.[d.id]) { delete saved.params[d.id].wicks; delete saved.params[d.id].bare }
 for (const d of DESIGNS) state.params[d.id] = { ...defaults(d), ...(saved.params?.[d.id] || {}) }
 state.v = 4
+// finish (logo, text, picture) per design
+state.finish = saved.finish && typeof saved.finish === 'object' ? saved.finish : {}
 // How it is made: 3D print (everything above) or CNC cut. CNC settings are per design
 // and live apart from the print settings, so switching never changes a print design.
 state.mode = saved.mode === 'cnc' ? 'cnc' : 'print'
@@ -564,11 +566,11 @@ function renderCncParams(d, cp, set) {
     sec('Material', C(['material']), true)
     return
   }
-  if (d.paxe) {
+  if (d.paxe || d.cageBall) {
     const metal = C(['material', 'process', 'thick'])
     metal[0][0] = { ...metal[0][0], options: metal[0][0].options.filter((o) => matOf({ material: o }).kind === 'metal') }
     if (!metal[0][0].options.includes(c.material)) c.material = metal[0][0].options[0]
-    sec('Head cut from metal plate', metal, true)
+    sec(d.cageBall ? 'Bands cut from metal sheet' : 'Head cut from metal plate', metal, true)
     return
   }
   if (d.acroMetal || d.dowel || d.tsword || d.taxe || d.hilt) {
@@ -644,6 +646,7 @@ function renderParams() {
     }
     cp.append(det)
   }
+  if (!d.custom) cp.append(finishPanel(d))
   const reset = document.createElement('button')
   reset.className = 'btn'
   reset.textContent = `Reset ${d.name} to defaults`
@@ -656,6 +659,86 @@ function renderParams() {
   $('glowRow').hidden = !hasLeds()
   $('ledRow').hidden = !hasLeds()
   renderExports()
+}
+
+// ---------------------------------------------------------------- finish --
+// Your own logo, text or picture on any design: traced to outlines here, put on the part in the worker.
+const FONTS = { 'bold sans': '900 220px system-ui, sans-serif', serif: '700 220px Georgia, serif', rounded: '800 220px "Arial Rounded MT Bold", system-ui, sans-serif', script: 'italic 700 220px "Brush Script MT", cursive', mono: '700 200px ui-monospace, monospace' }
+let finishImg = null
+function squareOf(src, w, h) {
+  // letterbox into a square so the trace keeps its shape
+  const n = Math.max(w, h), cv = document.createElement('canvas')
+  cv.width = cv.height = n
+  const ctx = cv.getContext('2d')
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, n, n)
+  ctx.drawImage(src, (n - w) / 2, (n - h) / 2, w, h)
+  return cv
+}
+function traceFinish(f) {
+  try {
+    let sq = null
+    if (f.kind === 'text' && f.text.trim()) {
+      const cv = document.createElement('canvas'), ctx = cv.getContext('2d')
+      ctx.font = FONTS[f.font] || FONTS['bold sans']
+      const w = Math.ceil(ctx.measureText(f.text).width) + 40
+      cv.width = w; cv.height = 300
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, 300)
+      ctx.font = FONTS[f.font] || FONTS['bold sans']; ctx.fillStyle = '#000'; ctx.textBaseline = 'middle'
+      ctx.fillText(f.text, 20, 160)
+      sq = squareOf(cv, w, 300)
+    } else if (f.kind === 'picture' && finishImg) sq = squareOf(finishImg, finishImg.naturalWidth || finishImg.width, finishImg.naturalHeight || finishImg.height)
+    if (!sq) { f.loops = null; f.sig = ''; return }
+    const { loops } = traceCanvas(sq, { threshold: f.threshold, invert: f.invert, soft: 1, res: 260 })
+    f.loops = loops
+    f.sig = `${f.kind}:${f.text}:${f.font}:${f.threshold}:${f.invert}:${loops.length}:${loops.reduce((a, l) => a + l.length, 0)}`
+  } catch (e) { f.loops = null; status('Could not trace that: ' + e.message) }
+}
+function finishPanel(d) {
+  const f = finOf(d.id)
+  const det = document.createElement('details')
+  det.className = 'finishPanel'
+  if (f.kind !== 'none') det.open = true
+  det.innerHTML = '<summary>✨ Finish: your logo, text or picture</summary><div></div>'
+  const box = det.lastChild
+  const changed = (retrace) => { if (retrace) traceFinish(f); persist(); schedule(150) }
+  const add = (def, get, set) => box.append(control(def, get, set))
+  add({ key: 'finKind', label: 'Put on it', options: ['none', 'text', 'picture'] }, () => f.kind, (v) => { f.kind = v; changed(true); renderParams() })
+  if (f.kind === 'text') {
+    const wrap = document.createElement('div'); wrap.className = 'ctl'
+    wrap.innerHTML = '<label for="finText">Text</label><input id="finText" type="text" maxlength="40" style="grid-column:1/-1">'
+    const inp = wrap.querySelector('input'); inp.value = f.text
+    let tm = null
+    inp.oninput = () => { f.text = inp.value; clearTimeout(tm); tm = setTimeout(() => changed(true), 400) }
+    box.append(wrap)
+    add({ key: 'finFont', label: 'Lettering', options: Object.keys(FONTS) }, () => f.font, (v) => { f.font = v; changed(true) })
+  }
+  if (f.kind === 'picture') {
+    const wrap = document.createElement('div'); wrap.className = 'ctl'
+    wrap.innerHTML = '<label for="finFile">Picture or logo (PNG, JPG, SVG)</label><input id="finFile" type="file" accept="image/*" style="grid-column:1/-1"><div class="hint">Dark parts become the logo. A clean black-on-white logo works best.</div>'
+    wrap.querySelector('input').onchange = (e) => {
+      const file = e.target.files[0]
+      if (!file) return
+      const img = new Image()
+      img.onload = () => { finishImg = img; changed(true) }
+      img.src = URL.createObjectURL(file)
+    }
+    box.append(wrap)
+    add({ key: 'finTh', label: 'Darkness cut-off', unit: '', min: 20, max: 235, step: 1 }, () => f.threshold, (v) => { f.threshold = v; clearTimeout(f._t); f._t = setTimeout(() => changed(true), 300) })
+    add({ key: 'finInv', label: 'Swap light and dark', check: true }, () => f.invert, (v) => { f.invert = v; changed(true) })
+  }
+  if (f.kind !== 'none') {
+    add({ key: 'finStyle', label: 'Style', options: ['raised', 'engraved'], hint: 'Raised stands proud of the surface; engraved is cut in. On metal plates it goes on the engrave layer.' }, () => f.style, (v) => { f.style = v; changed() })
+    add({ key: 'finDepth', label: 'Depth', unit: 'mm', min: 0.3, max: 4, step: 0.1 }, () => f.depth, (v) => { f.depth = v; changed() })
+    add({ key: 'finSize', label: 'Size', unit: 'mm', min: 8, max: 300, step: 1, hint: 'The width (or height) of the logo.' }, () => f.size, (v) => { f.size = v; changed() })
+    add({ key: 'finWhere', label: 'Where', options: ['top', 'bottom', 'front', 'back', 'left', 'right', 'round the side'], rerender: true }, () => f.where, (v) => { f.where = v; changed(); renderParams() })
+    if (f.where === 'round the side') add({ key: 'finCopies', label: 'Copies round', unit: '', min: 1, max: 12, step: 1 }, () => f.copies, (v) => { f.copies = v; changed() })
+    add({ key: 'finAcross', label: 'Move across', unit: '%', min: -50, max: 50, step: 1 }, () => f.across, (v) => { f.across = v; changed() })
+    add({ key: 'finUp', label: 'Move up', unit: '%', min: -50, max: 50, step: 1 }, () => f.up, (v) => { f.up = v; changed() })
+    add({ key: 'finTurn', label: 'Turn', unit: '°', min: -180, max: 180, step: 1 }, () => f.turn, (v) => { f.turn = v; changed() })
+    if (f.kind === 'picture' && !f.loops?.length) box.insertAdjacentHTML('beforeend', '<div class="hint">Pick a picture above.</div>')
+    if (f.kind === 'text' && !f.loops?.length) traceFinish(f)
+  }
+  return det
 }
 
 function drawThumb(cv, polys, R, glow = '#ffae2a') {
@@ -774,7 +857,7 @@ function entries() {
 const SECTIONS = { hubs: 'Dragon staff hubs', fire: 'Fire and metal (CNC)', sparks: 'Spark cages (charcoal, CNC only)', rope: 'Rope dart heads', poi: 'Poi', contact: 'Contact staff ends', acro: 'Acro staff ends', moulds: 'Silicone and rubber moulds', hoops: 'Hoops', collapse: 'Collapsible hoops', fittings: 'Pole fittings' }
 const SECTION_OF = {
   Fire: 'fire', Swords: 'fire', TubeSwords: 'fire', TubeAxes: 'fire', SpokeHubs: 'fire', PracticeSpokes: 'fire',
-  Contact: 'contact', Axes: 'contact', Acro: 'acro', AcroMetal: 'acro', FistContact: 'contact', Eyes: 'contact', FistRope: 'rope', FistPoi: 'poi', PineContact: 'contact', DartPine: 'rope', MouldAcro: 'moulds',
+  Contact: 'contact', Axes: 'contact', Acro: 'acro', AcroMetal: 'acro', FistContact: 'contact', Eyes: 'contact', MeteorCages: 'rope', CagePoi: 'poi', FistRope: 'rope', FistPoi: 'poi', PineContact: 'contact', DartPine: 'rope', MouldAcro: 'moulds',
   DartClassic: 'rope', DartModern: 'rope', DartRound: 'rope', DartPattern: 'rope', DartNature: 'rope',
   Poi: 'poi', BubblePoi: 'poi', Hoops: 'hoops', HoopJoints: 'collapse', MouldContact: 'moulds', MouldDart: 'moulds', MouldPoi: 'moulds',
   SparkDragon: 'sparks', SparkRope: 'sparks', SparkStaff: 'sparks',
@@ -966,7 +1049,10 @@ let ticket = 0
 // Built hubs, most recent last. The gallery thumbnails build every design in
 // the background, so most clicks on a design are answered from here at once.
 const cache = new Map()
-const keyOf = (id, p, mode = 'print') => JSON.stringify([id, p, state.material, state.bed, mode === 'cnc' ? state.cncp[id] : 0])
+const FINISH0 = { kind: 'none', text: 'DREAM', font: 'bold sans', style: 'raised', depth: 1, size: 40, where: 'top', copies: 1, across: 0, up: 0, turn: 0, threshold: 128, invert: false, loops: null, sig: '' }
+const finOf = (id) => (state.finish[id] = { ...FINISH0, ...(state.finish[id] || {}) })
+const finishPayload = (id) => { const f = state.finish[id]; return f && f.kind !== 'none' && f.loops?.length ? { ...f } : null }
+const keyOf = (id, p, mode = 'print') => { const f = finishPayload(id); return JSON.stringify([id, p, state.material, state.bed, mode === 'cnc' ? state.cncp[id] : 0, f ? { ...f, loops: f.sig } : 0]) }
 function remember(k, hub) {
   cache.delete(k)
   cache.set(k, hub)
@@ -1062,8 +1148,8 @@ async function rebuild() {
   let hub
   try {
     hub = cncNow
-      ? await work('cnc', { design: d.id, params: p, cnc: { ...cncp() } })
-      : await work('build', { design: d.id, params: p, material: state.material, bed: Number(state.bed) })
+      ? await work('cnc', { design: d.id, params: p, cnc: { ...cncp() }, finish: finishPayload(d.id) })
+      : await work('build', { design: d.id, params: p, material: state.material, bed: Number(state.bed), finish: finishPayload(d.id) })
     remember(k, hub)
   } catch (e) {
     inflight = false
@@ -1105,7 +1191,7 @@ function show(hub, d, p, t0) {
   }
   drawHalo(hub, p)
   // no staff through things held by a hilt, or ends that sit on the pole's tip
-  const noPole = !!(hub.hilt || hub.fist || hub.sword || hub.tsword || hub.taxe || hub.acro || hub.dowel || hub.bubblePoi || hub.hoop || hub.mould || hub.ball || hub.novelty || hub.dart || hub.cage || hub.sleeve || hub.practiceSpoke || hub.grip)
+  const noPole = !!(hub.cageBall || hub.hilt || hub.fist || hub.sword || hub.tsword || hub.taxe || hub.acro || hub.dowel || hub.bubblePoi || hub.hoop || hub.mould || hub.ball || hub.novelty || hub.dart || hub.cage || hub.sleeve || hub.practiceSpoke || hub.grip)
   $('vPole').hidden = noPole
   // swords, poi and rope darts are not spun on a staff: no spin controls
   const noSpin = !!(hub.sword || hub.tsword || hub.dart || hub.bubblePoi)
@@ -1125,6 +1211,7 @@ function show(hub, d, p, t0) {
   renderGuide()
   renderVerdict(hub, p)
   renderExports()
+  if (hub.finishNote) $('exportNote').insertAdjacentHTML('beforeend', `<div class="hint">✨ ${hub.finishNote}</div>`)
   $('busy').hidden = true
   hideLoader()
   status(`built in ${Math.round(performance.now() - t0)} ms · ${hub.stats.tris.toLocaleString()} triangles`)
@@ -1562,6 +1649,19 @@ function renderVerdict(hub, p) {
       ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
     return
   }
+  if (hub.cageBall) {
+    const v = hub.cageBall, s = hub.stats
+    const twist = (p.join || '').startsWith('tabs'), wire = (p.join || '').startsWith('stainless')
+    $('verdict').innerHTML = `
+      <div class="big">${kg(v.total)}<small>one head, Kevlar fuelled · ${kg(2 * v.total)} a pair</small></div>
+      <div class="row"><span>Metal</span><span>${v.g.toFixed(0)} g · ${v.T} mm ${v.mat}, ${(v.sheet[0] / 10).toFixed(0)} × ${(v.sheet[1] / 10).toFixed(0)} cm of sheet</span></div>
+      <div class="row"><span>Parts</span><span>${v.parts.join(' · ')}</span></div>
+      <div class="row"><span>Joining</span><span>${twist ? 'slot the four half hoops onto the equator ring (inside notches over outside notches), push the tabs through the pole plates and twist each a quarter turn with pliers' : wire ? 'slot it together, then lash every crossing and every tab with 1 mm stainless wire through the small holes, twisted tight and tucked' : 'slot it together and tack-weld or braze every crossing and every tab'}</span></div>
+      <div class="row"><span>Kevlar</span><span>${v.tapeM.toFixed(1)} m of ${p.wickW} mm tape spiralled round the bands, each turn half over the last, ends wired down · ${v.kevG.toFixed(0)} g fuelled</span></div>
+      <div class="row"><span>Hang it</span><span>a stainless shackle through the Ø${p.eyeD} top eye, then a ball-bearing swivel and the chain; the bottom plate's hole takes a tail or another head</span></div>
+      ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+    return
+  }
   if (hub.hilt) {
     const v = hub.hilt, s = hub.stats
     const lockTxt = v.lockKind === 'bolt' ? 'each tube straight into its socket, drilled through the block\'s hole, an M5 bolt and all-metal lock nut' : v.lockKind === 'grub' ? 'an insert glued and riveted in each tube end; its spigot goes in the socket and an M5 × 8 grub screw (cup point) drops into the groove round it' : 'an insert in each tube end with two pins: push in, twist a quarter turn, locked. No tools'
@@ -1717,6 +1817,17 @@ function renderCutExports(d) {
     const attach = d.mount === 'spoke' ? `<b>On the staff:</b> each cage goes on a spoke tip of a fire spoke hub. Use M8 stainless threaded rod as the spokes (it fits the 8 mm sockets): the rod goes through the cage floor, with a nut and washer inside and out. ` : d.mount === 'pole' ? `<b>On the staff:</b> the floor has the 4 × M4 holes on the forge's 44 mm circle: bolt it to the forge <b>End Expander</b> (inside the pole end, safe for carbon) or a <b>Clamp Collar</b>. ` : d.kind === 'diamond' ? `<b>On the rope:</b> a stainless shackle through the stitch holes at the top point, then a swivel. ` : `<b>On the rope:</b> an M8 stainless eye bolt through the top cap (nut and lock nut inside), then a swivel so the rope never twists. `
     const lock = d.kind === 'diamond' ? `<b>Opening and locking:</b> the loading seam is closed with stainless lock-wire, twisted tight with pliers and the twisted tail tucked in (aviation safety-wire style); check it before every burn. ` : `<b>Opening and locking:</b> ${d.kind === 'tube' ? 'the top cap comes off for loading; its bolts take <b>all-metal lock nuts</b>' : 'the lid has <b>two bolts</b> with <b>all-metal lock nuts</b>, so it stays shut even if one works loose'}. Never nylon-insert nuts: the nylon melts next to charcoal. `
     $('exportNote').innerHTML = attach + lock + `<b>Send the DXF</b> to a laser or waterjet shop: ${c.thick} mm ${matOf(c).name}. Layers: <b>CUT</b> outline, <b>HOLES</b> spark holes and fixings, <b>BEND</b> fold lines (not cut: ask them to fold on these, or fold it yourself in a vice, every fold 90° the same way). ${d.kind === 'diamond' ? 'Fold every BEND line to make the diamond, then stitch the open edges with 1 mm stainless wire through the small holes; leave one edge as the loading door, tied with a twist of wire.' : d.kind === 'tube' ? `${d.sides ? 'Fold the big rectangle on every BEND line into a six-sided tube' : 'Roll the big rectangle into a tube round a pipe'}, overlap the seam and rivet it; fold the cap tabs down and bolt the caps in with M4 stainless bolts (one cap comes off to load). ${d.mount === 'spoke' ? 'The spoke tip goes through the bottom cap: nut and washer inside and out.' : 'An M8 stainless eye bolt through the top cap takes the rope.'}` : 'Fold the sides up, fold the tabs in and pop-rivet them (3.2 mm stainless rivets), then fold the lid over and bolt its tab to the front with an M5 bolt. ' + (d.kind === 'box' && d.mount !== 'spoke' ? 'The floor bolts to a flange collar on the staff end.' : 'Each cube goes on a spoke tip: an 8 mm threaded spoke end through the floor hole, a nut and washer inside and out.')}`
+    return
+  }
+  if (d.cageBall) {
+    const nm = `meteor-cage-${p.ballD}mm-${c.thick}mm-${matKey(c)}`
+    exportButtons([
+      ['Cut file, all parts (DXF)', 'primary', txt(() => toDXF(hub.layers, d.name), nm + '.dxf', 'application/dxf'), !ready],
+      ['Cut file (SVG, true size)', '', txt(() => toCutSVG(hub.layers, 0), nm + '.svg', 'image/svg+xml'), !ready],
+      ['3D model (STL)', '', () => download(toSTL(hub.meshes.combined, d.name), nm + '.stl'), !ready],
+      ['Knots and wicking 101', '', openKnotGuide],
+    ])
+    $('exportNote').innerHTML = `Send the DXF to a laser or waterjet shop: ${c.thick} mm ${matOf(c).name}, every part laid out in a row. Ask for the edges deburred. Make two for a meteor.`
     return
   }
   if (d.hilt) {

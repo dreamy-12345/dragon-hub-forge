@@ -36,6 +36,7 @@ import { dowelDesigns } from './dowel.js'
 import { tubeSwordDesigns, tubeAxeDesigns, tubeMaceDesigns, plateAxeDesigns } from './tubeswords.js'
 import { fistDesigns } from './fist.js'
 import { hiltDesigns } from './hilt.js'
+import { cageDesigns } from './cages.js'
 import { nzDesigns, canDesigns, shroomDesigns } from './nz.js'
 import { TAU, rot, place, ccw, cw, rng, voronoi, pointInPoly, circlePts, HEART, wingPoly, logoDragonfly, Canvas } from './geom.js'
 
@@ -3324,7 +3325,7 @@ DESIGNS.push(...dowelDesigns())
 // tube fire swords and axes: a machined connector on the staff pole, Kevlar-wound tubes, a Kevlar ball pommel
 DESIGNS.push(...tubeSwordDesigns(), ...tubeAxeDesigns(), ...tubeMaceDesigns(), ...plateAxeDesigns())
 // monkey's fist heads: staff end, rope dart, meteor, poi
-DESIGNS.push(...fistDesigns(), ...hiltDesigns())
+DESIGNS.push(...fistDesigns(), ...hiltDesigns(), ...cageDesigns())
 // Aotearoa New Zealand plants and birds, and a brown beer can
 DESIGNS.push(...nzDesigns(), ...canDesigns(), ...shroomDesigns())
 

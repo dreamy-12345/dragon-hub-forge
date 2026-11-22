@@ -50,7 +50,11 @@ browser; saved designs stay in that browser).
 - **Collapsible hoops**: push-button, flex-button, double-button and clip-pin joints,
   a drill guide, section lengths and a materials list; a cut table beside every hoop.
 - **Pine cones**: rope darts, poi, staff ends and three hubs.
-- A size reference (a person of any height, or a lighter) next to any design.
+- A size reference (a person of any height, or a lighter) next to any design, a cross-section
+  view, and How it works animations for connectors.
+- **Finish**: your own text or logo, raised or engraved, on any design.
+- **Knots and Wicking 101**, monkey's fist heads, meteor cages, tube and solid fire axes, a
+  fire mace, the hilt connector with pole inserts, eyeball balls, mushrooms, NZ nature hubs.
 - **Pole fittings**: pole inserts, an internal End Expander and a Clamp Collar so
   rigid hubs grip without crushing carbon, and collapsible staff joints (screw,
   twist-lock, snap-button). Type your pole's inside and outside size once.
