@@ -12,7 +12,7 @@ const fmt = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
 // Where "Show me" points. A string is a CSS selector; {group} finds a settings
 // group by its heading; {list} finds a heading in the design list.
 const T = {
-  create: '#createBtn', save: '#headerSave', donate: '.donateBtn', help: '#helpBtn',
+  create: '#createBtn', save: '#headerSave', help: '#helpBtn',
   list: '#gallery', search: '#listQ', chips: '#listChips', sort: '#listSort', heart: '#gallery .heart',
   design: '#designParams', balance: '#designParams button.btn', common: '#commonParams',
   chipsView: '.toolbar', dark: '#vDark', uv: '#vUV', spin: '#vSpin', trails: '#vTrails', strobe: { sel: '#vStrobe', when: '**Zoetrope strobe** appears for moving-picture designs, like **Leaping Frogs** or **Galloping Hounds**.' },
@@ -146,14 +146,6 @@ const TOPICS = [
       ['Download the **Cut file (DXF)** and send it to a cutting shop. They quote from it.', T.exports],
       ['How to wick and tie Kevlar knots: **Wicking and knots guide** under Export.', T.exports],
       ['Fire safety: only Kevlar and bare stainless near the flame. Never nylon paracord. Never light a printed or plastic hub.', null],
-    ],
-  },
-  {
-    id: 'support', icon: '💛', title: 'Support Dreamscape',
-    steps: [
-      ['The forge is free. You never have to pay.', null],
-      ['If it helped you, **♥ Support Dreamscape** opens a donation page.', T.donate],
-      ['500 baht is suggested (about US$15). Any amount helps.', T.donate],
     ],
   },
 ]

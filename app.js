@@ -1786,23 +1786,6 @@ function download(data, name, type = 'model/stl') {
   a.click()
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 5000)
-  donateNudge()
-}
-
-// After a download: a friendly, optional nudge to support Dreamscape. Never blocks
-// anything, shows at most once a day, gone on its own after a few seconds.
-function donateNudge() {
-  const KEY = 'forge-donate-nudge', DAY = 24 * 3600 * 1000
-  try { if (Date.now() - Number(localStorage.getItem(KEY) || 0) < DAY) return; localStorage.setItem(KEY, String(Date.now())) } catch {}
-  document.getElementById('donateNudge')?.remove()
-  const el = document.createElement('div')
-  el.id = 'donateNudge'
-  el.setAttribute('role', 'status')
-  el.innerHTML = `<p><b>Your file is downloading. Happy printing! 🐉</b><br>The forge is free for everyone. If it helped, you can support Dreamscape, totally optional.</p>
-    <div><a class="btn primary" href="https://dream.sc/donate?for=dragon-hub-forge" target="_blank" rel="noopener">♥ Support (optional)</a><button class="btn" type="button">Maybe later</button></div>`
-  el.querySelector('button').onclick = () => el.remove()
-  document.body.append(el)
-  setTimeout(() => el.remove(), 15000)
 }
 
 // ------------------------------------------------------------------ chrome --
