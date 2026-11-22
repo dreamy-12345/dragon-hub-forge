@@ -94,8 +94,13 @@ export function buildBubblePoi(wasm, p, opts = {}) {
       ring3(y - gap / 2 + 2.5); y -= gap - 5
     }
     const aView = place(bigA, bigR, p.linkD, p.linkD)
-    views.push(aView)
-    if (crossed) views.push(k(k(k(bigB.translate([0, 0, -H / 2])).rotate([0, 90, 0])).translate([0, aView.boundingBox().min[1] + p.linkD + 3.6 + bigR + T, 0])))
+    if (crossed) {
+      // the big pair turned 25° about the hanging line so both rings show from the front as a cross
+      const yc = aView.boundingBox().min[1] + p.linkD + 3.6 + bigR + T
+      const bView = k(k(k(bigB.translate([0, 0, -H / 2])).rotate([0, 90, 0])).translate([0, yc, 0]))
+      const turn = (m) => k(k(k(m.translate([0, -yc, 0])).rotate([0, 25, 0])).translate([0, yc, 0]))
+      views.push(turn(aView), turn(bView))
+    } else views.push(aView)
     const assembled = k(Manifold.union(views))
     const bb = assembled.boundingBox(), cy = (bb.max[1] + bb.min[1]) / 2
     // ---- print plate: every piece flat, side by side

@@ -1070,7 +1070,7 @@ function show(hub, d, p, t0) {
   setGeo(kevMesh, m.kevlar)
   setGeo(pracMesh, m.practice)
   $('vSpokes').hidden = !(m.rods || m.kevlar || m.practice || hub.hoop)
-  $('vSpokes').textContent = hub.hoop ? (hub.hoop.close ? '◀ Whole hoop' : 'Connector close-up ▶') : hub.fist ? 'Knot' : hub.acro ? (hub.acro.metal ? (hub.acro.plugIn ? 'Bolt, wedge, O-rings' : 'O-rings') : 'Coins') : hub.dowel ? 'Bolt and wedge' : hub.spoke ? 'Spokes' : hub.mould ? (hub.mould.box ? 'Master' : 'Cast part') : hub.novelty?.counter ? 'Counterweight' : hub.hoop ? 'Connector' : 'Wicks / ends'
+  $('vSpokes').textContent = hub.bubblePoi ? 'Swivels' : hub.hoop ? (hub.hoop.close ? '◀ Whole hoop' : 'Connector close-up ▶') : hub.fist ? 'Knot' : hub.acro ? (hub.acro.metal ? (hub.acro.plugIn ? 'Bolt, wedge, O-rings' : 'O-rings') : 'Coins') : hub.dowel ? 'Bolt and wedge' : hub.spoke ? 'Spokes' : hub.mould ? (hub.mould.box ? 'Master' : 'Cast part') : hub.novelty?.counter ? 'Counterweight' : hub.hoop ? 'Connector' : 'Wicks / ends'
   if (view.spokes === false) for (const x of [rodMesh, kevMesh, pracMesh]) x.visible = false
   $('ringColourRow').hidden = !(m.ring || m.snap)
   $('glowRow').hidden = $('ledRow').hidden = !hasLeds() // the LED ring can switch them on for any design
