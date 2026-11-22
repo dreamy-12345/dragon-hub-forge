@@ -15,30 +15,39 @@
  */
 export const IN = 25.4
 
-// common hoop tubing (outside diameter and wall, mm). Measure yours: makers vary.
-export const TUBES = {
-  '5/8" polypro (16 mm)': { od: 15.9, wall: 1.6, dens: 0.9, note: 'Light and fast: minis, doubles and tricks.' },
-  '11/16" polypro (17.5 mm)': { od: 17.5, wall: 1.6, dens: 0.9, note: 'A touch firmer than 5/8": a favourite for off-body tricks.' },
-  '3/4" polypro (19 mm)': { od: 19.05, wall: 1.6, dens: 0.9, note: 'The all-round polypro: snappy, holds its round, light.' },
-  '7/8" polypro (22 mm)': { od: 22.2, wall: 1.8, dens: 0.9, note: 'Firmer, a little heavier: big polypro hoops and fire hoops.' },
-  '3/4" HDPE 100 psi (≈24 mm)': { od: 24.1, wall: 1.6, dens: 0.95, note: 'Heavier and slower: the classic learner hoop for waist hooping.' },
-  '3/4" HDPE 160 psi (≈26 mm)': { od: 26.2, wall: 2.6, dens: 0.95, note: 'The heaviest, slowest and steadiest: big beginner hoops.' },
-  'my own tube (type its sizes)': { od: 0, wall: 0, dens: 0.93, note: 'Measure the outside with calipers, and the wall at a cut end.' },
+// hoop tubing: pick the material and the size. Outside diameter and wall in mm; makers vary, so measure yours.
+// Polypro is sold by its outside size; HDPE is sold by a nominal pipe size, a little bigger outside.
+export const TUBE_MATS = {
+  polypro: { dens: 0.9, note: 'Light, snappy, holds its round: tricks, minis, off-body.', sizes: { '5/8"': [15.9, 1.6], '11/16"': [17.5, 1.6], '3/4"': [19.05, 1.6], '7/8"': [22.2, 1.8], '1"': [25.4, 2.0] } },
+  'HDPE 100 psi': { dens: 0.95, note: 'Heavier and slower: the classic learner hoop for waist hooping.', sizes: { '5/8"': [20.6, 1.6], '3/4"': [24.1, 1.6], '1"': [30.2, 1.9] } },
+  'HDPE 160 psi': { dens: 0.95, note: 'The heaviest, slowest, steadiest: big beginner hoops.', sizes: { '3/4"': [26.2, 2.6], '1"': [33.4, 2.9] } },
+  'my own tube (measure it)': { dens: 0.93, note: 'Measure the outside with calipers, and the wall at a cut end.', sizes: {} },
 }
+export const TUBE_SIZES = ['5/8"', '11/16"', '3/4"', '7/8"', '1"']
+const ownTube = (p) => (p.tubeMat || '').startsWith('my own')
 
 export const HOOP_PARAMS = [
-  { key: 'hoopIn', label: 'Hoop size (outside)', unit: 'in', min: 12, max: 50, step: 0.5, value: 36, presets: [24, 30, 34, 38, 42], hint: 'Across the outside, the way hoops are sold. Learning on the waist: 38–42". Tricks and off-body: 30–34". Minis and doubles: 22–28".' },
-  { key: 'tube', label: 'Tubing', options: Object.keys(TUBES), value: '3/4" polypro (19 mm)', rerender: true },
-  { key: 'tubeOD', label: 'Tube outside', unit: 'mm', min: 10, max: 35, step: 0.1, value: 19, showIf: (p) => p.tube.startsWith('my own') },
-  { key: 'tubeWall', label: 'Tube wall', unit: 'mm', min: 0.8, max: 4, step: 0.1, value: 1.6, showIf: (p) => p.tube.startsWith('my own') },
+  { key: 'measure', label: 'Size is measured', options: ['across the OUTSIDE (how hoops are sold)', 'across the INSIDE'], value: 'across the OUTSIDE (how hoops are sold)', rerender: true, hint: 'Outside diameter: edge to edge across the outside of the tube, the way hoops are sold. Inside diameter: across the hole in the middle. The forge shows both either way.' },
+  { key: 'hoopIn', label: 'Hoop size', unit: 'in', min: 12, max: 50, step: 0.5, value: 36, presets: [24, 30, 34, 38, 42], hint: 'Learning on the waist: 38–42". Tricks and off-body: 30–34". Minis and doubles: 22–28".' },
+  { key: 'tubeMat', label: 'Tube material', options: Object.keys(TUBE_MATS), value: 'polypro', rerender: true },
+  { key: 'tubeSize', label: 'Tube size', options: TUBE_SIZES, value: '3/4"', showIf: (p) => !ownTube(p), hint: 'Polypro is sold by its outside size. HDPE by its pipe size: 3/4" HDPE is about 24 mm outside (100 psi) or 26 mm (160 psi).' },
+  { key: 'tubeOD', label: 'Tube outside', unit: 'mm', min: 10, max: 35, step: 0.1, value: 19, showIf: (p) => ownTube(p) },
+  { key: 'tubeWall', label: 'Tube wall', unit: 'mm', min: 0.8, max: 4, step: 0.1, value: 1.6, showIf: (p) => ownTube(p) },
   { key: 'connL', label: 'Connector length', unit: 'mm', min: 40, max: 160, step: 1, value: 90, hint: 'Longer is stronger at the joint; 75–100 mm is usual.' },
   { key: 'show', label: 'Show', options: ['the whole hoop', 'the connector close up'], value: 'the whole hoop', hint: 'Close up: just the connector and the tube ends, and How it works ▶ shows them coming apart.' },
   { key: 'connFit', label: 'Connector fit', unit: 'mm', min: -0.4, max: 0.6, step: 0.05, value: 0.1, hint: 'How much bigger than the bore the barbs are. The body is 0.2 mm under it. Heat the tube end in hot water to push it on.' },
 ]
 
+/** The tube from the material and size (or your own measurements), with a label. */
 export const tubeOf = (p) => {
-  const t = TUBES[p.tube] || TUBES['3/4" polypro (19 mm)']
-  return t.od ? t : { ...t, od: p.tubeOD, wall: p.tubeWall }
+  // older saves had one 'tube' setting: read it
+  let mat = p.tubeMat, size = p.tubeSize
+  if (!mat && p.tube) { mat = /HDPE 160/.test(p.tube) ? 'HDPE 160 psi' : /HDPE/.test(p.tube) ? 'HDPE 100 psi' : /my own/.test(p.tube) ? 'my own tube (measure it)' : 'polypro'; size = (p.tube.match(/^[\d/]+"/) || ['3/4"'])[0] }
+  const M = TUBE_MATS[mat] || TUBE_MATS.polypro
+  if ((mat || '').startsWith('my own')) return { od: p.tubeOD, wall: p.tubeWall, dens: M.dens, note: M.note, label: `Ø${p.tubeOD} mm tube` }
+  let dims = M.sizes[size], fell = false
+  if (!dims) { size = Object.keys(M.sizes).includes('3/4"') ? '3/4"' : Object.keys(M.sizes)[0]; dims = M.sizes[size]; fell = true }
+  return { od: dims[0], wall: dims[1], dens: M.dens, note: M.note, label: `${size} ${mat}`, fell }
 }
 export const cutLength = (hoopOD, tubeOD) => Math.PI * (hoopOD - tubeOD) // mm
 
@@ -67,7 +76,8 @@ export function buildHoop(wasm, p, opts = {}) {
   const k = (o) => (live.push(o), o)
   try {
     const t = tubeOf(p), warns = []
-    const D = p.hoopIn * IN
+    if (t.fell) warns.push(`${p.tubeMat} is not sold in ${p.tubeSize}: showing ${t.label}.`)
+    const D = (p.measure || '').includes('INSIDE') ? p.hoopIn * IN + 2 * t.od : p.hoopIn * IN // always the outside diameter from here on
     const Rc = (D - t.od) / 2 // centre line
     const L = cutLength(D, t.od)
     const id = t.od - 2 * t.wall
@@ -129,10 +139,7 @@ export function hoopDesigns() {
     draw: () => {},
   })
   return [
-    d('hoopDance', 'Dance Hoop', 'A classic hoop for waist and body hooping: pick the size, and the forge tells you exactly how much tubing to cut. Print the curved connector, push the ends on, done.', { hoopIn: 38, tube: '3/4" HDPE 100 psi (≈24 mm)' }),
-    d('hoopPoly', 'Polypro Hoop', 'A light, snappy polypro hoop for tricks, breaks and off-body: the cut length for your size, and a curved printed connector made to the tube.', { hoopIn: 34, tube: '3/4" polypro (19 mm)' }),
-    d('hoopMini', 'Mini Hoop', 'A small hoop for minis and doubles (make two the same). Cut length, connector and weight for the pair.', { hoopIn: 24, tube: '5/8" polypro (16 mm)', connL: 70 }),
-    d('hoopBig', 'Big Beginner Hoop', 'A big, heavy, slow hoop that is the easiest to learn waist hooping on.', { hoopIn: 42, tube: '3/4" HDPE 160 psi (≈26 mm)', connL: 100 }),
+    d('hoopDance', 'Hoop', 'Any hoop: pick the size (inside or outside) and the tubing, and the forge gives the exact length to cut, the full cut table beside the view, and a curved connector to print. Collapsible joints are their own designs below.', { hoopIn: 38, tubeMat: 'HDPE 100 psi', tubeSize: '3/4"' }),
   ]
 }
 
@@ -173,7 +180,8 @@ export function buildHoopJoint(wasm, p, opts = {}) {
   try {
     const style = opts.style || 'button'
     const t = tubeOf(p), warns = []
-    const D = p.hoopIn * IN, Rc = (D - t.od) / 2, L = cutLength(D, t.od)
+    if (t.fell) warns.push(`${p.tubeMat} is not sold in ${p.tubeSize}: showing ${t.label}.`)
+    const D = (p.measure || '').includes('INSIDE') ? p.hoopIn * IN + 2 * t.od : p.hoopIn * IN, Rc = (D - t.od) / 2, L = cutLength(D, t.od)
     const id = t.od - 2 * t.wall
     const N = Math.max(2, Math.round(p.sections))
     const rc = id / 2 - 0.15 // slides in
@@ -280,9 +288,9 @@ export function jointDesigns() {
     draw: () => {},
   })
   return [
-    d('jointButton', 'Push-Button Joint', 'button', 'The travel-hoop classic: a curved connector riveted into one tube end, sliding into the next, locked by a small metal V-spring push button that clicks out through a 5 mm hole. Press the button to take the hoop apart. Comes with a drill guide for the holes.', { hoopIn: 36, tube: '5/8" polypro (16 mm)', connL: 80 }),
-    d('jointFlex', 'Flex-Button Joint', 'flex', 'No metal at all: the button is printed on a springy tongue in the connector wall. Print it in PETG or nylon; it clicks into the hole just like a metal button.', { hoopIn: 36, tube: '5/8" polypro (16 mm)', connL: 80 }),
-    d('jointDouble', 'Double-Button Joint', 'double', 'A push button on both halves, nothing riveted: every piece comes off, so you can swap sections, mix lengths or replace a broken one.', { hoopIn: 38, tube: '3/4" polypro (19 mm)', connL: 90, btnD: 6 }),
-    d('jointClip', 'Clip-Pin Joint', 'clip', 'The simplest collapsible joint: a small stainless clevis pin with a clip (or a bent hairpin clip) straight through tube and connector. Nothing to wear out, costs almost nothing.', { hoopIn: 38, tube: '3/4" HDPE 100 psi (≈24 mm)', connL: 90 }),
+    d('jointButton', 'Push-Button Joint', 'button', 'The travel-hoop classic: a curved connector riveted into one tube end, sliding into the next, locked by a small metal V-spring push button that clicks out through a 5 mm hole. Press the button to take the hoop apart. Comes with a drill guide for the holes.', { hoopIn: 36, tubeMat: 'polypro', tubeSize: '5/8"', connL: 80 }),
+    d('jointFlex', 'Flex-Button Joint', 'flex', 'No metal at all: the button is printed on a springy tongue in the connector wall. Print it in PETG or nylon; it clicks into the hole just like a metal button.', { hoopIn: 36, tubeMat: 'polypro', tubeSize: '5/8"', connL: 80 }),
+    d('jointDouble', 'Double-Button Joint', 'double', 'A push button on both halves, nothing riveted: every piece comes off, so you can swap sections, mix lengths or replace a broken one.', { hoopIn: 38, tubeMat: 'polypro', tubeSize: '3/4"', connL: 90, btnD: 6 }),
+    d('jointClip', 'Clip-Pin Joint', 'clip', 'The simplest collapsible joint: a small stainless clevis pin with a clip (or a bent hairpin clip) straight through tube and connector. Nothing to wear out, costs almost nothing.', { hoopIn: 38, tubeMat: 'HDPE 100 psi', tubeSize: '3/4"', connL: 90 }),
   ]
 }

@@ -20,6 +20,7 @@ export const CONE_PARAMS = [
 export const CONE_SHAPES = {
   pine: (t) => Math.max(0.12, Math.pow(Math.sin((Math.PI / 2) * Math.min(1, t / 0.68)), 0.7) * (t > 0.68 ? 1 - 0.5 * Math.pow((t - 0.68) / 0.32, 1.6) : 1)),
   fir: (t) => Math.max(0.12, Math.pow(Math.sin(Math.PI * Math.min(1, t * 0.92 + 0.04)), 0.55)),
+  cartoon: (t) => Math.max(0.16, Math.pow(Math.sin(Math.PI * Math.min(1, t * 0.95 + 0.03)), 0.45) * (t > 0.8 ? 1 - 0.9 * (t - 0.8) : 1)),
   stone: (t) => Math.max(0.1, Math.sqrt(Math.max(0, 1 - (2 * t - 1) ** 2)) * (t > 0.85 ? 1 - 1.2 * (t - 0.85) : 1)),
 }
 
@@ -28,7 +29,7 @@ export const CONE_SHAPES = {
  * cover z0..z1; dir = +1 when the cone's tip is towards +z, -1 when towards -z.
  * Returns a Manifold (the union of the scales), or null.
  */
-export function coneScales(wasm, k, { rAt, z0, z1, N, open = 0.3, dir = 1, minR = 3 }) {
+export function coneScales(wasm, k, { rAt, z0, z1, N, open = 0.3, dir = 1, minR = 3, skip = null }) {
   const { Manifold } = wasm
   // even coverage: place scales by surface area, not by height
   const steps = 200, acc = [0]
@@ -47,6 +48,7 @@ export function coneScales(wasm, k, { rAt, z0, z1, N, open = 0.3, dir = 1, minR 
     const z = zOf((i + 0.5) / N), r = rAt(z)
     if (r < minR) continue
     const a = i * GOLD
+    if (skip && skip(a, z)) continue
     const c = Math.cos(a), sn = Math.sin(a)
     const w = Math.min(s * 1.25, (TAU * r) / 5), h = s * 1.15, th = s * 0.42
     const at = (rad, tan, dz) => [rad * c - tan * sn, rad * sn + tan * c, z + dz]

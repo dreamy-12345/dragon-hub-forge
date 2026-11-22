@@ -29,7 +29,7 @@ import { buildHoop, buildHoopJoint } from './hoops.js'
 import { buildBubblePoi } from './bubblepoi.js'
 import { buildSword } from './swords.js'
 import { buildAcro, buildAcroMetal } from './acro.js'
-import { buildTubeSword, buildTubeAxe } from './tubeswords.js'
+import { buildTubeSword, buildTubeAxe, buildTubeMace, buildPlateAxe } from './tubeswords.js'
 import { buildFist } from './fist.js'
 import { buildHilt } from './hilt.js'
 import { buildDowel, LOCK_PARAMS, LOCKS, lockKey, hubLockZ } from './dowel.js'
@@ -240,6 +240,8 @@ export function buildHub(wasm, design, p, opts = {}) {
   if (design.hilt) return buildHilt(wasm, p, { printed: true, density: opts.material?.density })
   if (design.fist) return buildFist(wasm, p, { use: design.use, density: opts.material?.density })
   if (design.tsword) return buildTubeSword(wasm, p, {})
+  if (design.paxe) return buildPlateAxe(wasm, p, { style: design.style })
+  if (design.tmace) return buildTubeMace(wasm, p, { style: design.style })
   if (design.taxe) return buildTubeAxe(wasm, p, { style: design.style })
   if (design.dowel) return buildDowel(wasm, p, { lock: design.lock }) // print-mode preview: aluminium
   if (design.acroMetal) return buildAcroMetal(wasm, p, { plugIn: design.plugIn }) // print-mode preview: aluminium

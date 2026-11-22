@@ -33,10 +33,10 @@ import { swordDesigns } from './swords.js'
 import { acroDesigns } from './acro.js'
 import { pineHubDesigns } from './pinecone.js'
 import { dowelDesigns } from './dowel.js'
-import { tubeSwordDesigns, tubeAxeDesigns } from './tubeswords.js'
+import { tubeSwordDesigns, tubeAxeDesigns, tubeMaceDesigns, plateAxeDesigns } from './tubeswords.js'
 import { fistDesigns } from './fist.js'
 import { hiltDesigns } from './hilt.js'
-import { nzDesigns, canDesigns } from './nz.js'
+import { nzDesigns, canDesigns, shroomDesigns } from './nz.js'
 import { TAU, rot, place, ccw, cw, rng, voronoi, pointInPoly, circlePts, HEART, wingPoly, logoDragonfly, Canvas } from './geom.js'
 
 const deg = (d) => (d * Math.PI) / 180
@@ -3322,11 +3322,11 @@ DESIGNS.push(...pineHubDesigns())
 // locking dowels for the pole end (turned metal); hubs opt in with Lock onto a metal dowel
 DESIGNS.push(...dowelDesigns())
 // tube fire swords and axes: a machined connector on the staff pole, Kevlar-wound tubes, a Kevlar ball pommel
-DESIGNS.push(...tubeSwordDesigns(), ...tubeAxeDesigns())
+DESIGNS.push(...tubeSwordDesigns(), ...tubeAxeDesigns(), ...tubeMaceDesigns(), ...plateAxeDesigns())
 // monkey's fist heads: staff end, rope dart, meteor, poi
 DESIGNS.push(...fistDesigns(), ...hiltDesigns())
 // Aotearoa New Zealand plants and birds, and a brown beer can
-DESIGNS.push(...nzDesigns(), ...canDesigns())
+DESIGNS.push(...nzDesigns(), ...canDesigns(), ...shroomDesigns())
 
 const polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)]
 

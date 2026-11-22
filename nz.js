@@ -144,22 +144,6 @@ export function nzDesigns() {
       return { ...relief(rel), frameFix: fix }
     }),
 
-    d('nzKiwi', 'Kiwi', 'A ring of kiwi foraging round the hub: round feathery bodies, long beaks probing in towards the collar, strong feet on the rim.', [nP('birds', 'Kiwi', 3, 7, 5)], (c, g, p) => {
-      const rel = []
-      for (let i = 0; i < p.birds; i++) {
-        const a = g.rot + (TAU * i) / p.birds, rb = g.hubR + (g.Ri - g.hubR) * 0.58, [x, y] = P(rb, a)
-        const bw = Math.min((g.Ri - g.hubR) * 0.32, (TAU * rb) / p.birds * 0.3)
-        c.solid(ellipse(x, y, bw * 1.1, bw * 0.85, a + Math.PI / 2))
-        const head = add([x, y], rotAt([bw * 0.2, bw * 0.95], a - Math.PI / 2 + 0.6)) // head off to one side
-        c.disc(head[0], head[1], bw * 0.38)
-        c.seg(head[0], head[1], ...P(g.hubR - 1, a + 0.12), g.w * 1.1, g.w * 0.7) // the beak to the collar
-        for (const s of [-0.35, 0.35]) { const hip = add([x, y], P(bw * 0.6, a + s)); const foot = P(g.Ri + 1, a + s * 0.6); c.seg(hip[0], hip[1], foot[0], foot[1], g.w * 1.1) }
-        for (let f = 0; f < 14; f++) { const u = ((f * 37) % 100) / 100, v = ((f * 61) % 100) / 100; const q = add([x, y], rotAt([(u - 0.5) * bw * 1.4, (v - 0.5) * bw * 1.1], a + Math.PI / 2)); rel.push(leaf(q, add(q, P(bw * 0.28, a + Math.PI)), 2.2)) }
-        rel.push(ccw(circlePts(...add(head, P(bw * 0.15, a + 1.2)), 1.6, 10)))
-      }
-      return { ...relief(rel), frameFix: fix }
-    }, { colors: { A: '#4a3a2a', B: '#9c7c56' } }),
-
     d('nzFantail', 'Pīwakawaka', 'Fantails flitting round the rim, their tails fanned wide: the cheeky little bird that follows you through the bush.', [nP('birds', 'Fantails', 3, 7, 4), nP('feathers', 'Tail feathers', 6, 14, 10)], (c, g, p) => {
       const rel = []
       for (let i = 0; i < p.birds; i++) {
@@ -235,39 +219,6 @@ export function canDesigns() {
     return { big: add(at, rotAt([L * 0.52, 0], ang)), small: add(at, rotAt([W * 0.05, 0], ang)), outline }
   }
   return [
-    d('canRingPulls', 'Ring Pulls', 'Ring-pull tabs off a brown can for spokes: the open finger loop pulling on the rim, the rivet end fixed to the collar. Brown and gold.', [nP('tabs', 'Ring pulls', 3, 9, 6)], (c, g, p) => {
-      const rel = []
-      for (let i = 0; i < p.tabs; i++) {
-        const a = g.rot + (TAU * i) / p.tabs, L = g.Ri - g.hubR - 4, W = Math.min(L * 0.48, (TAU * (g.hubR + L / 2)) / p.tabs * 0.62)
-        // the outline of a ring pull: a rounded slot, stroked, with a bar across between the finger hole and the rivet end
-        const at = P(g.hubR + 2, a), out = []
-        for (let k2 = 0; k2 <= 18; k2++) { const t = -Math.PI / 2 + (Math.PI * k2) / 18; out.push(add(at, rotAt([L - W / 2 + (W / 2) * Math.cos(t), (W / 2) * Math.sin(t)], a))) }
-        for (let k2 = 0; k2 <= 18; k2++) { const t = Math.PI / 2 + (Math.PI * k2) / 18; out.push(add(at, rotAt([W * 0.32 + (W * 0.32) * Math.cos(t) * 0.8, (W * 0.38) * Math.sin(t)], a))) }
-        c.line(out, g.w * 1.6, true)
-        const bar = L * 0.38
-        c.seg(...add(at, rotAt([bar, -W * 0.45], a)), ...add(at, rotAt([bar, W * 0.45], a)), g.w * 1.8)
-        // the rivet end: filled, with the rivet raised
-        c.solid(ccw(out.slice(19).concat([add(at, rotAt([bar, W * 0.45], a)), add(at, rotAt([bar, -W * 0.45], a))])))
-        const rv = add(at, rotAt([W * 0.32, 0], a))
-        rel.push(ccw(circlePts(rv[0], rv[1], W * 0.16, 20)))
-        rel.push(leaf(add(at, rotAt([bar + 3, 0], a)), add(at, rotAt([L - 3, 0], a)), 2.4).length ? ccw(circlePts(...add(at, rotAt([bar - 4, 0], a)), 1.8, 10)) : [])
-        c.seg(...P(g.hubR - 1, a), ...at, g.w * 1.5)
-        c.seg(...add(at, rotAt([L, 0], a)), ...P(g.Ri + 1, a), g.w * 1.5)
-      }
-      return { ...relief(rel), frameFix: fix }
-    }),
-    d('canLid', 'Can Lid', 'The top of a can, blown up to a hub: the rolled rim, the stepped rings of the lid, the tear-drop opening and the ring pull lying across it.', [nP('rings', 'Lid rings', 2, 5, 3)], (c, g, p) => {
-      const rel = []
-      for (let i = 1; i <= p.rings; i++) c.ring(0, 0, g.hubR + ((g.Ri - g.hubR) * i) / (p.rings + 1), g.w * (i === p.rings ? 1.4 : 1))
-      // spokes holding the rings
-      for (let i = 0; i < 6; i++) { const a = g.rot + (TAU * i) / 6 + Math.PI / 6; c.seg(...P(g.hubR - 1, a), ...P(g.Ri + 1, a), g.w * 1.2) }
-      // the opening: a tear drop, outlined, and the ring pull over it
-      const a = g.rot, o = P(g.hubR + (g.Ri - g.hubR) * 0.62, a), drop = []
-      for (let i = 0; i < 40; i++) { const t = (TAU * i) / 40, r = 1 - 0.45 * Math.cos(t); drop.push(add(o, rotAt([(g.Ri - g.hubR) * 0.22 * r * Math.cos(t), (g.Ri - g.hubR) * 0.16 * Math.sin(t)], a))) }
-      c.line(drop, g.w * 1.2, true)
-      tab(c, rel, P(g.hubR + 2, a + Math.PI), a + Math.PI, (g.Ri - g.hubR) * 0.55, (g.Ri - g.hubR) * 0.3)
-      return { ...relief(rel), frameFix: fix }
-    }),
     d('canCrushed', 'Crushed Can', 'A can stomped flat at the end of the night: the side crumpled into zigzag pleats round the hub, dents and all.', [nP('pleats', 'Pleats', 8, 24, 14)], (c, g, p) => {
       const rel = [], zig = []
       const rA = g.hubR + (g.Ri - g.hubR) * 0.25, rB = g.Ri - (g.Ri - g.hubR) * 0.12
@@ -277,5 +228,47 @@ export function canDesigns() {
       for (let i = 0; i < 2 * p.pleats; i++) { const [x1, y1] = zig[i], [x2, y2] = zig[i + 1]; rel.push(leaf([x1 * 0.97 + x2 * 0.03, y1 * 0.97 + y2 * 0.03], [x2 * 0.97 + x1 * 0.03, y2 * 0.97 + y1 * 0.03], 3.2)) }
       return { ...relief(rel), frameFix: fix }
     }),
+  ]
+}
+
+export function shroomDesigns() {
+  const d = (id, name, blurb, params, draw, extra = {}) => ({ id, name, group: 'Mushrooms', blurb, added: '2026-11-22', overrides: { strutW: 3, frameH: 4, reliefH: 8 }, params, draw, ...extra })
+  const nP = (key, label, min, max, value, hint) => ({ key, label, unit: '', min, max, step: 1, value, ...(hint ? { hint } : {}) })
+  return [
+    d('shroomRing', 'Fairy Ring', 'A fairy ring: toadstools growing out from the collar, their spotted caps pressed up against the rim. Print the caps red and the spots white.', [nP('shrooms', 'Toadstools', 4, 10, 7), nP('spots', 'Spots per cap', 3, 9, 5)], (c, g, p) => {
+      const rel = []
+      for (let i = 0; i < p.shrooms; i++) {
+        const a = g.rot + (TAU * i) / p.shrooms, span = g.Ri - g.hubR
+        const capW = Math.min(span * 0.55, (TAU * (g.Ri - span * 0.2)) / p.shrooms * 0.8), capH = capW * 0.55
+        const base = P(g.hubR - 1, a), capBase = P(g.Ri - capH - 2, a)
+        c.seg(base[0], base[1], capBase[0], capBase[1], g.w * 2.2, g.w * 1.5) // the stem
+        // the cap: a dome, its top against the rim
+        const dome = []
+        for (let s = 0; s <= 24; s++) { const t = Math.PI * (s / 24); dome.push(add(capBase, rotAt([capH * Math.sin(t), (capW / 2) * Math.cos(t)], a))) }
+        c.solid(ccw(dome))
+        c.seg(...add(capBase, rotAt([capH - 1, 0], a)), ...P(g.Ri + 1, a), g.w * 1.5)
+        // a skirt ring on the stem, spots on the cap
+        const sk = add(base, rotAt([(Math.hypot(...capBase) - g.hubR) * 0.62, 0], a))
+        c.solid(ellipse(sk[0], sk[1], 2.5, g.w * 1.6, a))
+        for (let s = 0; s < p.spots; s++) { const t = 0.2 + (0.6 * s) / Math.max(1, p.spots - 1), r0 = capH * (0.35 + 0.3 * ((s * 37) % 10) / 10); rel.push(ccw(circlePts(...add(capBase, rotAt([r0 * Math.sin(Math.PI * t) + 2, (capW / 2 - 4) * Math.cos(Math.PI * t)], a)), Math.max(1.8, capW * 0.06), 14))) }
+      }
+      return { ...relief(rel), frameFix: fix }
+    }, { colors: { A: '#e8e0d0', B: '#d0281e' } }),
+    d('shroomGills', 'Under the Cap', 'The underside of a mushroom: fine gills fanning out from the stem to the edge of the cap, long and short between each other, with the skirt ring round the stem.', [nP('gills', 'Long gills', 12, 60, 32), { key: 'between', label: 'Short gills between', options: ['1', '2', '3'], value: '2' }], (c, g, p) => {
+      const rel = []
+      const n = p.gills, nb = Number(p.between)
+      for (let i = 0; i < n; i++) {
+        const a = g.rot + (TAU * i) / n
+        c.seg(...P(g.hubR - 1, a), ...P(g.Ri + 1, a), g.w * 0.9, g.w * 1.1)
+        for (let b = 1; b <= nb; b++) {
+          const ab = a + (TAU / n) * (b / (nb + 1)), start = g.hubR + (g.Ri - g.hubR) * (b === Math.ceil(nb / 2) ? 0.35 : 0.62)
+          c.seg(...P(start, ab), ...P(g.Ri + 1, ab), g.w * 0.65, g.w * 0.9)
+        }
+      }
+      // the skirt (annulus) round the stem, and a raised edge ring
+      c.ring(0, 0, g.hubR + (g.Ri - g.hubR) * 0.12, g.w * 2.2)
+      for (let s = 0; s < 48; s++) { const a = g.rot + (TAU * s) / 48; rel.push(ccw(circlePts(...P(g.hubR + (g.Ri - g.hubR) * 0.12, a), g.w * 0.7, 10))) }
+      return { ...relief(rel), frameFix: fix }
+    }, { colors: { A: '#d9c7a6', B: '#7a5a3a' } }),
   ]
 }

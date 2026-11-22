@@ -6,7 +6,7 @@ import { buildDart } from './darts.js'
 import { buildSword } from './swords.js'
 import { buildAcroMetal } from './acro.js'
 import { buildDowel } from './dowel.js'
-import { buildTubeSword, buildTubeAxe } from './tubeswords.js'
+import { buildTubeSword, buildTubeAxe, buildTubeMace, buildPlateAxe } from './tubeswords.js'
 import { buildHilt } from './hilt.js'
 
 const ready = Module(self.__MANIFOLD_OPTS || {}).then((w) => (w.setup(), w))
@@ -58,6 +58,8 @@ self.onmessage = async ({ data }) => {
       const d = design(data.design), c = data.cnc
       result = d.hilt ? buildHilt(wasm, data.params, { density: matOf(c).density })
         : d.tsword ? buildTubeSword(wasm, data.params, { density: matOf(c).density })
+        : d.paxe ? buildPlateAxe(wasm, data.params, { style: d.style, mat: matOf(c), thick: c.thick })
+        : d.tmace ? buildTubeMace(wasm, data.params, { style: d.style, density: matOf(c).density })
         : d.taxe ? buildTubeAxe(wasm, data.params, { style: d.style, density: matOf(c).density })
         : d.dowel ? buildDowel(wasm, data.params, { lock: d.lock, density: matOf(c).density })
         : d.acroMetal ? buildAcroMetal(wasm, data.params, { plugIn: d.plugIn, density: matOf(c).density })

@@ -415,3 +415,263 @@ export function tubeAxeDesigns() {
     d('taxeMoon', 'Twin Moon Fire Axe', 'moon', 'Two great hooked crescents like twin moons, and a spike between them. Big and theatrical: it lights up the whole circle.', { size: 170, spikeL: 110 }),
   ]
 }
+
+// ---------------------------------------------------- fire mace, diamond --
+/**
+ * Fire mace: a machined core ball on the pole end with tube spikes bolted into
+ * sockets all round, the outer part of each spike wound in Kevlar (or a Kevlar
+ * ball on each tip). Giant diamond: one tube bent into a big diamond whose ends
+ * meet in the block, Kevlar wound all round it, a spike on top. Both come with a
+ * matched Kevlar ball for the other end of the staff.
+ */
+export const TMACE_PARAMS = [
+  { key: 'size', label: 'Size', unit: 'mm', min: 80, max: 320, step: 5, value: 150, hint: 'Mace: spike length from the core. Diamond: its height.' },
+  { key: 'spikes', label: 'Spikes', unit: '', min: 4, max: 10, step: 1, value: 7, hint: 'Mace only: how many spikes round the core (one always points straight up).' },
+  { key: 'tips', label: 'Spike tips', options: ['Kevlar wound along the spike', 'Kevlar ball on each tip'], value: 'Kevlar wound along the spike' },
+  { key: 'bitOD', label: 'Tube', unit: 'mm', min: 8, max: 16, step: 0.5, value: 12, presets: [10, 12, 16] },
+  { key: 'tube', label: 'Tube is', options: Object.keys(TUBES), value: 'aluminium tube (6061)' },
+  { key: 'wickW', label: 'Kevlar tape', unit: 'mm', min: 25, max: 75, step: 1, value: 50, presets: [25, 38, 50] },
+  { key: 'poleOD', label: 'Pole', unit: 'mm', min: 12, max: 32, step: 0.1, value: 22, presets: [19, 22, 25.4] },
+  { key: 'counter', label: 'Other end of the staff', options: ['matched Kevlar ball (burns)', 'nothing'], value: 'matched Kevlar ball (burns)' },
+]
+
+export function buildTubeMace(wasm, p, opts = {}) {
+  const { Manifold } = wasm
+  const live = []
+  const k = (o) => (live.push(o), o)
+  try {
+    const warns = []
+    const diamond = opts.style === 'diamond'
+    const dens = opts.density || 2.7, tubeD = TUBES[p.tube] || 2.7
+    const r = p.bitOD / 2, w = 4, sd = 24, hd = 40
+    const sph = (rr, q) => k(k(Manifold.sphere(rr, 20)).translate(q))
+    const capsule = (pts, rr) => k(Manifold.union(pts.slice(1).map((q, i) => k(Manifold.hull([sph(rr, pts[i]), sph(rr, q)])))))
+    const toward = (len, rr, dir, from = [0, 0, 0]) => { // a rod from 'from' along unit dir
+      const z = [0, 0, 1], ax = [z[1] * dir[2] - z[2] * dir[1], z[2] * dir[0] - z[0] * dir[2], z[0] * dir[1] - z[1] * dir[0]]
+      const ang = Math.acos(Math.max(-1, Math.min(1, dir[2]))) * 180 / Math.PI
+      let m = k(Manifold.cylinder(len, rr, rr, 32))
+      const l = Math.hypot(...ax)
+      if (l > 1e-6) { // rotate about the axis by turning to it with two Euler steps
+        const yaw = Math.atan2(dir[1], dir[0]) * 180 / Math.PI
+        m = k(k(m.rotate([0, ang, 0])).rotate([0, 0, yaw]))
+      } else if (dir[2] < 0) m = k(m.rotate([180, 0, 0]))
+      return k(m.translate(from))
+    }
+    const rods = [], kev = []
+    let tubeLen = 0, kevLen = 0, coreR
+    let block
+    if (!diamond) {
+      // directions: one up, the rest spread round and a little up and down (golden spiral over the upper 3/4 of a sphere)
+      const n = Math.max(4, p.spikes), dirs = [[0, 0, 1]]
+      for (let i = 1; i < n; i++) { const zf = 0.55 - (1.1 * (i - 1)) / Math.max(1, n - 2), a = i * Math.PI * (3 - Math.sqrt(5)), rr = Math.sqrt(1 - zf * zf); dirs.push([rr * Math.cos(a), rr * Math.sin(a), zf * 0.6]) }
+      for (const d of dirs) { const l = Math.hypot(...d); d[0] /= l; d[1] /= l; d[2] /= l }
+      coreR = Math.max(p.poleOD / 2 + w + 4, r + w + 10)
+      const bosses = [k(Manifold.sphere(coreR, 48)), k(k(Manifold.cylinder(hd, p.poleOD / 2 + w, p.poleOD / 2 + w, 48)).translate([0, 0, -coreR - hd + 6]))]
+      const bores = [k(k(Manifold.cylinder(hd + 4, p.poleOD / 2 + 0.1, p.poleOD / 2 + 0.1, 48)).translate([0, 0, -coreR - hd + 4]))]
+      for (const d of dirs) {
+        bosses.push(toward(coreR * 0.6 + sd, r + w, d))
+        bores.push(toward(sd + 2, r + 0.1, d, d.map((v) => v * (coreR * 0.6 - 1))))
+        const tipAt = d.map((v) => v * (coreR * 0.6 + p.size))
+        rods.push(toward(p.size + 2, r, d, d.map((v) => v * coreR * 0.6)), sph(r, tipAt))
+        tubeLen += p.size + sd
+        if ((p.tips || '').startsWith('Kevlar ball')) kev.push(sph(Math.max(22, r * 2.6), tipAt))
+        else { const kl = p.size * 0.62; kev.push(toward(kl, r + 2 * TAPE_T, d, d.map((v) => v * (coreR * 0.6 + p.size - kl))), sph(r + 2 * TAPE_T, tipAt)); kevLen += kl }
+      }
+      block = k(k(Manifold.union(bosses)).subtract(k(Manifold.union(bores))))
+    } else {
+      // the diamond: one loop of tube, a big rhombus in the x-z plane from the block up to a top point
+      const H = p.size, Wd = H * 0.62
+      coreR = Math.max(p.poleOD / 2 + w + 4, 2 * r + w + 6)
+      const pts = []
+      const corner = (q) => pts.push(q)
+      corner([r + 3, 0, coreR * 0.55]); corner([Wd / 2, 0, H * 0.45]); corner([0, 0, H + coreR * 0.4]); corner([-Wd / 2, 0, H * 0.45]); corner([-r - 3, 0, coreR * 0.55])
+      // round the corners: sample a smooth loop through them
+      const loop = []
+      for (let i = 0; i < pts.length - 1; i++) for (let t = 0; t < 1; t += 1 / 10) loop.push(pts[i].map((v, j) => v + (pts[i + 1][j] - v) * t))
+      loop.push(pts.at(-1))
+      rods.push(capsule(loop, r))
+      for (let i = 1; i < loop.length; i++) tubeLen += Math.hypot(...loop[i].map((v, j) => v - loop[i - 1][j]))
+      kev.push(capsule(loop.slice(4, -4), r + 2 * TAPE_T)); kevLen = tubeLen - 50
+      // a spike up from the top point
+      rods.push(toward(H * 0.3, r * 0.8, [0, 0, 1], [0, 0, H + coreR * 0.4]), sph(r * 0.8, [0, 0, H * 1.3 + coreR * 0.4]))
+      kev.push(toward(H * 0.22, r * 0.8 + 2 * TAPE_T, [0, 0, 1], [0, 0, H * 1.08 + coreR * 0.4]), sph(r * 0.8 + 2 * TAPE_T, [0, 0, H * 1.3 + coreR * 0.4]))
+      kevLen += H * 0.22
+      const bosses = [k(k(Manifold.cube([2 * coreR, coreR * 1.4, coreR * 1.4], true)).intersect(k(Manifold.sphere(coreR * 1.05, 48)))), k(k(Manifold.cylinder(hd, p.poleOD / 2 + w, p.poleOD / 2 + w, 48)).translate([0, 0, -coreR * 0.7 - hd + 6]))]
+      const bores = [k(k(Manifold.cylinder(hd + 4, p.poleOD / 2 + 0.1, p.poleOD / 2 + 0.1, 48)).translate([0, 0, -coreR * 0.7 - hd + 4]))]
+      for (const s of [1, -1]) bores.push(k(k(Manifold.cylinder(coreR, r + 0.1, r + 0.1, 32)).translate([s * (r + 3), 0, 0])))
+      block = k(k(Manifold.union(bosses)).subtract(k(Manifold.union(bores))))
+    }
+    rods.push(k(k(Manifold.cylinder(260, p.poleOD / 2, p.poleOD / 2, 32)).translate([0, 0, -coreR - 260 + 6])))
+    const blockG = (block.volume() / 1000) * dens
+    const bitG = (Math.PI * (r ** 2 - (r - 1.5) ** 2) * tubeLen) / 1000 * tubeD
+    const tape = (Math.PI * (p.bitOD + TAPE_T) * kevLen) / (p.wickW * 0.5) + ((p.tips || '').startsWith('Kevlar ball') && !diamond ? Math.max(4, p.spikes) * ((4 / 3) * Math.PI * (Math.max(22, r * 2.6) ** 3 - r ** 3) * 0.75) / (p.wickW * TAPE_T) : 0)
+    const kevG = ((tape * p.wickW * TAPE_T) / 1000) * KEVLAR * WET
+    const total = blockG + bitG + kevG
+    let counter = null
+    if ((p.counter || '').startsWith('matched')) for (let D = 50; D < 160; D++) {
+      const R = D / 2, rc = R * 0.58, kv = ((4 / 3) * Math.PI * (R ** 3 - rc ** 3) / 1000) * KEVLAR * WET, cm = ((4 / 3) * Math.PI * rc ** 3 / 1000) * 7.85 * 0.75
+      if (kv + cm + 35 >= total) { counter = { D, kev: kv, core: Math.max(0, total - kv - 35), plug: 35, tape: ((4 / 3) * Math.PI * (R ** 3 - rc ** 3)) / (p.wickW * TAPE_T) * 1.1 }; break }
+    }
+    if (!counter && (p.counter || '').startsWith('matched')) warns.push('The head is too heavy for one counterweight ball: a lighter tube or a smaller head.')
+    if (total > 900) warns.push(`The head is ${total.toFixed(0)} g wet: heavy for one end of a staff. Smaller, fewer spikes, or thinner tube.`)
+    const meshes = { combined: meshData(block), rods: meshData(k(Manifold.union(rods))), kevlar: meshData(k(Manifold.union(kev))) }
+    const fb = block.boundingBox()
+    meshes.connFlat = meshData(k(block.translate([0, 0, -fb.min[2]])))
+    const all = k(Manifold.union([block, ...rods.slice(0, -1)])).boundingBox()
+    return {
+      taxe: { style: opts.style, blockG, bitG, topG: 0, kevG, total, tape, tubeLen, kevLen, counter, c: coreR * 2, width: all.max[0] - all.min[0], height: all.max[2] - all.min[2], bits: diamond ? 1 : Math.max(4, p.spikes), mace: !diamond, diamond },
+      meshes,
+      viewR: Math.max(all.max[0] - all.min[0], all.max[2] - all.min[2]) * 0.7,
+      polygons: { base: [[[-coreR, -coreR], [coreR, -coreR], [coreR, coreR], [-coreR, coreR]]], relief: [], pods: [], weak: [] },
+      podH: 0, ring: null, snap: null, cnc: true,
+      stats: { tris: meshes.combined.indices.length / 3, grams: blockG, gramsTotal: total, warns, height: all.max[2] - all.min[2] },
+    }
+  } finally {
+    for (const o of live) o.delete?.()
+  }
+}
+
+export function tubeMaceDesigns() {
+  const d = (id, name, style, blurb, over = {}) => ({
+    id, name, group: 'TubeAxes', blurb, taxe: true, tmace: true, style, cncOnly: true, cnc: { material: 'al6061' }, added: '2026-11-22',
+    params: TMACE_PARAMS.filter((x) => style === 'diamond' ? !['spikes', 'tips'].includes(x.key) : true).map((x) => ({ ...x, ...(over[x.key] !== undefined ? { value: over[x.key] } : {}) })),
+    draw: () => {},
+  })
+  return [
+    d('tmaceFire', 'Fire Mace', 'mace', 'A fire mace for the end of a staff: tube spikes bolted into a machined core all round, the outer part of each spike wound in Kevlar (or a Kevlar ball on every tip). Built like the tube axes, with a matched Kevlar ball for the other end.'),
+    d('tmaceDiamond', 'Giant Fire Diamond', 'diamond', 'One tube bent into a giant diamond on the end of the staff, wound in Kevlar all the way round, with a burning spike on top. A huge, clean shape of fire.', { size: 260 }),
+  ]
+}
+
+// ------------------------------------------------------ solid metal axes --
+/**
+ * Plate fire axes: the head is cut from one metal plate (laser, waterjet), its
+ * tongue slots into a machined block on the pole end and is held by two M6 bolts
+ * through block and plate. Kevlar tape is folded over the cutting edge and bolted
+ * through the row of holes along it. A matched Kevlar ball for the other end.
+ */
+const PAXE = {
+  bearded: { name: 'Viking bearded', double: false, back: false },
+  double: { name: 'double', double: true, back: false },
+  anime: { name: 'anime', double: false, back: true },
+}
+export const PAXE_PARAMS = [
+  { key: 'size', label: 'Axe size', unit: 'mm', min: 100, max: 300, step: 5, value: 170, hint: 'How far the blade reaches out from the pole.' },
+  { key: 'wickW', label: 'Kevlar tape', unit: 'mm', min: 25, max: 75, step: 1, value: 38, presets: [25, 38, 50], hint: 'Folded over the edge: 38 mm leaves about 15 mm each side.' },
+  { key: 'poleOD', label: 'Pole', unit: 'mm', min: 12, max: 32, step: 0.1, value: 22, presets: [19, 22, 25.4] },
+  { key: 'counter', label: 'Other end of the staff', options: ['matched Kevlar ball (burns)', 'nothing'], value: 'matched Kevlar ball (burns)' },
+]
+
+export function buildPlateAxe(wasm, p, opts = {}) {
+  const { CrossSection, Manifold } = wasm
+  const live = []
+  const k = (o) => (live.push(o), o)
+  try {
+    const warns = []
+    const S = PAXE[opts.style] || PAXE.bearded
+    const mat = opts.mat || { name: 'Aluminium 6061-T6', density: 2.7, kind: 'metal' }
+    const T = opts.thick || 6
+    const A = p.size
+    const catmull = (P, n = 8) => {
+      const out = []
+      for (let i = 0; i < P.length - 1; i++) {
+        const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)]
+        for (let j = 0; j < n; j++) { const t = j / n, t2 = t * t, t3 = t2 * t; out.push([0, 1].map((q) => 0.5 * (2 * p1[q] + (-p0[q] + p2[q]) * t + (2 * p0[q] - 5 * p1[q] + 4 * p2[q] - p3[q]) * t2 + (-p0[q] + 3 * p1[q] - 3 * p2[q] + p3[q]) * t3))) }
+      }
+      out.push(P.at(-1)); return out
+    }
+    const blockW = p.poleOD + 12, tongueH = 50, neck = 14
+    // one blade, out to +x: from the neck, up and out to the upper horn, round the edge, down to the beard, back to the neck
+    const blade = (sx) => {
+      const X = (x) => sx * x
+      const anime = opts.style === 'anime', beard = opts.style === 'bearded'
+      const mid = tongueH * 0.5
+      const up = [X(A * (anime ? 0.62 : 0.86)), mid + A * (anime ? 0.78 : 0.5)] // upper horn tip
+      const lo = [X(A * (anime ? 0.6 : beard ? 0.62 : 0.84)), mid - A * (anime ? 0.85 : beard ? 0.78 : 0.5)] // lower horn tip (the beard drops low)
+      // the cutting edge: a full arc bulging out between the horns
+      const edge = catmull([up, [X(A * 0.98), mid + A * 0.3], [X(A * 1.06), mid], [X(A * 0.98), mid - A * 0.32], lo], 10)
+      // the back of the blade: concave curves from the neck sweeping out to each horn
+      const backUp = catmull([[X(blockW / 2 + neck), tongueH - 3], [X(A * 0.34), mid + A * 0.1], [X(A * (anime ? 0.42 : 0.6)), mid + A * (anime ? 0.42 : 0.3)], up], 8)
+      const backLo = catmull([lo, [X(A * (beard ? 0.4 : 0.58)), mid - A * (beard ? 0.45 : 0.3)], [X(A * 0.3), mid - A * 0.12], [X(blockW / 2 + neck), 5]], 8)
+      const pts = [[X(blockW / 2 - 2), tongueH - 4], ...backUp, ...edge.slice(1), ...backLo.slice(1), [X(blockW / 2 - 2), 4]]
+      return { pts: sx > 0 ? pts : [...pts].reverse(), edge }
+    }
+    const shapes = [blade(1)]
+    if (S.double) shapes.push(blade(-1))
+    const polys = shapes.map((b) => b.pts)
+    // the tongue that goes into the block, and a top spike
+    polys.push([[-blockW / 2 + 2, 0], [blockW / 2 - 2, 0], [blockW / 2 - 2, tongueH], [-blockW / 2 + 2, tongueH]])
+    const spikeH = opts.style === 'anime' ? A * 0.7 : A * 0.35
+    polys.push([[-9, tongueH - 2], [9, tongueH - 2], [4, tongueH + spikeH], [-4, tongueH + spikeH]])
+    if (S.back) polys.push([[-blockW / 2 + 2, tongueH * 0.3], [-blockW / 2 - A * 0.5, tongueH * 0.55], [-blockW / 2 + 2, tongueH * 0.8]])
+    const ccwP = (P) => { let a = 0; for (let i = 0; i < P.length; i++) { const [x1, y1] = P[i], [x2, y2] = P[(i + 1) % P.length]; a += x1 * y2 - x2 * y1 } return a < 0 ? [...P].reverse() : P }
+    let plate = k(new CrossSection(polys.map(ccwP), 'NonZero'))
+    plate = k(k(k(plate.offset(-3, 'Round', 2, 16)).offset(6, 'Round', 2, 16)).offset(-3, 'Round', 2, 16))
+    // holes: two M6 through the tongue, and the Kevlar bolt row along each edge (10 mm in from it)
+    const holes = [{ x: 0, y: tongueH * 0.28, r: 3.2 }, { x: 0, y: tongueH * 0.72, r: 3.2 }]
+    let edgeLen = 0
+    for (const b of shapes) {
+      const e = b.edge
+      let acc = 0
+      for (let i = 1; i < e.length; i++) {
+        const l = Math.hypot(e[i][0] - e[i - 1][0], e[i][1] - e[i - 1][1]); acc += l; edgeLen += l
+        if (acc >= 55) {
+          acc = 0
+          const dx = e[i][0] - e[i - 1][0], dy = e[i][1] - e[i - 1][1], L2 = Math.hypot(dx, dy) || 1
+          const nx = -dy / L2, ny = dx / L2, cx = e[i][0], cy = e[i][1]
+          // step inward (towards the axe's middle)
+          const sgn = (cx * nx + (cy - tongueH * 0.5) * ny) > 0 ? -1 : 1
+          holes.push({ x: cx + sgn * nx * 11, y: cy + sgn * ny * 11, r: 2.2 })
+        }
+      }
+    }
+    const cut = k(plate.subtract(k(CrossSection.union(holes.map((h) => k(k(CrossSection.circle(h.r, 24)).translate([h.x, h.y])))))))
+    const head = k(k(k(cut.extrude(T)).translate([0, 0, -T / 2])).rotate([90, 0, 0]))
+    const plateG = (head.volume() / 1000) * mat.density
+    // the block: a pole socket below, a slot above for the tongue, two M6 bolts across
+    const hd = 40
+    let block = k(Manifold.union([k(k(Manifold.cylinder(hd, p.poleOD / 2 + 4.5, p.poleOD / 2 + 4.5, 48)).translate([0, 0, -hd])), k(k(Manifold.cube([blockW, T + 12, tongueH + 6], true)).translate([0, 0, (tongueH + 6) / 2 - 2]))]))
+    block = k(block.subtract(k(Manifold.union([
+      k(k(Manifold.cylinder(hd + 1, p.poleOD / 2 + 0.1, p.poleOD / 2 + 0.1, 48)).translate([0, 0, -hd - 1])),
+      k(k(Manifold.cube([blockW + 2, T + 0.2, tongueH + 6], true)).translate([0, 0, (tongueH + 6) / 2 + 0.01])),
+      ...[0.28, 0.72].map((f) => k(k(k(Manifold.cylinder(T + 20, 3.2, 3.2, 20)).rotate([90, 0, 0])).translate([0, (T + 20) / 2, tongueH * f]))),
+      k(k(k(Manifold.cylinder(30, 2.7, 2.7, 20)).rotate([90, 0, 0])).translate([0, 15, -hd / 2])),
+    ]))))
+    const blockG = (block.volume() / 1000) * 2.7
+    const tapeM = (edgeLen + spikeH * 2) / 1000 * 1.1
+    const kevG = ((tapeM * 1000 * p.wickW * TAPE_T) / 1000) * KEVLAR * WET
+    const total = plateG + blockG + kevG
+    let counter = null
+    if ((p.counter || '').startsWith('matched')) for (let D = 50; D < 160; D++) {
+      const R = D / 2, rc = R * 0.58, kv = ((4 / 3) * Math.PI * (R ** 3 - rc ** 3) / 1000) * KEVLAR * WET, cm = ((4 / 3) * Math.PI * rc ** 3 / 1000) * 7.85 * 0.75
+      if (kv + cm + 35 >= total) { counter = { D, kev: kv, core: Math.max(0, total - kv - 35), plug: 35, tape: ((4 / 3) * Math.PI * (R ** 3 - rc ** 3)) / (p.wickW * TAPE_T) * 1.1 }; break }
+    }
+    // the Kevlar folded over each edge, for the view
+    const kev = []
+    for (const b of shapes) { const e = b.edge; for (let i = 1; i < e.length; i++) kev.push(k(Manifold.hull([k(k(Manifold.sphere(T / 2 + 3, 10)).translate([e[i - 1][0], 0, e[i - 1][1]])), k(k(Manifold.sphere(T / 2 + 3, 10)).translate([e[i][0], 0, e[i][1]]))]))) }
+    const meshes = { combined: meshData(head), kevlar: meshData(k(Manifold.union(kev))), rods: meshData(k(Manifold.union([block, k(k(Manifold.cylinder(220, p.poleOD / 2, p.poleOD / 2, 32)).translate([0, 0, -hd - 216]))]))) }
+    const fb = block.boundingBox()
+    meshes.connFlat = meshData(k(block.translate([0, 0, -fb.min[2]])))
+    const bb = head.boundingBox()
+    return {
+      taxe: { style: opts.style, plate: true, blockG, bitG: plateG, topG: 0, kevG, total, tape: tapeM * 1000, tubeLen: 0, kevLen: edgeLen, counter, c: blockW, width: bb.max[0] - bb.min[0], height: bb.max[2] - bb.min[2] + hd, bits: S.double ? 2 : 1, T, mat: mat.name },
+      meshes,
+      viewR: Math.max(bb.max[0] - bb.min[0], bb.max[2] - bb.min[2] + hd) * 0.7,
+      polygons: { base: cut.toPolygons(), relief: [], pods: [], weak: [] },
+      layers: { cut: plate.toPolygons(), holes, drill: [], pocket: [], pocketDepth: 0, engrave: [] },
+      podH: 0, ring: null, snap: null, cnc: true,
+      stats: { tris: meshes.combined.indices.length / 3, grams: plateG, gramsTotal: total, warns, height: bb.max[2] - bb.min[2] },
+    }
+  } finally {
+    for (const o of live) o.delete?.()
+  }
+}
+
+export function plateAxeDesigns() {
+  const d = (id, name, style, blurb) => ({ id, name, group: 'TubeAxes', blurb, taxe: true, paxe: true, style, cncOnly: true, cnc: { material: 'al6061', thick: 6 }, added: '2026-11-22', params: PAXE_PARAMS.map((x) => ({ ...x })), draw: () => {} })
+  return [
+    d('paxeBearded', 'Solid Viking Fire Axe', 'bearded', 'A solid metal Viking bearded axe head cut from one plate, its tongue bolted into a machined block on the pole end, Kevlar tape folded over the whole cutting edge and bolted through. A spike on top, and a matched Kevlar ball for the other end.'),
+    d('paxeDouble', 'Solid Double Fire Axe', 'double', 'Two solid blades cut as one plate, Kevlar along both edges: balanced both ways, a clean ring of fire as it turns.'),
+    d('paxeAnime', 'Solid Anime Fire Axe', 'anime', 'A huge hooked crescent, a long top spike and a back spike, all cut from one plate: the edge burns from horn to horn.'),
+  ]
+}

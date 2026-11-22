@@ -23,7 +23,7 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
@@ -564,6 +564,13 @@ function renderCncParams(d, cp, set) {
     sec('Material', C(['material']), true)
     return
   }
+  if (d.paxe) {
+    const metal = C(['material', 'process', 'thick'])
+    metal[0][0] = { ...metal[0][0], options: metal[0][0].options.filter((o) => matOf({ material: o }).kind === 'metal') }
+    if (!metal[0][0].options.includes(c.material)) c.material = metal[0][0].options[0]
+    sec('Head cut from metal plate', metal, true)
+    return
+  }
   if (d.acroMetal || d.dowel || d.tsword || d.taxe || d.hilt) {
     const metal = C(['material'])
     metal[0][0] = { ...metal[0][0], options: metal[0][0].options.filter((o) => matOf({ material: o }).kind === 'metal') }
@@ -695,12 +702,15 @@ function galleryTools() {
   g.querySelector('h2').insertAdjacentHTML('afterend', `<div class="listtools" id="listTools">
     <input type="search" id="listQ" placeholder="Search designs" aria-label="Search designs" autocomplete="off">
     <div class="chips" id="listChips" role="group" aria-label="Show"></div>
+    <label class="sortby">Made from <select id="listMade"><option value="all">anything</option><option value="print">3D print</option><option value="metal">metal (CNC, machined)</option><option value="rubber">rubber (moulds)</option><option value="fire">fire (Kevlar)</option></select></label>
     <label class="sortby">Sort <select id="listSort"><option value="groups">by group</option><option value="liked">most liked</option><option value="new">newest</option><option value="az">A to Z</option></select></label>
     <div class="who" id="whoBox" hidden><span>Your name, so hearts are yours:</span><input id="whoName" maxlength="40" placeholder="Name"><button class="btn primary" id="whoOk">OK</button></div>
   </div>`)
   $('listQ').value = listUI.q
   $('listQ').oninput = (e) => { listUI.q = e.target.value; keepList(); renderGallery() }
   $('listSort').value = listUI.sort
+  $('listMade').value = listUI.made || 'all'
+  $('listMade').onchange = (e) => { listUI.made = e.target.value; keepList(); renderGallery() }
   $('listSort').onchange = (e) => { listUI.sort = e.target.value; keepList(); renderGallery() }
   for (const [v, label] of FILTERS) {
     const b = document.createElement('button')
@@ -791,9 +801,21 @@ function renderGallery() {
   const secRank = (g) => (SECTION_OF[g] ? 1 + secOrder.indexOf(SECTION_OF[g]) : 0)
   const order = [...order0].sort((a, b) => secRank(a) - secRank(b) || order0.indexOf(a) - order0.indexOf(b))
   const groupOf = (e) => e.group
-  let rows = list
+  // made from: printed, metal, rubber or fire
+  const madeOf = (d) => {
+    const m = new Set()
+    if (!d) return m
+    if (!d.cncOnly) m.add('print')
+    if (d.cncOnly || d.cnc || (!d.adaptor && !d.custom && !printOnly(d) && !d.dart && !d.ballEnd && !d.mould && !d.bubblePoi)) m.add('metal')
+    if (d.dart) m.add('metal') // turned or milled
+    if (d.mould) { m.delete('metal'); m.add('rubber') }
+    if (d.sword || d.tsword || d.taxe || d.fist || d.spokeHub || d.cage || d.group === 'Fire' || d.hilt) m.add('fire')
+    if (!d.cncOnly && !printOnly(d) && !d.dart && !d.mould && !d.adaptor && !d.custom && d.draw) m.add('fire') // any hub cut in metal can carry wicks
+    return m
+  }
+  let rows = listUI.made && listUI.made !== 'all' ? list.filter((e) => !e.design || madeOf(e.design).has(listUI.made)) : list
   if (grouped) {
-    rows = [...list].sort((a, b) => order.indexOf(groupOf(a)) - order.indexOf(groupOf(b)))
+    rows = [...rows].sort((a, b) => order.indexOf(groupOf(a)) - order.indexOf(groupOf(b)))
     // pin what you like near the top of the full list
     if (listUI.filter === 'all' && mine.size) {
       const pinned = all.filter((e) => mine.has(e.key)).map((e) => ({ ...e, group: '__liked' }))
@@ -864,7 +886,8 @@ function designCard(e) {
       for (const [box, hex] of [['swatches', d.colors.A], ['swatchesB', d.colors.B]])
         $(box).querySelectorAll('.swatch').forEach((s) => s.setAttribute('aria-pressed', s.style.background && new THREE.Color(s.style.background).getHexString() === hex.slice(1)))
     }
-    if (cncOnly(d) && !isCnc()) return setMode('cnc') // spark cages are only ever cut in steel
+    if (cncOnly(d) && !isCnc()) { state.autoCnc = true; return setMode('cnc') } // spark cages are only ever cut in steel
+    if (!cncOnly(d) && isCnc() && state.autoCnc) { state.autoCnc = false; return setMode('print') } // back to printing after a metal-only design
     renderParams()
     applyLook()
     schedule(0)
@@ -1293,7 +1316,7 @@ function renderJointVerdict(hub, p) {
   const metal = j.style === 'button' || j.style === 'double'
   $('verdict').innerHTML = `
     <div class="big">${j.N} × ${inch(j.seg)}<small>${(j.seg / 10).toFixed(1)} cm per section · ${j.N} joints</small></div>
-    <div class="row"><span>Total to cut</span><span>${inch(v.L)} (${(v.L / 10).toFixed(1)} cm) of ${p.tube.startsWith('my own') ? 'your tube' : p.tube}, cut into ${j.N} equal pieces</span></div>
+    <div class="row"><span>Total to cut</span><span>${inch(v.L)} (${(v.L / 10).toFixed(1)} cm) of ${t.label}, cut into ${j.N} equal pieces</span></div>
     <div class="row"><span>Joint</span><span>${j.name}</span></div>
     <div class="row"><span>Holes</span><span>${j.style === 'clip' ? `Ø3.2 straight through ${j.sB} mm from the sliding end` : `Ø${p.btnD} button hole ${j.sB} mm from the end, on the inside of the hoop`}${j.style !== 'double' ? ` · Ø3.3 rivet ${j.sR.toFixed(0)} mm from the fixed end` : ''}</span></div>
     <div class="row"><span>You need</span><span>${j.N} printed connectors${metal ? ` · ${j.N * (j.style === 'double' ? 2 : 1)} V-spring push buttons with a ${p.btnD} mm button (core Ø${j.core.toFixed(1)})` : ''}${j.style === 'clip' ? ` · ${j.N} × 3 mm stainless clevis pins with clips, or hairpin clips` : ''}${j.style !== 'double' ? ` · ${j.N} × 3.2 mm aluminium pop rivets (short)` : ''}</span></div>
@@ -1309,11 +1332,11 @@ function renderHoopVerdict(hub, p, mat) {
   const sizes = []
   for (let d = 20; d <= 46; d += 2) sizes.push(d)
   $('verdict').innerHTML = `
-    <div class="big">${inch(v.L)}<small>of tubing to cut for a ${p.hoopIn}" hoop · ${cm(v.L)} · ${(v.L / 1000).toFixed(3)} m</small></div>
-    <div class="row"><span>Outside diameter</span><span>${p.hoopIn}" (${(v.D / 10).toFixed(1)} cm): the size hoops are sold by, edge to edge across the outside</span></div>
+    <div class="big">${inch(v.L)}<small>of tubing to cut for a hoop ${inch(v.D)} OUTSIDE diameter (${inch(v.D - 2 * t.od)} inside) · ${cm(v.L)} · ${(v.L / 1000).toFixed(3)} m</small></div>
+    <div class="row"><span>Outside diameter</span><span>${inch(v.D)} (${(v.D / 10).toFixed(1)} cm): the size hoops are sold by, edge to edge across the outside</span></div>
     <div class="row"><span>Inside diameter</span><span>${inch(v.D - 2 * t.od)} (${((v.D - 2 * t.od) / 10).toFixed(1)} cm): across the inside, the outside less two tube widths</span></div>
-    <div class="row"><span>Tubing</span><span>${p.tube.startsWith('my own') ? `Ø${t.od} mm, ${t.wall} mm wall` : p.tube} · bore Ø${v.id.toFixed(1)} mm</span></div>
-    <div class="row"><span>How it's worked out</span><span>π × (${p.hoopIn}" − ${inch(t.od)} tube) = ${inch(v.L)}: the tube bends round its own centre line</span></div>
+    <div class="row"><span>Tubing</span><span>${t.label}: Ø${t.od} mm outside, ${t.wall} mm wall, bore Ø${v.id.toFixed(1)} mm · ${t.note}</span></div>
+    <div class="row"><span>How it's worked out</span><span>π × (${inch(v.D)} outside − ${inch(t.od)} tube) = ${inch(v.L)}: the tube bends round its own centre line</span></div>
     <div class="row"><span>Weight</span><span>about ${v.total.toFixed(0)} g before tape (tape adds 30–80 g)</span></div>
     <div class="row"><span>Connector</span><span>print 1 · ${p.connL} mm long, curved to the hoop · ${v.connG.toFixed(0)} g ${state.material.startsWith('tpu') ? 'PETG' : mat.name}</span></div>
     <div class="row"><span>Tube for 2 hoops</span><span>${((2 * v.L) / 1000).toFixed(2)} m · for 4: ${((4 * v.L) / 1000).toFixed(2)} m (buy 5% extra for squaring the ends)</span></div>
@@ -1334,9 +1357,10 @@ function renderCutPanel(hub, p) {
   const v = hub.hoop, t = v.tube, j = v.joint
   const inch = (mm) => (mm / 25.4).toFixed(2) + '"'
   const rows = []
+  const inside = (p.measure || '').includes('INSIDE')
   for (let d = 16; d <= 50; d += 1) {
-    const L = Math.PI * (d * 25.4 - t.od)
-    rows.push(`<tr data-in="${d}"${Math.abs(d - p.hoopIn) < 0.01 ? ' class="on"' : ''}><td>${d}"</td><td>${(d * 2.54).toFixed(1)}</td><td>${inch(L)}</td><td>${(L / 10).toFixed(1)}</td>${j ? `<td>${(L / 10 / j.N).toFixed(1)}</td>` : ''}</tr>`)
+    const OD = inside ? d * 25.4 + 2 * t.od : d * 25.4, ID = OD - 2 * t.od, L = Math.PI * (OD - t.od)
+    rows.push(`<tr data-in="${d}"${Math.abs(d - p.hoopIn) < 0.01 ? ' class="on"' : ''}><td>${(OD / 25.4).toFixed(inside ? 2 : 0)}"</td><td>${(ID / 25.4).toFixed(inside ? 0 : 2)}"</td><td>${inch(L)}</td><td>${(L / 10).toFixed(1)}</td>${j ? `<td>${(L / 10 / j.N).toFixed(1)}</td>` : ''}</tr>`)
   }
   const ID = v.D - 2 * t.od
   const diag = `<svg viewBox="0 0 220 120" style="width:100%;height:auto;margin:4px 0 8px" role="img" aria-label="Outside and inside diameter of the hoop">
@@ -1344,12 +1368,12 @@ function renderCutPanel(hub, p) {
     <line x1="16.5" y1="60" x2="123.5" y2="60" stroke="#ddd" stroke-width="1.2" marker-start="url(#ah)" marker-end="url(#ah)"/>
     <line x1="23.5" y1="78" x2="116.5" y2="78" stroke="#8fd" stroke-width="1.2" marker-start="url(#ah2)" marker-end="url(#ah2)"/>
     <defs><marker id="ah" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0L6,3L0,6z" fill="#ddd"/></marker><marker id="ah2" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0L6,3L0,6z" fill="#8fd"/></marker></defs>
-    <text x="132" y="50" fill="#ddd" font-size="11">Outside (size)</text><text x="132" y="63" fill="#ddd" font-size="11" font-weight="700">${p.hoopIn}" · ${(v.D / 10).toFixed(1)} cm</text>
+    <text x="132" y="50" fill="#ddd" font-size="11">Outside (size)</text><text x="132" y="63" fill="#ddd" font-size="11" font-weight="700">${(v.D / 25.4).toFixed(2)}" · ${(v.D / 10).toFixed(1)} cm</text>
     <text x="132" y="84" fill="#8fd" font-size="11">Inside</text><text x="132" y="97" fill="#8fd" font-size="11" font-weight="700">${(ID / 25.4).toFixed(2)}" · ${(ID / 10).toFixed(1)} cm</text>
   </svg>`
   box.innerHTML = `<h3>${inch(v.L)} to cut</h3>${diag}
-    <p>for a ${p.hoopIn}" hoop on ${p.tube.startsWith('my own') ? `Ø${t.od} mm tube` : p.tube.split(' (')[0]}${j ? `: ${j.N} pieces of ${(v.L / j.N / 10).toFixed(1)} cm` : ''}. Cut length = π × (hoop size − tube width). Tap a row to pick that size.</p>
-    <table><thead><tr><th>Hoop</th><th>cm</th><th>Cut</th><th>cm</th>${j ? '<th>each</th>' : ''}</tr></thead><tbody>${rows.join('')}</tbody></table>`
+    <p>for a hoop <b>${(v.D / 25.4).toFixed(2)}" outside diameter</b> (${((v.D - 2 * t.od) / 25.4).toFixed(2)}" inside) on ${t.label}${j ? `: ${j.N} pieces of ${(v.L / j.N / 10).toFixed(1)} cm` : ''}. Cut length = π × (hoop size − tube width). Tap a row to pick that size.</p>
+    <table><thead><tr><th>Outside ⌀</th><th>Inside ⌀</th><th>Cut</th><th>cm</th>${j ? '<th>each cm</th>' : ''}</tr></thead><tbody>${rows.join('')}</tbody></table>`
   box.hidden = false
   box.querySelectorAll('tbody tr').forEach((tr) => (tr.onclick = () => { params().hoopIn = Number(tr.dataset.in); renderParams(); schedule(0) }))
   box.querySelector('tr.on')?.scrollIntoView({ block: 'center' })
@@ -1529,10 +1553,10 @@ function renderVerdict(hub, p) {
   if (hub.taxe) {
     const v = hub.taxe, s = hub.stats
     $('verdict').innerHTML = `
-      <div class="big">${v.total.toFixed(0)} g<small>the axe head, wet · ${v.counter ? kg(v.total + v.counter.kev + v.counter.core + v.counter.plug) + ' both ends' : ''}</small></div>
+      <div class="big">${v.total.toFixed(0)} g<small>the ${v.mace ? 'mace' : v.diamond ? 'diamond' : 'axe'} head, wet · ${v.counter ? kg(v.total + v.counter.kev + v.counter.core + v.counter.plug) + ' both ends' : ''}</small></div>
       <div class="row"><span>Block</span><span>${v.blockG.toFixed(0)} g machined · M5 bolts through every socket</span></div>
-      <div class="row"><span>Bits</span><span>${v.bits} crescent${v.bits > 1 ? 's' : ''} bent from Ø${p.bitOD} tube · ${v.tubeLen.toFixed(0)} mm of tube in all</span></div>
-      <div class="row"><span>Kevlar tape</span><span>${(v.tape / 1000).toFixed(1)} m of ${p.wickW} mm on the edges${p.spikeL ? ' and the spike' : ' and the top ball'}</span></div>
+      <div class="row"><span>${v.plate ? 'Head' : v.mace ? 'Spikes' : v.diamond ? 'Diamond' : 'Bits'}</span><span>${v.plate ? `cut from ${v.T} mm ${v.mat} plate, ${v.bitG.toFixed(0)} g · its tongue bolts into the block with 2 × M6` : v.mace ? `${v.bits} spikes of Ø${p.bitOD} tube, each bolted into its socket in the core` : v.diamond ? `one Ø${p.bitOD} tube bent into a diamond, both ends bolted into the block` : `${v.bits} crescent${v.bits > 1 ? 's' : ''} bent from Ø${p.bitOD} tube`} · ${v.tubeLen.toFixed(0)} mm of tube in all</span></div>
+      <div class="row"><span>Kevlar tape</span><span>${(v.tape / 1000).toFixed(1)} m of ${p.wickW} mm ${v.plate ? 'folded over the cutting edge, bolted through every hole with M4 stainless bolts and all-metal lock nuts' : `on the edges${p.spikeL ? ' and the spike' : ' and the top ball'}`}</span></div>
       ${v.counter ? `<div class="row"><span>Other end</span><span>Ø${v.counter.D} Kevlar ball: steel core ${v.counter.core.toFixed(0)} g on an M8 stud in an end plug, ${(v.counter.tape / 1000).toFixed(1)} m of tape · weighs the same as the head, so the staff balances</span></div>` : ''}
       <div class="row"><span>Size</span><span>${v.width.toFixed(0)} wide × ${v.height.toFixed(0)} mm tall (head and the pole stub shown)</span></div>
       ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
@@ -1707,7 +1731,8 @@ function renderCutExports(d) {
   if (d.tsword || d.taxe) {
     const nm = `${d.tsword ? 'fire-sword' : 'fire-axe'}-${d.id}-connector-${p.poleOD}pole-${matKey(c)}`
     exportButtons([
-      ['Connector for the machine shop (STL)', 'primary', () => download(toSTL(hub.meshes.connFlat, d.name + ' connector'), nm + '.stl'), !ready],
+      ...(d.paxe ? [['Axe head cut file (DXF)', 'primary', txt(() => toDXF(hub.layers, d.name), `${d.id}-head-${c.thick}mm-${matKey(c)}.dxf`, 'application/dxf'), !ready], ['Axe head (SVG, true size)', '', txt(() => toCutSVG(hub.layers, 0), `${d.id}-head-${c.thick}mm.svg`, 'image/svg+xml'), !ready]] : []),
+      ['Connector for the machine shop (STL)', d.paxe ? '' : 'primary', () => download(toSTL(hub.meshes.connFlat, d.name + ' connector'), nm + '.stl'), !ready],
       ...(d.tsword ? [['Connector sizes sheet (SVG)', '', txt(() => connectorSheetSVG(hub, p, matOf(c).name, d.name), nm + '-sheet.svg', 'image/svg+xml'), !ready]] : []),
       ...(hub?.meshes.plugFlat ? [['Pommel end plug (STL)', '', () => download(toSTL(hub.meshes.plugFlat, d.name + ' pommel plug'), nm + '-pommel-plug.stl'), !ready]] : []),
       ['Wicking and knots guide', '', openWickGuide],
@@ -2330,10 +2355,11 @@ $('poleOut').onchange = applyPole
 $('poleIn').onchange = applyPole
 
 $('modePrint').onclick = () => {
+  state.autoCnc = false
   if (cncOnly(design())) state.design = DESIGNS.find((d) => !d.adaptor && !d.custom && !d.cncOnly).id // a spark cage can't be printed
   setMode('print')
 }
-$('modeCnc').onclick = () => setMode('cnc')
+$('modeCnc').onclick = () => { state.autoCnc = false; setMode('cnc') }
 if (cncOnly(design())) state.mode = 'cnc'
 setMode(state.mode, true)
 

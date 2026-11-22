@@ -138,8 +138,22 @@ export function buildDart(wasm, p, opts = {}) {
       const pr = []
       for (let i = 1; i <= 64; i++) pr.push([rAt((Lb * i) / 64), (Lb * i) / 64])
       body = k(k(new CrossSection([[[0, 0], [rAt(0), 0], ...pr, [0, Lb]]], 'Positive')).revolve(96))
-      const sc = coneScales(wasm, k, { rAt, z0: Lb * 0.02, z1: Lb * 0.94, N: p.scales ?? 120, open: p.open ?? 0.3, dir: -1, minR: 2.5 })
+      const cartoon = shape === 'cartoon', faceZ = Lb * 0.5
+      // a cartoon cone keeps a clear patch on its front for a face
+      const skip = cartoon ? (a, z) => { const aa = Math.atan2(Math.sin(a), Math.cos(a)); return Math.abs(aa) < 0.75 && Math.abs(z - faceZ) < R * 0.55 } : null
+      const sc = coneScales(wasm, k, { rAt, z0: Lb * 0.02, z1: Lb * 0.94, N: p.scales ?? 120, open: p.open ?? 0.3, dir: -1, minR: 2.5, skip })
       if (sc) body = k(body.add(sc))
+      if (cartoon) {
+        // big googly eyes and a smile
+        const fr = rAt(faceZ)
+        const eye = (s) => k(k(Manifold.sphere(R * 0.24, 32)).translate([fr * 0.88, s * R * 0.27, faceZ + R * 0.16]))
+        const pupil = (s) => k(k(Manifold.sphere(R * 0.11, 20)).translate([fr * 0.88 + R * 0.2, s * R * 0.25, faceZ + R * 0.13]))
+        body = k(Manifold.union([body, eye(1), eye(-1)]))
+        body = k(body.subtract(k(Manifold.union([pupil(1), pupil(-1)]))))
+        const smile = []
+        for (let i = 0; i <= 8; i++) { const t = -0.6 + (1.2 * i) / 8; smile.push(k(k(Manifold.sphere(R * 0.06, 12)).translate([fr * 0.97 + R * 0.02, Math.sin(t) * R * 0.32, faceZ - R * 0.18 - Math.cos(t) * R * 0.1 + R * 0.08]))) }
+        body = k(body.subtract(k(Manifold.hull(smile.slice(0, 5))).add(k(Manifold.hull(smile.slice(4))))))
+      }
       warns.push('Pine cone scales overhang: print with tree supports touching the bed only, or print it in two halves.')
     } else if (style === 'leaf') {
       // a leaf bud: a teardrop wrapped in rows of pointed leaves, each with a raised midrib, laid along the curve
@@ -198,12 +212,12 @@ export function buildDart(wasm, p, opts = {}) {
       }
       // roots: five tapering roots from low on the trunk down to the tip
       const roots = []
-      for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2 + 0.3; roots.push(chain([[R * 0.4 * Math.cos(a), R * 0.4 * Math.sin(a), L * 0.24], [R * 0.85 * Math.cos(a), R * 0.85 * Math.sin(a), L * 0.1], [R * 0.9 * Math.cos(a + 0.2), R * 0.9 * Math.sin(a + 0.2), L * 0.02]], R * 0.26, R * 0.12)) }
+      for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2 + 0.3; roots.push(chain([[R * 0.15 * Math.cos(a), R * 0.15 * Math.sin(a), L * 0.3], [R * 0.4 * Math.cos(a), R * 0.4 * Math.sin(a), L * 0.24], [R * 0.85 * Math.cos(a), R * 0.85 * Math.sin(a), L * 0.1], [R * 0.9 * Math.cos(a + 0.2), R * 0.9 * Math.sin(a + 0.2), L * 0.02]], R * 0.26, R * 0.12)) }
       // arms: two branches out and up, each with a twig
       const arms = []
       for (const s of [1, -1]) {
-        const base = [0, s * R * 0.7, L * 0.56], el = [0.1 * R, s * R * 1.25, L * 0.62], hand = [0.15 * R, s * R * 1.45, L * 0.76]
-        arms.push(chain([base, el, hand], R * 0.24, R * 0.12), chain([el, [0.25 * R, s * R * 1.55, L * 0.64]], R * 0.12, R * 0.07))
+        const root = [0, s * R * 0.15, L * 0.54], base = [0, s * R * 0.75, L * 0.56], el = [0.1 * R, s * R * 1.25, L * 0.62], hand = [0.15 * R, s * R * 1.45, L * 0.76]
+        arms.push(chain([root, base, el, hand], R * 0.32, R * 0.12), chain([[0.08 * R, s * R * 1.1, L * 0.6], el, [0.25 * R, s * R * 1.55, L * 0.64]], R * 0.15, R * 0.07))
       }
       // the crown: knobbly leaf clumps round the top, under the eye boss
       const crown = []
@@ -216,6 +230,54 @@ export function buildDart(wasm, p, opts = {}) {
       body = k(body.add(sph(R * 0.2, fr + R * 0.06, 0, fz - R * 0.12)))
       body = k(body.subtract(k(Manifold.union([sph(R * 0.17, fr + R * 0.02, -R * 0.26, fz + R * 0.04), sph(R * 0.17, fr + R * 0.02, R * 0.26, fz + R * 0.04), chain([[fr + R * 0.02, -R * 0.3, fz - R * 0.42], [fr + R * 0.1, 0, fz - R * 0.47], [fr + R * 0.02, R * 0.3, fz - R * 0.4]], R * 0.06, R * 0.06)]))))
       warns.push('The ent has overhangs (arms, brow, roots): print it with tree supports, eye down.')
+    } else if (style.startsWith('shroom-')) {
+      // mushrooms, hanging cap-up from the eye: the stem is the dart's point
+      const kind = style.slice(7)
+      const sph = (r, x, y, z, n = 24) => k(k(Manifold.sphere(r, n)).translate([x, y, z]))
+      if (kind === 'amanita' || kind === 'morel') {
+        const capZ = L * (kind === 'morel' ? 0.52 : 0.68), stemR = R * (kind === 'morel' ? 0.42 : 0.36)
+        const stem = k(k(Manifold.cylinder(capZ - L * 0.1, stemR * 0.9, stemR, 48)).translate([0, 0, L * 0.1]))
+        const base = sph(R * (kind === 'morel' ? 0.5 : 0.62), 0, 0, L * 0.12, 48) // the swollen base, at the tip
+        let cap
+        if (kind === 'amanita') {
+          cap = k(k(k(Manifold.sphere(R, 64)).scale([1, 1, 0.62])).translate([0, 0, capZ]))
+          cap = k(cap.trimByPlane([0, 0, 1], capZ - R * 0.06))
+          // white spots: raised warts on the cap
+          const spots = []
+          for (let i = 0; i < 22; i++) { const zf = 0.15 + (0.8 * i) / 22, a = i * Math.PI * (3 - Math.sqrt(5)), rr = Math.sqrt(1 - zf * zf); spots.push(k(k(sph(R * 0.11, R * rr * Math.cos(a), R * rr * Math.sin(a), 0, 12).scale([1, 1, 0.7])).translate([0, 0, capZ + R * 0.62 * zf]))) }
+          cap = k(cap.add(k(Manifold.union(spots))))
+          // the skirt ring hanging round the stem under the cap
+          const skirt = k(k(k(k(CrossSection.circle(R * 0.09, 16)).translate([stemR * 1.12, 0])).revolve(48)).translate([0, 0, capZ - R * 0.3]))
+          body = k(Manifold.union([stem, base, cap, skirt]))
+        } else {
+          // a morel: a tall honeycombed cone of a cap
+          cap = k(k(k(Manifold.sphere(R, 48)).scale([0.95, 0.95, 1.55])).translate([0, 0, capZ + R * 0.75]))
+          const pits = []
+          for (let i = 0; i < 70; i++) { const zf = -0.75 + (1.6 * i) / 70, a = i * Math.PI * (3 - Math.sqrt(5)), rr = Math.sqrt(Math.max(0, 1 - zf * zf)); pits.push(sph(R * 0.17, R * 0.95 * rr * Math.cos(a), R * 0.95 * rr * Math.sin(a), capZ + R * 0.75 + R * 1.55 * zf, 10)) }
+          cap = k(cap.subtract(k(Manifold.union(pits))))
+          body = k(Manifold.union([stem, base, cap]))
+        }
+        Lr = 0
+        L = body.boundingBox().max[2] - 0.5 // the eye boss sits right on top of the cap
+      } else {
+        // poi heads: a round button cap with gills under it, or a warty puffball
+        Lr = 2 * R
+        if (kind === 'button') {
+          let cap = k(k(k(Manifold.sphere(R, 64)).scale([1, 1, 0.75])).translate([0, 0, Lr * 0.55]))
+          const under = k(k(Manifold.cylinder(R * 0.55, R * 0.92, R * 0.5, 64)).translate([0, 0, Lr * 0.55 - R * 0.55]))
+          const gills = []
+          for (let i = 0; i < 36; i++) gills.push(k(k(k(Manifold.cube([R * 0.5, 1.4, R * 0.5], true)).translate([R * 0.62, 0, Lr * 0.55 - R * 0.28])).rotate([0, 0, (360 * i) / 36])))
+          const stem = k(k(Manifold.cylinder(Lr * 0.3, R * 0.32, R * 0.4, 48)).translate([0, 0, Lr * 0.12]))
+          body = k(Manifold.union([cap, under, k(Manifold.union(gills)).intersect(k(k(Manifold.sphere(R, 48)).translate([0, 0, Lr * 0.55]))), stem, sph(R * 0.4, 0, 0, Lr * 0.12, 32)]))
+        } else {
+          body = sph(R, 0, 0, Lr / 2, 64)
+          const warts = []
+          for (let i = 0; i < 90; i++) { const zf = 1 - (2 * (i + 0.5)) / 90, a = i * Math.PI * (3 - Math.sqrt(5)), rr = Math.sqrt(1 - zf * zf), d = R * 0.98; warts.push(k(k(k(Manifold.cylinder(R * 0.12, R * 0.08, 0.6, 6)).rotate([0, (Math.acos(zf) * 180) / Math.PI, (a * 180) / Math.PI])).translate([d * rr * Math.cos(a), d * rr * Math.sin(a), Lr / 2 + d * zf]))) }
+          body = k(body.add(k(Manifold.union(warts))))
+        }
+      }
+      if (Lr) Lr = body.boundingBox().max[2] + 0.5 // round poi heads: the eye on top of the cap
+      warns.push('Mushrooms have overhangs (the cap): print with tree supports touching the bed only, eye down.')
     } else if (style === 'gnome') {
       // a garden gnome: round belly, a flowing beard, a big nose, a pointy hat; the rope eye is the hat's tip
       const ell = (rx, ry, rz, x, z) => k(k(k(Manifold.sphere(1, 48)).scale([rx, ry, rz])).translate([x, 0, z]))
@@ -350,7 +412,7 @@ export function dartDesigns() {
     params: DART_PARAMS.map((x) => ({ ...x, ...(over[x.key] !== undefined ? { value: over[x.key] } : {}) })),
     draw: () => {},
   })
-  const ROUND = ['orb', 'geodesic', 'pod', 'cone-stone']
+  const ROUND = ['orb', 'geodesic', 'pod', 'cone-stone', 'shroom-button', 'shroom-puff']
   const p = (id, name, style, blurb, over) => {
     const x = { ...d(id, name, style, 'Poi', blurb, over), poi: true }
     x.params = x.params.filter((q) => !(q.key === 'length' && ROUND.includes(style))).map((q) => q.key === 'ropeD' ? { ...q, label: 'Leash cord', hint: 'The eye fits this cord with a millimetre to spare; clip a swivel through it.' } : q)
@@ -375,7 +437,10 @@ export function dartDesigns() {
       ['dartPine', 'Pine Cone', 'cone-pine', 'A pine cone on a rope: a fat cone hanging from the eye by its stem, covered in scales on the golden-angle spirals real cones grow. Soft and grippy in TPU.', { length: 120, maxD: 40, scales: 120, open: 0.3 }],
       ['dartPineOpen', 'Open Pine Cone', 'cone-pine', 'A dry, open pine cone: the scale ends stand right out. Lots of grip to catch, and it throws the light about as it spins.', { length: 115, maxD: 44, scales: 90, open: 0.9 }],
       ['dartEnt', 'Ent', 'ent', 'A walking tree on a rope: a gnarled, twisting bark trunk, roots for feet at the tip, two branch arms, a deep-set face with a knotted nose, and a leafy crown with the rope eye in it. Print in TPU with tree supports.', { length: 130, maxD: 40 }],
+      ['dartAmanita', 'Toadstool', 'shroom-amanita', 'A red-and-white fairy-tale toadstool on a rope: a domed cap covered in raised white spots, a frilly skirt round the stem, and a swollen base for the tip. The rope eye is on top of the cap. Print the cap red and the spots white.', { length: 120, maxD: 46 }],
+      ['dartMorel', 'Morel', 'shroom-morel', 'A morel mushroom: a tall, honeycombed cap full of pits on a short, fat stem. Lovely in the hand, and the pits grab the light.', { length: 125, maxD: 36 }],
       ['dartFir', 'Fir Cone', 'cone-fir', 'A long, slim fir cone with fine, tight scales: fast through the air and easy on the hands.', { length: 140, maxD: 30, scales: 170, open: 0.15 }],
+      ['dartPineCartoon', 'Happy Pine Cone', 'cone-cartoon', 'A cartoon pine cone: short and fat, big chunky scales, two big round eyes and a cheeky smile. Print the eyes white with a colour change, or paint the pupils.', { length: 110, maxD: 48, scales: 46, open: 0.55 }],
       ['dartStonePine', 'Stone Pine', 'cone-stone', 'A round stone-pine cone: a ball of chunky scales that rolls off the body. Size it with Widest.', { maxD: 44, scales: 110, open: 0.35 }],
     ].map(([id, name, st, blurb, o]) => { const x = d(id, name, st, 'DartPine', blurb, o); x.params = [...x.params.filter((q) => !(q.key === 'length' && st === 'cone-stone')), ...CONE_PARAMS.map((q) => ({ ...q, value: o[q.key] ?? q.value }))]; return x }),
     d('dartTwist', 'Twist', 'twist', 'DartModern', 'A six-pointed star twisted down to the tip: it looks like it is spinning even when it hangs still.', { length: 120, maxD: 34 }),
@@ -386,6 +451,8 @@ export function dartDesigns() {
     p('poiScales', 'Dragon Scale Poi', 'scales', 'A teardrop poi head covered in raised dragon scales on a golden-angle spiral.', { length: 95, maxD: 56, ropeD: 5 }),
     ...[
       ['poiPine', 'Pine Cone Poi', 'cone-pine', 'A pine cone poi head hanging from the leash by its stem: golden-angle scales all over, soft in TPU. Make a pair.', { length: 105, maxD: 56, ropeD: 5, scales: 120, open: 0.3 }],
+      ['poiShroom', 'Button Mushroom Poi', 'shroom-button', 'A round button-mushroom poi head: a smooth domed cap, fine gills underneath and a short stem. The leash clips to the top of the cap.', { maxD: 64, ropeD: 5 }],
+      ['poiPuffball', 'Puffball Poi', 'shroom-puff', 'A puffball poi: a round ball covered in tiny soft warts, just like the ones that puff spores when you squeeze them. Grippy for contact.', { maxD: 62, ropeD: 5 }],
       ['poiStonePine', 'Stone Pine Poi', 'cone-stone', 'A round stone-pine poi head of chunky scales: rolls off the arms, and the scales give the light something to play on.', { maxD: 64, ropeD: 5, scales: 120, open: 0.35 }],
     ].map(([id, name, st, blurb, o]) => { const x = p(id, name, st, blurb, o); x.params = [...x.params, ...CONE_PARAMS.map((q) => ({ ...q, value: o[q.key] ?? q.value }))]; return x }),
     p('poiGlow', 'Glow Poi', 'glow', 'A clear TPU teardrop that holds an LED capsule: slide it in from the tip and press the plug in. Glow poi you can print.', { length: 130, maxD: 36, ropeD: 5 }),
