@@ -7,6 +7,7 @@ import { buildSword } from './swords.js'
 import { buildAcroMetal } from './acro.js'
 import { buildDowel } from './dowel.js'
 import { buildTubeSword, buildTubeAxe } from './tubeswords.js'
+import { buildHilt } from './hilt.js'
 
 const ready = Module(self.__MANIFOLD_OPTS || {}).then((w) => (w.setup(), w))
 const design = (id) => DESIGNS.find((d) => d.id === id)
@@ -55,13 +56,14 @@ self.onmessage = async ({ data }) => {
     } else if (op === 'cnc') {
       // CNC: the design as drawn for print, flattened and fixed for the cutter
       const d = design(data.design), c = data.cnc
-      result = d.tsword ? buildTubeSword(wasm, data.params, { density: matOf(c).density })
+      result = d.hilt ? buildHilt(wasm, data.params, { density: matOf(c).density })
+        : d.tsword ? buildTubeSword(wasm, data.params, { density: matOf(c).density })
         : d.taxe ? buildTubeAxe(wasm, data.params, { style: d.style, density: matOf(c).density })
         : d.dowel ? buildDowel(wasm, data.params, { lock: d.lock, density: matOf(c).density })
         : d.acroMetal ? buildAcroMetal(wasm, data.params, { plugIn: d.plugIn, density: matOf(c).density })
         : d.sword ? buildSword(wasm, data.params, { style: d.style, mat: matOf(c), thick: c.thick })
         : d.dart ? buildDart(wasm, data.params, { style: d.style, density: matOf(c).density, cnc: true })
-        : d.acro || d.bubblePoi || d.hoop || d.mould || d.grip || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty ? buildHub(wasm, d, data.params, { material: MATERIALS.tpu95 }) : d.spokeHub
+        : d.fist || d.acro || d.bubblePoi || d.hoop || d.mould || d.grip || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty ? buildHub(wasm, d, data.params, { material: MATERIALS.tpu95 }) : d.spokeHub
         ? buildSpokeHub(wasm, data.params, { mode: 'cnc', shape: d.shape, density: matOf(c).density, fireSafe: matOf(c).kind === 'metal' })
         : buildPlate(wasm, buildHub(wasm, d, { ...data.params, ring: 'off', snap: 'off' }), data.params, c)
     } else if (op === 'fit') result = buildFitTest(wasm, data.params)

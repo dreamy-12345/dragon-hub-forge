@@ -181,6 +181,41 @@ export function buildDart(wasm, p, opts = {}) {
       cup = k(cup.add(k(k(Manifold.union(bumps)).trimByPlane([0, 0, 1], cz + 0.05 * R))))
       const rim = k(k(k(k(CrossSection.circle(R * 0.07, 16)).translate([R * 1.02, 0])).revolve(96)).translate([0, 0, cz + 0.08 * R]))
       body = k(Manifold.union([nut, cup, rim]))
+    } else if (style === 'ent') {
+      // a tree herder: a gnarled bark trunk, roots for feet at the tip, branch arms, a carved face, a leafy crown under the eye
+      const sph = (r, x, y, z) => k(k(Manifold.sphere(r, 20)).translate([x, y, z]))
+      const chain = (pts, r0, r1) => k(Manifold.union(pts.slice(1).map((q, i) => k(Manifold.hull([sph(r0 + ((r1 - r0) * i) / pts.length, ...pts[i]), sph(r0 + ((r1 - r0) * (i + 1)) / pts.length, ...q)])))))
+      const prof2 = []
+      for (let i = 0; i <= 40; i++) { const t = i / 40; prof2.push([R * (0.72 + 0.12 * Math.sin(t * 9) * (1 - t) + 0.16 * Math.sin(Math.PI * Math.min(1, t * 1.2))) * (t > 0.85 ? 1 - (t - 0.85) * 2.2 : 1), L * (0.1 + 0.9 * t)]) }
+      body = k(k(new CrossSection([[[0, L * 0.1], ...prof2, [0, L]]], 'Positive')).revolve(48))
+      body = k(body.warp((v) => { const a = (v[2] / L) * 0.9; const c = Math.cos(a), s = Math.sin(a), x = v[0], y = v[1]; v[0] = x * c - y * s; v[1] = x * s + y * c }))
+      // bark: wandering grooves down the trunk
+      const grooves = []
+      for (let g = 0; g < 11; g++) {
+        const pts = []
+        for (let i = 0; i <= 10; i++) { const z = L * (0.14 + 0.7 * (i / 10)), a = (g / 11) * Math.PI * 2 + 0.25 * Math.sin(i * 1.7 + g) + (z / L) * 0.9; const rr = R * 0.86; pts.push([rr * Math.cos(a), rr * Math.sin(a), z]) }
+        grooves.push(chain(pts, R * 0.07, R * 0.05))
+      }
+      // roots: five tapering roots from low on the trunk down to the tip
+      const roots = []
+      for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2 + 0.3; roots.push(chain([[R * 0.4 * Math.cos(a), R * 0.4 * Math.sin(a), L * 0.24], [R * 0.85 * Math.cos(a), R * 0.85 * Math.sin(a), L * 0.1], [R * 0.9 * Math.cos(a + 0.2), R * 0.9 * Math.sin(a + 0.2), L * 0.02]], R * 0.26, R * 0.12)) }
+      // arms: two branches out and up, each with a twig
+      const arms = []
+      for (const s of [1, -1]) {
+        const base = [0, s * R * 0.7, L * 0.56], el = [0.1 * R, s * R * 1.25, L * 0.62], hand = [0.15 * R, s * R * 1.45, L * 0.76]
+        arms.push(chain([base, el, hand], R * 0.24, R * 0.12), chain([el, [0.25 * R, s * R * 1.55, L * 0.64]], R * 0.12, R * 0.07))
+      }
+      // the crown: knobbly leaf clumps round the top, under the eye boss
+      const crown = []
+      for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2, z = L * (0.84 + 0.06 * (i % 2)); crown.push(k(sph(R * 0.3, R * 0.55 * Math.cos(a), R * 0.55 * Math.sin(a), z).scale([1, 1, 0.75]))) }
+      body = k(Manifold.union([body, ...roots, ...arms, ...crown]))
+      body = k(body.subtract(k(Manifold.union(grooves))))
+      // the face, looking out along +x: deep-set eyes under a heavy brow, a knot of a nose, a crack of a mouth
+      const fz = L * 0.66, fr = R * 0.66 // just under the bark, so every feature is fused to the trunk
+      body = k(body.add(chain([[fr, -R * 0.42, fz + R * 0.2], [fr + R * 0.12, 0, fz + R * 0.26], [fr, R * 0.42, fz + R * 0.2]], R * 0.14, R * 0.14)))
+      body = k(body.add(sph(R * 0.2, fr + R * 0.06, 0, fz - R * 0.12)))
+      body = k(body.subtract(k(Manifold.union([sph(R * 0.17, fr + R * 0.02, -R * 0.26, fz + R * 0.04), sph(R * 0.17, fr + R * 0.02, R * 0.26, fz + R * 0.04), chain([[fr + R * 0.02, -R * 0.3, fz - R * 0.42], [fr + R * 0.1, 0, fz - R * 0.47], [fr + R * 0.02, R * 0.3, fz - R * 0.4]], R * 0.06, R * 0.06)]))))
+      warns.push('The ent has overhangs (arms, brow, roots): print it with tree supports, eye down.')
     } else if (style === 'gnome') {
       // a garden gnome: round belly, a flowing beard, a big nose, a pointy hat; the rope eye is the hat's tip
       const ell = (rx, ry, rz, x, z) => k(k(k(Manifold.sphere(1, 48)).scale([rx, ry, rz])).translate([x, 0, z]))
@@ -339,6 +374,7 @@ export function dartDesigns() {
     ...[
       ['dartPine', 'Pine Cone', 'cone-pine', 'A pine cone on a rope: a fat cone hanging from the eye by its stem, covered in scales on the golden-angle spirals real cones grow. Soft and grippy in TPU.', { length: 120, maxD: 40, scales: 120, open: 0.3 }],
       ['dartPineOpen', 'Open Pine Cone', 'cone-pine', 'A dry, open pine cone: the scale ends stand right out. Lots of grip to catch, and it throws the light about as it spins.', { length: 115, maxD: 44, scales: 90, open: 0.9 }],
+      ['dartEnt', 'Ent', 'ent', 'A walking tree on a rope: a gnarled, twisting bark trunk, roots for feet at the tip, two branch arms, a deep-set face with a knotted nose, and a leafy crown with the rope eye in it. Print in TPU with tree supports.', { length: 130, maxD: 40 }],
       ['dartFir', 'Fir Cone', 'cone-fir', 'A long, slim fir cone with fine, tight scales: fast through the air and easy on the hands.', { length: 140, maxD: 30, scales: 170, open: 0.15 }],
       ['dartStonePine', 'Stone Pine', 'cone-stone', 'A round stone-pine cone: a ball of chunky scales that rolls off the body. Size it with Widest.', { maxD: 44, scales: 110, open: 0.35 }],
     ].map(([id, name, st, blurb, o]) => { const x = d(id, name, st, 'DartPine', blurb, o); x.params = [...x.params.filter((q) => !(q.key === 'length' && st === 'cone-stone')), ...CONE_PARAMS.map((q) => ({ ...q, value: o[q.key] ?? q.value }))]; return x }),

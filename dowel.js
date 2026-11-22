@@ -137,16 +137,26 @@ export function buildDowel(wasm, p, opts = {}) {
     }
     const g = (m.volume() / 1000) * density
     const meshes = { combined: meshData(m) }
-    const hw = []
-    if (wedge) hw.push(wedge, cyl(2.95, -p.inL - 2, info.headZ), cyl(5, info.headZ, info.headZ + 6))
-    if (info.washer) hw.push(cyl(info.washer.od / 2, z1 + 1, z1 + 3.5, 48))
-    if (hw.length) meshes.rods = meshData(k(Manifold.union(hw)))
+    // the moving parts for "How it works": the pole, a hub on the stub, the wedge, the bolt, the lock
+    const anim = []
+    const tubeM = (ro, rin, za, zb) => k(cyl(ro, za, zb, 64).subtract(cyl(rin, za - 1, zb + 1, 64)))
+    meshes.animPole = meshData(tubeM(p.poleOD / 2, ri, -p.inL - 40, 0)); anim.push({ key: 'animPole', dir: [0, 0, -80], look: 'ghost' })
+    meshes.animHub = meshData(tubeM(p.poleOD / 2 + 9, p.poleOD / 2 + 0.15, fT, z1 + (lock === 'bolt' ? 1 : 0))); anim.push({ key: 'animHub', dir: [0, 0, 70], look: 'part', lead: 1.2 })
+    if (wedge) {
+      meshes.animWedge = meshData(wedge); anim.push({ key: 'animWedge', dir: [0, 0, -35], lead: 1.3 })
+      const head = lock === 'bolt' ? z1 + 3.5 : info.headZ
+      meshes.animBolt = meshData(k(Manifold.union([cyl(2.95, -p.inL - 2, head, 20), k(k(Manifold.cylinder(6, 5, 5, 6)).translate([0, 0, head]))]))); anim.push({ key: 'animBolt', dir: [0, 0, p.inL + 60], spin: 12, lead: 1.5 })
+    }
+    if (info.washer) { meshes.animWasher = meshData(tubeM(info.washer.od / 2, 3.2, z1 + 1, z1 + 3.5)); anim.push({ key: 'animWasher', dir: [0, 0, 90], lead: 1.4 }) }
+    if (lock === 'grub') { meshes.animGrub = meshData(k(k(k(Manifold.cylinder(10, 2.4, 2.4, 16)).rotate([0, 90, 0])).translate([rst - 1.2, 0, zL]))); anim.push({ key: 'animGrub', dir: [25, 0, 0], spin: 10, lead: 1.6 }) }
+    if (lock === 'pin') { meshes.animPin = meshData(k(k(k(Manifold.cylinder(2 * ro + 30, 2.5, 2.5, 16)).rotate([0, 90, 0])).translate([-ro - 15, 0, zL]))); anim.push({ key: 'animPin', dir: [60, 0, 0], lead: 1.6 }) }
     if (wedge) meshes.wedgeFlat = meshData(k(wedge.translate([0, 0, p.inL + 2])))
     // the lathe profile (both halves) for the drawing and the DXF
     const side = [[...pts.slice(1, -1), ...pts.slice(1, -1).reverse().map(([r, z]) => [-r, z])]]
     const circle = []
     for (let i = 0; i < 64; i++) circle.push([ro * Math.cos((TAU * i) / 64), ro * Math.sin((TAU * i) / 64)])
     return {
+      anim,
       dowel: { ...info, g, density, D: 2 * ro, len: z1 + p.inL },
       meshes,
       viewR: (z1 + p.inL) * 0.65,

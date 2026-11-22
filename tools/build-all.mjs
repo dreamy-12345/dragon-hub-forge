@@ -8,7 +8,7 @@ const wasm = await Module()
 wasm.setup()
 const out = process.argv[2]
 for (const d of DESIGNS) {
-  if (d.spokeHub || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.dart || d.cage || d.grip || d.mould || d.hoop || d.bubblePoi || d.sword || d.acro || d.dowel || d.tsword || d.taxe) continue // their own tools/*-test.mjs cover these
+  if (d.spokeHub || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.dart || d.cage || d.grip || d.mould || d.hoop || d.bubblePoi || d.sword || d.acro || d.dowel || d.tsword || d.taxe || d.fist || d.hilt) continue // their own tools/*-test.mjs cover these
   const p = defaults(d)
   const t0 = performance.now()
   let hub

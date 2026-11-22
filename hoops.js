@@ -32,6 +32,7 @@ export const HOOP_PARAMS = [
   { key: 'tubeOD', label: 'Tube outside', unit: 'mm', min: 10, max: 35, step: 0.1, value: 19, showIf: (p) => p.tube.startsWith('my own') },
   { key: 'tubeWall', label: 'Tube wall', unit: 'mm', min: 0.8, max: 4, step: 0.1, value: 1.6, showIf: (p) => p.tube.startsWith('my own') },
   { key: 'connL', label: 'Connector length', unit: 'mm', min: 40, max: 160, step: 1, value: 90, hint: 'Longer is stronger at the joint; 75–100 mm is usual.' },
+  { key: 'show', label: 'Show', options: ['the whole hoop', 'the connector close up'], value: 'the whole hoop', hint: 'Close up: just the connector and the tube ends, and How it works ▶ shows them coming apart.' },
   { key: 'connFit', label: 'Connector fit', unit: 'mm', min: -0.4, max: 0.6, step: 0.05, value: 0.1, hint: 'How much bigger than the bore the barbs are. The body is 0.2 mm under it. Heat the tube end in hot water to push it on.' },
 ]
 
@@ -40,6 +41,18 @@ export const tubeOf = (p) => {
   return t.od ? t : { ...t, od: p.tubeOD, wall: p.tubeWall }
 }
 export const cutLength = (hoopOD, tubeOD) => Math.PI * (hoopOD - tubeOD) // mm
+
+/** Close-up of a joint: the connector where it is, two tube ends that slide off it (for the animation). */
+function closeUp(wasm, k, meshes, conn, { Rc, od, id, len = 70 }) {
+  const { CrossSection } = wasm
+  const ring = k(k(CrossSection.circle(od / 2, 32)).subtract(k(CrossSection.circle(id / 2, 32))))
+  const deg = (len / Rc) * (180 / Math.PI)
+  const stub = (from) => k(k(k(ring.translate([Rc, 0])).revolve(Math.max(12, Math.ceil(deg)), deg)).rotate([0, 0, from]))
+  meshes.animTubeA = meshData(stub(0.15))
+  meshes.animTubeB = meshData(stub(-deg - 0.15))
+  meshes.combined = meshData(conn)
+  return [{ key: 'animTubeA', dir: [0, 70, 0], look: 'ghost' }, { key: 'animTubeB', dir: [0, -70, 0], look: 'ghost', lead: 1.15 }]
+}
 
 function meshData(m) {
   const mesh = m.getMesh(), np = mesh.numProp, n = mesh.vertProperties.length / np
@@ -89,13 +102,17 @@ export function buildHoop(wasm, p, opts = {}) {
     const tubeG = ((Math.PI * ((t.od / 2) ** 2 - (id / 2) ** 2) * L) / 1000) * t.dens
     const connG = (conn.volume() / 1000) * dens
     const meshes = { combined: meshData(hoop), practice: meshData(conn), connFlat: meshData(connFlat) }
+    const close = (p.show || '').includes('close')
+    const anim = close ? closeUp(wasm, k, meshes, conn, { Rc, od: t.od, id }) : []
+    if (close) delete meshes.practice
     const circle = []
     for (let i = 0; i < 96; i++) circle.push([(D / 2) * Math.cos((2 * Math.PI * i) / 96), (D / 2) * Math.sin((2 * Math.PI * i) / 96)])
     const hole = circle.map(([x, y]) => [(x * (Rc - t.od / 2)) / (D / 2), (y * (Rc - t.od / 2)) / (D / 2)]).reverse()
     return {
-      hoop: { D, L, Rc, tube: t, id, tubeG, connG, total: tubeG + connG, arc },
+      anim,
+      hoop: { D, L, Rc, tube: t, id, tubeG, connG, total: tubeG + connG, arc, close },
       meshes,
-      viewR: D * 0.55,
+      viewR: close ? 70 : D * 0.55,
       polygons: { base: [circle, hole], relief: [], pods: [], weak: [] },
       podH: 0, ring: null, snap: null,
       stats: { tris: meshes.combined.indices.length / 3, grams: connG, gramsTotal: tubeG + connG, warns, height: t.od },
@@ -232,15 +249,21 @@ export function buildHoopJoint(wasm, p, opts = {}) {
     const tubeG = ((Math.PI * ((t.od / 2) ** 2 - (id / 2) ** 2) * L) / 1000) * t.dens
     const connG = (conn.volume() / 1000) * dens
     const meshes = { combined: meshData(hoop), practice: meshData(conn), connFlat: meshData(connFlat), guideFlat: meshData(guide) }
-    if (hw.length) meshes.rods = meshData(k(Manifold.union(hw)))
+    const close = (p.show || '').includes('close')
+    const anim = close ? closeUp(wasm, k, meshes, conn, { Rc, od: t.od, id }) : []
+    if (close) {
+      delete meshes.practice
+      if (hw.length) { meshes.animHw = meshData(k(Manifold.union(hw))); anim.push({ key: 'animHw', dir: [-18, 0, 0], lead: 1.4 }) }
+    } else if (hw.length) meshes.rods = meshData(k(Manifold.union(hw)))
     const circle = []
     for (let i = 0; i < 96; i++) circle.push([(D / 2) * Math.cos((2 * Math.PI * i) / 96), (D / 2) * Math.sin((2 * Math.PI * i) / 96)])
     const hole = circle.map(([x, y]) => [(x * (Rc - t.od / 2)) / (D / 2), (y * (Rc - t.od / 2)) / (D / 2)]).reverse()
     if (L / N > 900) warns.push(`Each section is ${(L / N / 10).toFixed(0)} cm: more sections pack smaller.`)
     return {
-      hoop: { D, L, Rc, tube: t, id, tubeG, connG: connG * N, total: tubeG + connG * N, arc, joint: { style, name: JOINTS[style], N, seg: L / N, sB, sR: -sR, core: 2 * rB } },
+      anim,
+      hoop: { D, L, Rc, tube: t, id, close, tubeG, connG: connG * N, total: tubeG + connG * N, arc, joint: { style, name: JOINTS[style], N, seg: L / N, sB, sR: -sR, core: 2 * rB } },
       meshes,
-      viewR: D * 0.55,
+      viewR: close ? 70 : D * 0.55,
       polygons: { base: [circle, hole], relief: [], pods: [], weak: [] },
       podH: 0, ring: null, snap: null,
       stats: { tris: meshes.combined.indices.length / 3, grams: connG, gramsTotal: tubeG + connG * N, warns, height: t.od },

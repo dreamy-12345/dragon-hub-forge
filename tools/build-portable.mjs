@@ -33,6 +33,7 @@ const wick = fs.readFileSync(at('wicking-guide.html'), 'utf8')
 const grip = fs.readFileSync(at('pole-grip-guide.html'), 'utf8')
 const mould = fs.readFileSync(at('mould-guide.html'), 'utf8')
 const hoopG = fs.readFileSync(at('hoop-guide.html'), 'utf8')
+const knotG = fs.readFileSync(at('knot-guide.html'), 'utf8')
 
 let html = fs.readFileSync(at('index.html'), 'utf8')
 const drop = (re, what) => {
@@ -50,6 +51,7 @@ window.__WICK_GUIDE_HTML = ${asString(wick)}
 window.__GRIP_GUIDE_HTML = ${asString(grip)}
 window.__MOULD_GUIDE_HTML = ${asString(mould)}
 window.__HOOP_GUIDE_HTML = ${asString(hoopG)}
+window.__KNOT_GUIDE_HTML = ${asString(knotG)}
 </script>
 <script type="module">${safe(app.outputFiles[0].text)}</script>`
 const tag = '<script type="module" src="./app.js"></script>'

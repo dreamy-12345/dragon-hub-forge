@@ -15,14 +15,14 @@
  */
 export const BUBBLE_POI_PARAMS = [
   { key: 'film', label: 'Film', options: ['no string: printed loops', 'string: wrap with cotton yarn'], value: 'no string: printed loops', hint: 'No string: the notches inside each loop hold the mix; dip and spin. String: wrap each loop with 100% cotton yarn (not acrylic): it soaks up far more mix, so you get many more and bigger bubbles per dip.' },
-  { key: 'smallN', label: 'Small circles', unit: '', min: 1, max: 12, step: 1, value: 6, hint: 'How many small circles are stacked above the big one.' },
-  { key: 'smallD', label: 'Small circle size', unit: 'mm', min: 12, max: 60, step: 1, value: 22, hint: 'Inside diameter of each small circle.' },
-  { key: 'bigD', label: 'Big circle size', unit: 'mm', min: 30, max: 180, step: 1, value: 64, hint: 'Inside diameter of the big circle at the bottom: the one that makes the giant bubbles.' },
-  { key: 'loopT', label: 'Loop wire', unit: 'mm', min: 2, max: 7, step: 0.1, value: 3.2, hint: 'How wide each ring is. String loops want 3.5 mm or more so the yarn has something to wrap.' },
-  { key: 'thick', label: 'Thickness', unit: 'mm', min: 2.5, max: 8, step: 0.1, value: 4, hint: 'How thick it prints (lying flat). Thicker is stiffer and holds a little more mix.' },
-  { key: 'join', label: 'Joints', unit: 'mm', min: 0.8, max: 6, step: 0.1, value: 2.2, hint: 'How much each circle overlaps the next. More = stronger joints.' },
-  { key: 'ropeD', label: 'Top eye (leash)', unit: 'mm', min: 3, max: 10, step: 0.5, value: 6, hint: 'The hole at the top for the leash swivel or cord.' },
-  { key: 'linkD', label: 'Bottom eye (link)', unit: 'mm', min: 0, max: 10, step: 0.5, value: 5, hint: 'A small eye under the big circle: clip on a small swivel to link another head, a weight or a tail below. 0 = none.' },
+  { key: 'smallN', label: 'Small circles', unit: '', min: 1, max: 12, step: 1, value: 6, hint: 'How many small circles hang in the chain above the big one.' },
+  { key: 'smallD', label: 'Small circle size', unit: 'mm', min: 12, max: 60, step: 1, value: 24, hint: 'Inside diameter of each small circle.' },
+  { key: 'bigD', label: 'Big circle size', unit: 'mm', min: 30, max: 180, step: 1, value: 70, hint: 'Inside diameter of the big circle at the bottom: the one that makes the giant bubbles.' },
+  { key: 'cross', label: 'Big circle', options: ['crossed by a second ring', 'single ring'], value: 'crossed by a second ring', hint: 'A second ring slots through the big one at right angles (a half-depth slot in each, top and bottom), so it makes bubbles whichever way it swings.' },
+  { key: 'loopT', label: 'Loop wire', unit: 'mm', min: 2, max: 7, step: 0.1, value: 3.4, hint: 'How wide each ring is. String loops want 3.5 mm or more so the yarn has something to wrap.' },
+  { key: 'thick', label: 'Thickness', unit: 'mm', min: 2.5, max: 8, step: 0.1, value: 4, hint: 'How thick each ring prints (lying flat).' },
+  { key: 'linkD', label: 'Link eyes', unit: 'mm', min: 3, max: 8, step: 0.5, value: 4.5, hint: 'The small eye at the top and bottom of every circle: it takes a small swivel or a split ring to link the circles into a chain.' },
+  { key: 'ropeD', label: 'Top eye (leash)', unit: 'mm', min: 3, max: 10, step: 0.5, value: 6, hint: 'The eye at the very top, for the leash swivel.' },
 ]
 
 function meshData(m) {
@@ -41,63 +41,82 @@ export function buildBubblePoi(wasm, p, opts = {}) {
     const yarn = (p.film || '').startsWith('string')
     const T = yarn ? Math.max(p.loopT, 3.5) : p.loopT
     const H = p.thick
-    // the rings, top to bottom: small ones, then the big one
-    const rings = []
-    for (let i = 0; i < p.smallN; i++) rings.push(p.smallD / 2)
-    rings.push(p.bigD / 2)
-    const centres = []
+    const crossed = (p.cross || '').startsWith('crossed')
+    // one flat ring (xy, centred), with an eye tab on top (+y) and one underneath (-y)
+    const ringSec = (ri, topHole, botHole, notch) => {
+      let sec = k(k(CrossSection.circle(ri + T, 128)).subtract(k(CrossSection.circle(ri, 128))))
+      const eyes = []
+      for (const [hole, s] of [[topHole, 1], [botHole, -1]]) {
+        if (!hole) continue
+        const ro = hole / 2 + 2.2, yc = s * (ri + T + hole / 2 + 1.4)
+        const stem = k(k(CrossSection.square([2 * ro, Math.abs(yc) - ri - T / 2], false)).translate([-ro, s > 0 ? ri + T / 2 : yc]))
+        eyes.push({ solid: k(k(k(CrossSection.circle(ro, 40)).translate([0, yc])).add(stem)), hole: k(k(CrossSection.circle(hole / 2, 32)).translate([0, yc])) })
+      }
+      if (eyes.length) sec = k(sec.add(k(CrossSection.union(eyes.map((e) => e.solid)))))
+      sec = k(sec.subtract(k(CrossSection.circle(ri, 128))))
+      if (eyes.length) sec = k(sec.subtract(k(CrossSection.union(eyes.map((e) => e.hole)))))
+      if (!yarn) {
+        const n = Math.max(8, Math.round((Math.PI * 2 * ri) / 5.5)), nn = []
+        for (let j2 = 0; j2 < n; j2++) { const a = (2 * Math.PI * (j2 + 0.5)) / n; nn.push(k(k(CrossSection.circle(0.9, 12)).translate([ri * Math.cos(a), ri * Math.sin(a)]))) }
+        sec = k(sec.subtract(k(CrossSection.union(nn))))
+      }
+      if (notch) {
+        // half-depth slots at the top and bottom where the crossing ring passes: from the inside edge (A) or the outside edge (B)
+        const w = H + 0.3, cuts = []
+        for (const s of [1, -1]) {
+          const y0 = notch === 'in' ? s * (ri - 1) : s * (ri + T / 2 - 0.1), y1 = notch === 'in' ? s * (ri + T / 2 + 0.1) : s * (ri + T + 1)
+          cuts.push(k(k(CrossSection.square([w, Math.abs(y1 - y0)], false)).translate([-w / 2, Math.min(y0, y1)])))
+        }
+        sec = k(sec.subtract(k(CrossSection.union(cuts))))
+      }
+      return sec
+    }
+    const smallR = p.smallD / 2, bigR = p.bigD / 2
+    const pieces = [] // [label, manifold]
+    const small = k(ringSec(smallR, p.linkD, p.linkD, null).extrude(H))
+    const topRing = k(ringSec(smallR, p.ropeD, p.linkD, null).extrude(H))
+    const bigA = k(ringSec(bigR, p.linkD, p.linkD, crossed ? 'in' : null).extrude(H))
+    const bigB = crossed ? k(ringSec(bigR, 0, 0, 'out').extrude(H)) : null
+    // ---- the chain, assembled for the view: rings in a column, small swivels between them
+    const gap = p.linkD + 7 // a small swivel or split ring between the eyes
+    const views = [], hw = []
     let y = 0
-    for (let i = 0; i < rings.length; i++) {
-      if (i) y -= rings[i - 1] + T + rings[i] + T - p.join
-      centres.push(y)
+    const place = (m, ri, top, bot) => {
+      const h = ri + T + (top ? top + 1.4 + 2.2 : 0)
+      y -= h
+      const moved = k(m.translate([0, y, -H / 2]))
+      y -= ri + T + (bot ? bot + 1.4 + 2.2 : 0)
+      return moved
     }
-    const ring2d = (ri, yc) => {
-      let r = k(k(k(CrossSection.circle(ri + T, 96)).subtract(k(CrossSection.circle(ri, 96)))).translate([0, yc]))
-      return r
+    const ring3 = (yc) => hw.push(k(k(k(k(k(CrossSection.circle(0.9, 10)).translate([gap / 2 - 1, 0])).revolve(24)).rotate([0, 90, 0])).translate([0, yc, 0])))
+    for (let i = 0; i < p.smallN; i++) {
+      views.push(place(i === 0 ? topRing : small, smallR, i === 0 ? p.ropeD : p.linkD, p.linkD))
+      ring3(y - gap / 2 + 2.5); y -= gap - 5
     }
-    let sec = k(CrossSection.union(rings.map((ri, i) => ring2d(ri, centres[i]))))
-    // the eyes: a tab above the top circle and one below the big circle
-    const eye = (hole, yc, up) => {
-      const ro = hole / 2 + 2.4
-      const stem = k(k(CrossSection.square([2 * ro, ro + T], true)).translate([0, yc - (up ? (ro + T) / 2 : -(ro + T) / 2)]))
-      return { solid: k(k(k(CrossSection.circle(ro, 48)).translate([0, yc])).add(stem)), hole: k(k(CrossSection.circle(hole / 2, 32)).translate([0, yc])) }
-    }
-    const topR = rings[0] + T, botR = rings[rings.length - 1] + T
-    const topEye = eye(p.ropeD, centres[0] + topR + p.ropeD / 2 + 1.6, true)
-    const parts = [topEye]
-    if (p.linkD > 0) parts.push(eye(p.linkD, centres[centres.length - 1] - botR - p.linkD / 2 - 1.6, false))
-    sec = k(sec.add(k(CrossSection.union(parts.map((e) => e.solid)))))
-    // but never fill a loop: keep each opening clear
-    for (let i = 0; i < rings.length; i++) sec = k(sec.subtract(k(k(CrossSection.circle(rings[i], 96)).translate([0, centres[i]]))))
-    sec = k(sec.subtract(k(CrossSection.union(parts.map((e) => e.hole)))))
-    if (!yarn) {
-      // film notches round the inside of every loop hold the mix
-      const notches = []
-      rings.forEach((ri, i) => {
-        const n = Math.max(8, Math.round((Math.PI * 2 * ri) / 5.5))
-        for (let j = 0; j < n; j++) { const a = (2 * Math.PI * (j + 0.5)) / n; notches.push(k(k(CrossSection.circle(0.9, 12)).translate([ri * Math.cos(a), centres[i] + ri * Math.sin(a)]))) }
-      })
-      sec = k(sec.subtract(k(CrossSection.union(notches))))
-    }
-    let m = k(sec.extrude(H))
+    const aView = place(bigA, bigR, p.linkD, p.linkD)
+    views.push(aView)
+    if (crossed) views.push(k(k(k(bigB.translate([0, 0, -H / 2])).rotate([0, 90, 0])).translate([0, aView.boundingBox().min[1] + p.linkD + 3.6 + bigR + T, 0])))
+    const assembled = k(Manifold.union(views))
+    const bb = assembled.boundingBox(), cy = (bb.max[1] + bb.min[1]) / 2
+    // ---- print plate: every piece flat, side by side
+    const flats = [['top', topRing], ...(p.smallN > 1 ? [['small', small]] : []), ['bigA', bigA], ...(crossed ? [['bigB', bigB]] : [])]
+    const meshes = { combined: meshData(k(assembled.translate([0, -cy, 0]))) }
+    if (hw.length) meshes.rods = meshData(k(k(Manifold.union(hw)).translate([0, -cy, 0])))
+    for (const [key, m] of flats) meshes[`flat_${key}`] = meshData(m)
     const dens = opts.density || 1.27
-    const g = (m.volume() / 1000) * dens
-    const box = m.boundingBox()
-    const len = box.max[1] - box.min[1], wid = box.max[0] - box.min[0]
-    if (len > 250) warns.push(`It is ${len.toFixed(0)} mm long: lay it corner to corner on the bed, or use fewer or smaller circles.`)
+    const gOf = (m) => (m.volume() / 1000) * dens
+    const g = gOf(topRing) + (p.smallN - 1) * gOf(small) + gOf(bigA) + (crossed ? gOf(bigB) : 0)
+    const len = bb.max[1] - bb.min[1], wid = bb.max[0] - bb.min[0]
     if (!yarn && p.bigD > 90) warns.push('A printed loop over about 90 mm struggles to hold a film: use string for a giant big circle.')
-    if (p.join < T * 0.4) warns.push('The joints are thin: raise Joints so each circle overlaps the next more.')
-    // centre it for the view and the bed
-    const cy = (box.max[1] + box.min[1]) / 2
-    const flat = k(m.translate([0, -cy, 0]))
-    const meshes = { combined: meshData(flat) }
-    const outline = k(sec.translate([0, -cy])).toPolygons()
-    const yarnM = yarn ? rings.reduce((a, ri) => a + ((2 * Math.PI * (ri + T / 2)) / 3) * (2 * T + 2 * H), 0) / 1000 : 0
+    if (2 * (bigR + T) + 2 * (p.linkD + 4) > 250) warns.push('The big ring is bigger than most beds: lay it corner to corner, or make it smaller.')
+    const rings = [smallR, bigR, ...(crossed ? [bigR] : [])]
+    const yarnM = yarn ? (p.smallN * ((2 * Math.PI * (smallR + T / 2)) / 3) * (2 * T + 2 * H) + rings.slice(1).reduce((a, r) => a + ((2 * Math.PI * (r + T / 2)) / 3) * (2 * T + 2 * H), 0)) / 1000 : 0
+    const outline = k(CrossSection.circle(bigR + T, 64))
     return {
-      bubblePoi: { yarn, small: p.smallN, loops: rings.length, len, wid, height: H, yarnM, link: p.linkD > 0 },
+      bubblePoi: { yarn, small: p.smallN, loops: p.smallN + 1 + (crossed ? 1 : 0), len, wid, height: H, yarnM, crossed, swivels: p.smallN, pieces: flats.map(([k2]) => k2) },
       meshes,
       viewR: Math.max(len, wid) * 0.6,
-      polygons: { base: outline, relief: [], pods: [], weak: [] },
+      polygons: { base: outline.toPolygons(), relief: [], pods: [], weak: [] },
       podH: 0, ring: null, snap: null,
       stats: { tris: meshes.combined.indices.length / 3, grams: g, gramsTotal: g, warns, height: H },
     }
@@ -113,9 +132,9 @@ export function bubblePoiDesigns() {
     draw: () => {},
   })
   return [
-    d('bubblePoiClassic', 'Bubble Poi: Classic', 'The classic bubble poi: six small circles stacked in a column and one big circle at the bottom. An eye on top for the leash swivel, and a small eye underneath to link another head or a weight on a little swivel. Prints flat, no supports.', {}),
-    d('bubblePoiMini', 'Bubble Poi: Mini', 'A smaller, lighter classic: six little circles and a palm-sized big one. Quick to spin, good for kids and for doubles.', { smallD: 18, bigD: 50, loopT: 2.8, thick: 3.5 }),
-    d('bubblePoiGiant', 'Bubble Poi: Giant', 'Five circles and a huge one at the bottom, made to be wrapped in cotton yarn: it holds enough mix for giant bubbles and long trails.', { smallN: 5, smallD: 30, bigD: 120, loopT: 4.5, thick: 5, film: 'string: wrap with cotton yarn' }),
-    d('bubblePoiLadder', 'Bubble Poi: Long Ladder', 'Nine small circles stacked into a long ladder over a big one: a long ribbon of small bubbles behind every swing.', { smallN: 9, smallD: 17, bigD: 52, loopT: 2.8 }),
+    d('bubblePoiClassic', 'Bubble Poi: Classic', 'The classic bubble poi: six small circles linked in a chain by little swivels, and a big circle at the bottom crossed by a second ring. Every circle prints flat on its own, with an eye top and bottom; the leash clips to the top one.', {}),
+    d('bubblePoiMini', 'Bubble Poi: Mini', 'A smaller, lighter classic: six little circles and a palm-sized big one. Quick to spin, good for kids and for doubles.', { smallD: 18, bigD: 50, loopT: 2.8, thick: 3.5, linkD: 4 }),
+    d('bubblePoiGiant', 'Bubble Poi: Giant', 'Five circles and a huge one at the bottom, made to be wrapped in cotton yarn: it holds enough mix for giant bubbles and long trails.', { smallN: 5, smallD: 30, bigD: 120, loopT: 4.5, thick: 5, film: 'string: wrap with cotton yarn', linkD: 5 }),
+    d('bubblePoiLadder', 'Bubble Poi: Long Ladder', 'Nine small circles linked into a long ladder over a big one: a long ribbon of small bubbles behind every swing.', { smallN: 9, smallD: 17, bigD: 52, loopT: 2.8, cross: 'single ring' }),
   ]
 }

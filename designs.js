@@ -34,6 +34,9 @@ import { acroDesigns } from './acro.js'
 import { pineHubDesigns } from './pinecone.js'
 import { dowelDesigns } from './dowel.js'
 import { tubeSwordDesigns, tubeAxeDesigns } from './tubeswords.js'
+import { fistDesigns } from './fist.js'
+import { hiltDesigns } from './hilt.js'
+import { nzDesigns, canDesigns } from './nz.js'
 import { TAU, rot, place, ccw, cw, rng, voronoi, pointInPoly, circlePts, HEART, wingPoly, logoDragonfly, Canvas } from './geom.js'
 
 const deg = (d) => (d * Math.PI) / 180
@@ -3320,6 +3323,10 @@ DESIGNS.push(...pineHubDesigns())
 DESIGNS.push(...dowelDesigns())
 // tube fire swords and axes: a machined connector on the staff pole, Kevlar-wound tubes, a Kevlar ball pommel
 DESIGNS.push(...tubeSwordDesigns(), ...tubeAxeDesigns())
+// monkey's fist heads: staff end, rope dart, meteor, poi
+DESIGNS.push(...fistDesigns(), ...hiltDesigns())
+// Aotearoa New Zealand plants and birds, and a brown beer can
+DESIGNS.push(...nzDesigns(), ...canDesigns())
 
 const polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)]
 

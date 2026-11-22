@@ -352,7 +352,19 @@ export function buildAcroMetal(wasm, p, opts = {}) {
     const wedgeG = parts.wedge ? (parts.wedge.volume() / 1000) * 7.9 : 0
     const meshes = { combined: meshData(body) }
     const hw = []
-    if (parts.wedge) hw.push(parts.wedge, cyl(2.95, -info.sL - 2, L - 7), cyl(5, L - 7, L - 1))
+    const anim = []
+    if (parts.wedge) {
+      // the moving parts, for the "How it works" view: pole, wedge, bolt and the rubber tip cap
+      const ring = (ro, rin, z0, z1) => k(cyl(ro, z0, z1).subtract(cyl(rin, z0 - 1, z1 + 1)))
+      meshes.animPole = meshData(ring(p.poleOD / 2, ri, -info.sL - 45, 0))
+      meshes.animWedge = meshData(parts.wedge)
+      meshes.animBolt = meshData(k(Manifold.union([cyl(2.95, -info.sL - 2, L - 7, 20), k(k(Manifold.cylinder(6, 5, 5, 6)).translate([0, 0, L - 7]))])))
+      const cap = k(Manifold.union([cyl(5.45, L - 6.5, L - 0.3, 32), k(k(k(Manifold.sphere(8, 32)).scale([1, 1, 0.35])).translate([0, 0, L - 0.3]))]))
+      meshes.animCap = meshData(cap)
+      const cb = cap.boundingBox()
+      meshes.capFlat = meshData(k(k(cap.rotate([180, 0, 0])).translate([0, 0, cb.max[2]])))
+      anim.push({ key: 'animPole', dir: [0, 0, -70], look: 'ghost' }, { key: 'animWedge', dir: [0, 0, -40], lead: 1.3 }, { key: 'animBolt', dir: [0, 0, info.sL + 40], spin: 12 }, { key: 'animCap', dir: [0, 0, 30], look: 'part', lead: 1.6 })
+    }
     if (grooves.length) for (const gr of grooves) hw.push(k(k(k(k(CrossSection.circle(p.oRingCS / 2, 16)).translate([gr.d / 2 + p.oRingCS / 2 - 0.3, 0])).revolve(64)).translate([0, 0, gr.z + gr.w / 2])))
     if (hw.length) meshes.rods = meshData(k(Manifold.union(hw)))
     if (parts.wedge) meshes.wedgeFlat = meshData(k(parts.wedge.translate([0, 0, info.sL + 2])))
@@ -363,6 +375,7 @@ export function buildAcroMetal(wasm, p, opts = {}) {
     const circle = []
     for (let i = 0; i < 64; i++) circle.push([R * Math.cos((TAU * i) / 64), R * Math.sin((TAU * i) / 64)])
     return {
+      anim,
       acro: { metal: true, plugIn, R, D: 2 * R, circ: p.circ, L, kind: O.kind, g, wedgeG, total: g + wedgeG, grooves, ...info, density },
       dart: null,
       meshes,

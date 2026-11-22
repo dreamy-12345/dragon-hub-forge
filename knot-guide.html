@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knots and Wicking 101</title>
+<meta name="description" content="Knots for fire and contact props in Kevlar: contact poi, meteor hammers, pretty wick wraps, and wicking 101 for fire swords and metal dragon staff hubs.">
+<style>
+:root {
+  --bg: #0e0d12; --panel: #17151d; --raise: #201d28; --line: #2d2937;
+  --fg: #ece8f2; --muted: #958fa6;
+  --ember: #f0a23b; --ember-dim: #6b4a1e;
+  --good: #6cd39a; --warn: #f2c94c; --bad: #ff6070;
+  --steel: #9aa6b8; --kev: #e8c46a;
+  --display: "Unbounded", "Avenir Next", "Helvetica Neue", sans-serif;
+  --body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.6 var(--body); }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 90px; }
+h1 { font: 700 1.9rem/1.15 var(--display); margin: .2em 0 .3em; letter-spacing: .01em; }
+h1 span { color: var(--ember); }
+h2 { font: 700 1.4rem/1.2 var(--display); margin: 2.4em 0 .6em; padding-top: .8em; border-top: 1px solid var(--line); }
+h3 { font: 600 1.15rem/1.3 var(--body); margin: 1.4em 0 .4em; color: var(--ember); }
+a { color: var(--ember); word-break: break-word; }
+code { font: .88em var(--mono); background: var(--raise); padding: .1em .35em; border-radius: 4px; }
+.lede { color: var(--muted); font-size: 1.05rem; }
+.why { font-size: 1.02rem; margin: .3em 0 .8em; }
+.why b { color: var(--ember); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin: 14px 0; }
+.card > :first-child { margin-top: 0; }
+.card > :last-child { margin-bottom: 0; }
+.need { border-left: 4px solid var(--good); }
+.need b.t, .warn b.t, .safety b.t { display: block; font: 700 .8rem var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .3em; }
+.need b.t { color: var(--good); }
+.warn { border-left: 4px solid var(--warn); }
+.warn b.t { color: var(--warn); }
+.safety { border: 2px solid var(--bad); background: #24141a; }
+.safety b.t { color: var(--bad); font-size: .95rem; }
+.safety h2 { border: 0; margin-top: .2em; padding-top: 0; color: var(--bad); }
+ul, ol { padding-left: 1.4em; }
+li { margin: .3em 0; }
+ol.steps { counter-reset: s; list-style: none; padding-left: 0; }
+ol.steps > li { counter-increment: s; position: relative; padding: .45em .6em .45em 3em; margin: .35em 0; background: var(--panel); border-radius: 8px; }
+ol.steps > li::before { content: counter(s); position: absolute; left: .55em; top: .4em; width: 1.75em; height: 1.75em; border-radius: 50%; background: var(--ember-dim); color: var(--ember); font: 700 .95rem/1.75em var(--mono); text-align: center; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+.stat { background: var(--raise); border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font: 700 1.2rem var(--display); color: var(--ember); }
+.stat small { color: var(--muted); }
+nav.toc { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+nav.toc ol { margin: 6px 0; padding-left: 22px; columns: 2 230px; }
+nav.toc a { text-decoration: none; }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px 14px; margin: 12px 0; }
+details[open] { padding-bottom: 12px; }
+summary { cursor: pointer; font: 600 1.12rem/1.4 var(--body); padding: 10px 0; color: var(--fg); }
+summary::marker { color: var(--ember); }
+summary small { color: var(--muted); font-weight: 400; font-size: .9rem; }
+details .card { background: var(--raise); }
+details ol.steps > li { background: var(--raise); }
+figure { margin: 14px 0; background: var(--raise); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+figure svg { width: 100%; height: auto; display: block; max-height: 340px; }
+figcaption { color: var(--muted); font-size: .9rem; padding: 6px 4px 0; }
+.svt { font: 13px var(--body); fill: var(--fg); }
+.svm { font: 12px var(--body); fill: var(--muted); }
+.tbl { overflow-x: auto; margin: 10px 0; }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+th, td { text-align: left; vertical-align: top; padding: 7px 9px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; }
+.pill { display: inline-block; font: 700 .72rem var(--mono); padding: 1px 8px; border-radius: 99px; vertical-align: 2px; }
+.pill.d { background: rgba(108,211,154,.15); color: var(--good); }
+.pill.l { background: rgba(240,162,59,.15); color: var(--ember); }
+.sources li { font-size: .92rem; }
+.muted { color: var(--muted); }
+@media print { body { background: #fff; color: #000; } details { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Knots and wicking <span>101</span></h1>
+<p class="lede">The knots that matter for fire and contact props, tied in Kevlar: contact poi, meteor hammers, pretty wicks for staffs and swords, and step-by-step wicking for the forge's fire swords and metal dragon staff hubs.</p>
+
+<nav class="toc" aria-label="Contents">
+<b>On this page</b>
+<ol>
+<li><a href="#basics">Kevlar basics</a></li>
+<li><a href="#library">The knot library</a></li>
+<li><a href="#poi">Contact poi</a></li>
+<li><a href="#meteor">Meteor hammer</a></li>
+<li><a href="#pretty">Pretty ways to wick</a></li>
+<li><a href="#sword101">Fire sword wicking 101</a></li>
+<li><a href="#hub101">Metal dragon staff hub wicking 101</a></li>
+<li><a href="#check">Check before every burn</a></li>
+</ol>
+</nav>
+
+<section class="card safety">
+<b class="t">Fire safety</b>
+<p>Only <b>Kevlar</b> (wick tape, rope, thread), <b>stainless steel</b> (wire, bolts, all-metal lock nuts) and <b>aluminium or steel</b> go in or near the flame. Never cotton, nylon, paracord, glue, cable ties or nylon-insert nuts. Practise every knot in cheap cord first, but never light it. Fuel away from the flame, spin off the extra, and always have a fire blanket and a safety person.</p>
+</section>
+
+<!-- ======================= BASICS ======================= -->
+<h2 id="basics">Kevlar basics</h2>
+<div class="grid">
+<div class="stat"><b>Tape</b><small>25, 38, 50 mm (1", 1.5", 2") wide, about 3 mm thick. Woven: the workhorse for wrapping.</small></div>
+<div class="stat"><b>Rope</b><small>6 mm and 10 mm braided Kevlar. For knots, balls, ropes and laced wicks.</small></div>
+<div class="stat"><b>Thread</b><small>Kevlar sewing thread or 1 mm Kevlar cord: for whipping, stitching and binding.</small></div>
+<div class="stat"><b>Wire</b><small>1.0–1.5 mm stainless lock wire: the fixing that never burns.</small></div>
+</div>
+<ul>
+<li><b>Cutting:</b> Kevlar does not melt, so it cannot be sealed with a flame. Wrap tape round the cut line, cut through the tape with sharp scissors (Kevlar blunts blades fast), then whip the end with Kevlar thread.</li>
+<li><b>Tight is everything:</b> a loose wick soaks too much fuel, flings it, burns unevenly and wears out. Pull every turn snug and work the slack through knots bit by bit.</li>
+<li><b>Break it in:</b> the first burn darkens the wick and burns off the sizing. Burns after that are cleaner and longer.</li>
+<li><b>Rope is stiff:</b> tie Kevlar rope loose first, check the path, then tighten from one end to the other.</li>
+</ul>
+
+<!-- ======================= LIBRARY ======================= -->
+<h2 id="library">The knot library</h2>
+<p>Every knot here is tied the same way in Kevlar as in any rope. The <span class="pill l">link</span> ones are clearest animated: follow the link, then come back for the Kevlar notes.</p>
+
+<details>
+<summary>Constrictor knot <small>binding a tape end or a rope end tight to a tube</small></summary>
+<p class="why"><b>Use it for:</b> locking the start and end of a wick wrap, binding a bundle, holding a whipping. It bites and does not slip.</p>
+<ol class="steps">
+<li>Lay the cord over the tube, take it round once and cross over the first part, forming an X on top.</li>
+<li>Take it round again, then tuck the end under both crossing parts of the X.</li>
+<li>Pull both ends hard. Trim to 10 mm. For a permanent bind, tie a double constrictor (two full turns before the tuck).</li>
+</ol>
+<p class="muted">In Kevlar thread on a wick: pull it so tight it sinks into the tape.</p>
+</details>
+
+<details>
+<summary>Figure-eight loop <small>a fixed loop for a swivel, a handle or a chain</small></summary>
+<p class="why"><b>Use it for:</b> the loop at the end of a poi leash, a meteor rope or a rope dart, clipped to a swivel. Strong, easy to check, easy to untie.</p>
+<ol class="steps">
+<li>Double the rope back on itself to make a bight 30 cm long.</li>
+<li>With the doubled rope, tie a figure-eight: loop it over itself, round behind, and back through the first loop.</li>
+<li>Dress it so every strand lies side by side, pull each strand tight, leave a 3 cm tail. Bind the tail down with a constrictor.</li>
+</ol>
+</details>
+
+<details>
+<summary>Double fisherman's knot <span class="pill l">link</span> <small>joining two ropes for good</small></summary>
+<p class="why"><b>Use it for:</b> joining Kevlar rope ends into a loop (a finger loop, a handle loop), or joining two lengths. One of the strongest joins. <a href="https://www.animatedknots.com/double-fishermans-knot">Animated tutorial</a>.</p>
+<ol class="steps">
+<li>Lay the two ends side by side, overlapping 25 cm.</li>
+<li>With one end, wrap twice round both ropes, then tuck back through the two wraps (a double overhand round the other rope).</li>
+<li>Do the same with the other end the other way. Pull the two knots together until they touch.</li>
+</ol>
+</details>
+
+<details>
+<summary>Sheet bend <small>joining two ropes of different thickness</small></summary>
+<p class="why"><b>Use it for:</b> joining a thick Kevlar rope to a thin one, or rope to a loop. Quick and reliable, untie-able. Use a double sheet bend in slippery Kevlar.</p>
+<ol class="steps">
+<li>Make a bight (a U) in the thicker rope.</li>
+<li>Pass the thin rope up through the bight, round behind both legs of it, then tuck it under itself (not through the bight).</li>
+<li>For the double: go round behind twice before the tuck. Pull tight.</li>
+</ol>
+</details>
+
+<details>
+<summary>Diamond (lanyard) knot <span class="pill l">link</span> <small>a round knob to finish a rope end or make a stop</small></summary>
+<p class="why"><b>Use it for:</b> a stopper knob on a meteor rope, a knob above a poi head, a decorative end. <a href="https://www.animatedknots.com/lanyard-knot">Animated tutorial</a>. Do not tighten it by pulling the ends: work each strand through, rolling the knot between your fingers.</p>
+</details>
+
+<details>
+<summary>Crown sinnet (box knot) <span class="pill l">link</span> <small>a square, chunky braid that makes a wick block</small></summary>
+<p class="why"><b>Use it for:</b> a fat rope wick on the end of a spoke or a staff, or a square meteor head. Two Kevlar ropes crossed and crowned over and over. <a href="https://www.animatedknots.com/crown-sinnet-knot">Animated tutorial</a>.</p>
+</details>
+
+<details>
+<summary>Cobra (Solomon bar) <span class="pill l">link</span> <small>a flat, woven cover over a rod, a handle or a tape end</small></summary>
+<p class="why"><b>Use it for:</b> a woven Kevlar band over the start and end of a wick wrap (it locks the tape and looks great), a burning grip-less band on a sword blade, a bracelet of fire round a staff. <a href="https://www.animatedknots.com/cobra-lanyard-knot">Animated tutorial</a>. In 6 mm Kevlar it adds about 12 mm per 10 mm of bar.</p>
+</details>
+
+<details>
+<summary>Turk's head <span class="pill l">link</span> <small>a woven ring round a tube</small></summary>
+<p class="why"><b>Use it for:</b> bands at each end of a wick (they hold the tape and frame it), rings along a sword or staff, a woven sleeve over a ball. <a href="https://www.animatedknots.com/turks-head-knot">Animated tutorial</a>. Tie it on the tube itself so it fits exactly.</p>
+</details>
+
+<details>
+<summary>Monkey's fist <small>a solid ball</small></summary>
+<p class="why"><b>Use it for:</b> contact poi heads, meteor hammer weights, rope dart heads, staff ends, the pommel ball on a tube fire sword. The forge's <b>Monkey's Fist</b> designs work out the turns, the rope to cut and the weight for your core.</p>
+<ol class="steps">
+<li><b>First set:</b> wrap the rope round two or three fingers (or a jig) the number of turns per set, side by side.</li>
+<li><b>Second set:</b> turn 90° and wrap the same number of turns round the middle of the first set.</li>
+<li><b>Core in:</b> slip the core (steel ball, printed core) into the middle of the first set.</li>
+<li><b>Third set:</b> pass the rope through the inside of the first set and round outside the second set, the same number of turns.</li>
+<li><b>Work it tight:</b> follow the rope from the start, pulling each loop snug round the core one at a time. Go round twice or three times. Kevlar takes patience.</li>
+<li><b>Finish:</b> bring both tails out side by side, tie them into a figure-eight loop or bind them to a swivel with a double constrictor and stainless wire.</li>
+</ol>
+<p>Learn it more ways: the step photos in the <a href="wicking-guide.html#knots">wicking guide</a>, <a href="https://www.animatedknots.com/monkeys-fist-knot">an animated version</a>, <a href="https://www.101knots.com/monkeys-fist.html">a picture-by-picture version</a> and <a href="https://www.instructables.com/Paracord-Monkeys-Fist-1/">a made-in-cord walkthrough</a>.</p>
+<ul>
+<li>Always tie it round a <b>steel core</b> (ball, slug or stacked washers on a stud), never an empty middle: the core gives it weight and keeps its round.</li>
+<li>Bring the two ends out side by side, tie them into a figure-eight loop or bind them to a swivel with a double constrictor and stainless wire.</li>
+</ul>
+</details>
+
+<details>
+<summary>Common whipping <small>finishing a cut rope end</small></summary>
+<ol class="steps">
+<li>Lay a loop of Kevlar thread along the rope end, the loop pointing to the end.</li>
+<li>Wind the thread tightly back over the loop and the rope towards the end, 15 turns, each tight against the last.</li>
+<li>Tuck the working end through the loop, pull the other end until the loop slides under the turns, trim both ends.</li>
+</ol>
+</details>
+
+<!-- ======================= POI ======================= -->
+<h2 id="poi">Contact poi</h2>
+<p>Contact poi roll on the arms and body, so the head is round, heavy and kind to skin. Make the head in the forge (Poi Ball, Geo Poi, Pine Cone Poi, Stone Pine Poi, or cast one in rubber in Moulds) or tie it in Kevlar for fire.</p>
+<ol class="steps">
+<li><b>Head (practice):</b> print a forge poi head in TPU at 100%, or cast a silicone one with a nut set in.</li>
+<li><b>Head (fire):</b> a monkey's fist of 10 mm Kevlar round a 40–50 mm steel ball (4–5 turns per set), or Kevlar tape wound tight round a steel core and stitched with Kevlar thread.</li>
+<li><b>Leash:</b> a figure-eight loop at the head end through a stainless swivel. Chain (stainless) is best for fire: rope can burn through.</li>
+<li><b>Length:</b> from your knuckles to your armpit, plus the head. Contact poi are often a little shorter so they roll in close.</li>
+<li><b>Handle:</b> a finger loop: a short Kevlar or cord loop joined with a double fisherman's knot, on a swivel, or a knob handle (a diamond knot or a printed knob).</li>
+<li><b>Weight:</b> 150–250 g a head for contact. Make the pair match within 5 g.</li>
+</ol>
+
+<!-- ======================= METEOR ======================= -->
+<h2 id="meteor">Meteor hammer</h2>
+<p>A rope with a weight on each end, swung round the body and wrapped. Fire meteors carry a wick ball at each end.</p>
+<ol class="steps">
+<li><b>Rope:</b> for fire, braided Kevlar or stainless chain near the heads with rope in the middle; for practice, any soft braided rope. Length: arm span to twice arm span (2.5–4 m) is usual.</li>
+<li><b>Weights:</b> monkey's fist balls round steel cores, the forge's metal cage balls wrapped in Kevlar, or printed heads for practice.</li>
+<li><b>Joining:</b> each end of the rope in a figure-eight loop, a stainless swivel, then the head. Swivels stop the rope twisting as it wraps.</li>
+<li><b>Middle mark:</b> a Turk's head or a diamond knot at the centre so you can find the middle by feel.</li>
+<li><b>Balance:</b> both heads the same weight within 10 g.</li>
+</ol>
+
+<!-- ======================= PRETTY ======================= -->
+<h2 id="pretty">Pretty ways to wick</h2>
+<p>All of these use plain 25–50 mm Kevlar tape and are tied off with Kevlar thread or stainless wire. They burn the same; they just look and feel different.</p>
+
+<figure>
+<svg viewBox="0 0 640 150" role="img" aria-label="Four wick wraps on a tube: half-overlap spiral, barber pole, X-wrap and banded">
+<g fill="none" stroke-width="2">
+<rect x="10" y="40" width="130" height="34" rx="6" fill="#3a3442" stroke="#958fa6"/>
+</g>
+<g fill="#e8c46a" opacity=".85">
+<polygon points="18,40 40,40 30,74 8,74"/><polygon points="40,40 62,40 52,74 30,74"/><polygon points="62,40 84,40 74,74 52,74"/><polygon points="84,40 106,40 96,74 74,74"/><polygon points="106,40 128,40 118,74 96,74"/>
+</g>
+<g stroke="#17151d" stroke-width="1.5"><line x1="40" y1="40" x2="30" y2="74"/><line x1="62" y1="40" x2="52" y2="74"/><line x1="84" y1="40" x2="74" y2="74"/><line x1="106" y1="40" x2="96" y2="74"/></g>
+<text class="svt" x="10" y="100">Half-overlap spiral</text><text class="svm" x="10" y="118">the classic: even, tight</text>
+
+<rect x="170" y="40" width="130" height="34" rx="6" fill="#3a3442" stroke="#958fa6"/>
+<g opacity=".9"><polygon points="178,40 194,40 184,74 168,74" fill="#e8c46a"/><polygon points="200,40 216,40 206,74 190,74" fill="#c98f2a"/><polygon points="222,40 238,40 228,74 212,74" fill="#e8c46a"/><polygon points="244,40 260,40 250,74 234,74" fill="#c98f2a"/><polygon points="266,40 282,40 272,74 256,74" fill="#e8c46a"/></g>
+<text class="svt" x="170" y="100">Barber pole</text><text class="svm" x="170" y="118">two tapes side by side</text>
+
+<rect x="330" y="40" width="130" height="34" rx="6" fill="#3a3442" stroke="#958fa6"/>
+<g fill="#e8c46a" opacity=".8"><polygon points="335,40 355,40 395,74 375,74"/><polygon points="375,40 395,40 435,74 415,74"/><polygon points="415,40 435,40 455,57 455,74"/></g>
+<g fill="#c98f2a" opacity=".8"><polygon points="355,74 375,74 415,40 395,40"/><polygon points="395,74 415,74 455,40 435,40"/><polygon points="335,74 355,74 375,57 365,48"/></g>
+<text class="svt" x="330" y="100">X-wrap</text><text class="svm" x="330" y="118">wind up, then back down</text>
+
+<rect x="490" y="40" width="130" height="34" rx="6" fill="#3a3442" stroke="#958fa6"/>
+<rect x="500" y="40" width="110" height="34" fill="#e8c46a" opacity=".85"/>
+<g fill="#9aa6b8"><rect x="500" y="37" width="12" height="40" rx="3"/><rect x="549" y="37" width="12" height="40" rx="3"/><rect x="598" y="37" width="12" height="40" rx="3"/></g>
+<text class="svt" x="490" y="100">Banded</text><text class="svm" x="490" y="118">Turk's heads or cobra bars over it</text>
+</svg>
+<figcaption>Four wraps for a staff end, a sword blade or a tube guard.</figcaption>
+</figure>
+
+<div class="tbl"><table>
+<tr><th>Wrap</th><th>How</th><th>Best on</th></tr>
+<tr><td><b>Half-overlap spiral</b></td><td>Start with two flat turns locked by a constrictor, then wind at an angle so each turn covers half the last. Finish with two flat turns and a constrictor or wire.</td><td>Everything: the standard, the longest-burning.</td></tr>
+<tr><td><b>Barber pole</b></td><td>Two narrower tapes (25 mm) wound side by side as one. Use a darker, burnt-in tape for one for stripes.</td><td>Contact staff ends, tube swords.</td></tr>
+<tr><td><b>X-wrap</b></td><td>Wind a spiral up with gaps of a tape width, then back down the other way to cover them, making diamonds.</td><td>Long blades and guards: lighter, more even fuel.</td></tr>
+<tr><td><b>Banded</b></td><td>A plain spiral with Turk's heads or 5 cm cobra bars of 6 mm Kevlar rope over it every 10 cm. The bands lock the tape and look forged.</td><td>Swords, staff ends, show props.</td></tr>
+<tr><td><b>Edge-folded</b></td><td>Tape folded over a plate edge, stitched or bolted through every 70 mm.</td><td>Plate swords and axes: only the edges burn.</td></tr>
+<tr><td><b>Laced rope</b></td><td>Kevlar rope laced over and under through slots down a blade, like a corset.</td><td>Plate swords, CNC hubs (rope ring round the rim).</td></tr>
+<tr><td><b>Monkey's fist ends</b></td><td>A ball of Kevlar rope round a steel core on the end of a staff.</td><td>Contact staff, meteor, the pommel of a tube sword.</td></tr>
+</table></div>
+
+<!-- ======================= SWORD 101 ======================= -->
+<h2 id="sword101">Fire sword wicking 101</h2>
+<p>For the forge's plate swords (Fire Broadsword, Scimitar, Flame Blade, Leaf Blade) with <b>Kevlar wrapped the full blade</b>, and the tube swords (Longsword, Broadsword, Claymore, Arming).</p>
+<div class="card warn"><b class="t">Before you wrap</b><ul>
+<li>Grind or file the tip round and every edge blunt: a sharp edge cuts through the wrap over time.</li>
+<li>Kevlar only, straight onto the metal: no cotton under it, no glue. Cotton chars and glue lets go, and the wick then comes off mid-burn.</li>
+</ul></div>
+<div class="card need"><b class="t">You need</b><ul>
+<li>50 mm Kevlar tape: the forge gives the length (about 2–4 m a sword).</li>
+<li>Two M5 stainless bolts and all-metal lock nuts (plate swords), stainless lock wire, Kevlar thread.</li>
+<li>Pliers, a wire twister or pliers, sharp scissors.</li>
+</ul></div>
+<ol class="steps">
+<li><b>Start at the guard:</b> fold the tape end square, lay it on the blade just above the guard and bolt it under the lower M5 bolt (plate) or bind it with a double constrictor of Kevlar thread plus two turns of wire (tube).</li>
+<li><b>Two flat turns</b> over the start to lock it.</li>
+<li><b>Spiral up:</b> wind at an angle so each turn covers half the one before. Keep it tight; on a plate blade, pull it hard round the edges so it beds in.</li>
+<li><b>Stitch it (plate swords):</b> every 80 mm the blade has a small hole: pass stainless wire through the tape and the hole and twist it off on the flat. This stops the wrap sliding when it hits the floor.</li>
+<li><b>Or spiral-wire it (any sword):</b> knot stainless wire through the hole by the guard, spiral it up over the wrap a hand's width per turn to the hole by the tip, and knot it there. For the toughest wick, spiral a second wire back down the other way so the two cross in diamonds.</li>
+<li><b>Over the tip:</b> fold the tape over the tip and back down a little, then take two flat turns.</li>
+<li><b>Finish:</b> bolt the end under the top M5 bolt (plate) or bind it with a double constrictor and wire (tube). Tuck every sharp wire end flat.</li>
+<li><b>Guards (tube swords):</b> the same on each arm: start 15 mm out from the block, spiral out over the end cap and back, bind off.</li>
+<li><b>Pommel ball:</b> stack the steel discs on the M8 stud, check the balance on a finger, then wind tape round the core in every direction (like winding a ball of wool) and stitch the outside with Kevlar thread, or tie a monkey's fist of 10 mm Kevlar rope round it.</li>
+</ol>
+
+<!-- ======================= HUB 101 ======================= -->
+<h2 id="hub101">Metal dragon staff hub wicking 101</h2>
+<p>For the forge's CNC-cut metal hubs (fire ends on tabs, or a Kevlar rope ring) and the machined spoke hubs.</p>
+<details open>
+<summary>Tab wicks <small>tape round a tab, bolted through</small></summary>
+<ol class="steps">
+<li>Cut the tape to the length the forge gives (about 380–450 mm a wick for 50 mm tape).</li>
+<li>Fold the end over 20 mm, lay it on the tab and start winding round the tab, the folded end under the first turn.</li>
+<li>Wind it tight, every turn exactly on the last, until the wick is the size you want (about Ø40 mm).</li>
+<li>Drill or punch through the wick at the tab's two bolt holes, push M5 stainless bolts through with big washers both sides, fit all-metal lock nuts and tighten.</li>
+<li>Bind each wick's outer edge with two turns of wire, twisted and tucked.</li>
+</ol>
+</details>
+<details>
+<summary>Kevlar rope ring <small>rope laced round the rim</small></summary>
+<ol class="steps">
+<li>Whip both ends of 10 mm Kevlar rope.</li>
+<li>Lace it over and under round the rim through the rope holes, pulling each pass tight.</li>
+<li>Join the ends with a double fisherman's, or wire each end to its tie hole.</li>
+</ol>
+</details>
+<details>
+<summary>Spoke wicks <small>machined spoke hubs</small></summary>
+<p>Wrap tape on each spoke end as in the <a href="wicking-guide.html#tape">wicking guide, method A</a>, or tie a monkey's fist or crown sinnet head on each spoke. Every wick the same size and weight, or the hub wobbles.</p>
+</details>
+
+<!-- ======================= CHECK ======================= -->
+<h2 id="check">Check before every burn</h2>
+<ul>
+<li>Every bolt and lock nut tight, every wire end tucked.</li>
+<li>No loose tape, no frayed rope, no knots slipping.</li>
+<li>Wicks dry of excess fuel: spin off well away from the flame.</li>
+<li>Swivels turn freely; chain and links have no open gaps.</li>
+<li>Fire blanket and safety person ready.</li>
+</ul>
+<p class="muted">Knot steps here are a reminder, not a substitute for practice. Tie every knot in practice cord first, and have an experienced fire spinner check your prop before it is lit. More: the full <a href="wicking-guide.html">wicking guide</a>.</p>
+
+</main>
+</body>
+</html>

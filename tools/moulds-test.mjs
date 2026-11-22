@@ -4,7 +4,7 @@ import { DESIGNS, defaults, buildHub, MATERIALS } from '../hub.js'
 const w = await Module(); w.setup()
 const only = process.argv[2]
 for (const d of DESIGNS.filter((d) => d.mould && (!only || d.id === only))) {
-  for (const method of d.params.find((x) => x.key === 'method').options) for (const attach of d.kind === 'dart' ? ['cast-in M8 nut (screw in a swivel)', 'moulded eye'] : [null]) {
+  for (const method of d.params.find((x) => x.key === 'method').options) for (const attach of d.kind === 'dart' ? ['cast-in M8 nut (screw in a swivel)', 'rope cast in (knotted end set in the rubber)', 'moulded eye'] : [null]) {
     const t = performance.now(), p = { ...defaults(d), method, ...(attach ? { attach } : {}) }
     const h = buildHub(w, d, p, { material: MATERIALS.petg })
     const m = h.mould

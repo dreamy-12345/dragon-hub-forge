@@ -69,6 +69,15 @@ header .grow { flex: 1; }
 .cutPanel tbody tr { cursor: pointer; }
 .cutPanel tbody tr:hover td { background: color-mix(in srgb, var(--ember) 10%, transparent); }
 @media (max-width: 700px) { .cutPanel { position: static; width: auto; max-height: 40vh; margin: 8px; } }
+.notice { max-width: 560px; background: var(--panel); color: var(--fg, #eee); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.notice::backdrop { background: rgba(0,0,0,.55); }
+.notice h2 { margin: 0 0 8px; font-size: 18px; }
+.notice p { margin: 0 0 10px; line-height: 1.5; }
+.notice .disclaimer { border: 1px solid color-mix(in srgb, #ff6070 60%, var(--line)); background: color-mix(in srgb, #ff6070 10%, transparent); border-radius: 10px; padding: 10px 12px; margin: 10px 0 14px; line-height: 1.5; font-size: 14px; }
+.notice form { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.notice a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+.liability { position: fixed; left: 50%; transform: translateX(-50%); bottom: 4px; z-index: 4; font-size: 11px; color: var(--muted); background: color-mix(in srgb, var(--bg, #111) 80%, transparent); padding: 2px 10px; border-radius: 99px; cursor: pointer; }
+@media (max-width: 700px) { .liability { position: static; transform: none; display: block; text-align: center; margin: 6px; } }
 .blurb { position: absolute; left: 14px; bottom: 14px; right: 14px; max-width: 60ch; color: var(--muted); font-size: 13px; pointer-events: none; }
 .blurb b { color: var(--fg); font: 700 15px var(--display); display: block; margin-bottom: 2px; }
 .busy { position: absolute; right: 14px; top: 14px; font: 12px var(--mono); color: var(--ember); }
@@ -303,10 +312,25 @@ kbd { font: 13px var(--mono); border: 1px solid var(--line); border-radius: 5px;
     <h1>Dragon Hub <span>Forge</span></h1>
     <div class="sub">Printable hubs for 22, 16 and 13 mm dragon staffs</div>
     <div class="grow"></div>
+    <button class="btn" id="bigJobBtn" title="Our plans for the fire dome">🔥 Big job mate</button>
+    <button class="btn" id="knotsBtn" title="Knots and wicking 101: contact poi, meteor hammers, pretty wicks, fire swords and metal hubs">🪢 Knots</button>
     <button class="btn createBtn" id="createBtn" aria-pressed="false">✏️ Create your own</button>
     <button class="btn primary" id="headerSave">Save design</button>
     <div class="status" id="status">loading geometry engine…</div>
   </header>
+  <dialog id="noticeDlg" class="notice">
+    <h2>🔥 Fire spinning comes with risks</h2>
+    <p>Fire spinning and flow arts come with real risks: burns, fire, injury, and damage to people and property. By making, using or performing with any prop designed here, you take part entirely <b>at your own risk</b>.</p>
+    <p>These are designs and guidance, not tested or certified products. We take <b>no liability</b> for these props, for how they are made, or for how they are used. Check every prop before every burn, train with experienced spinners, and always have a safety person and fire blanket ready.</p>
+    <p>Thank you for understanding, and spin safe. 🙏</p>
+    <form method="dialog"><button class="btn primary" value="ok">I understand</button></form>
+  </dialog>
+  <dialog id="bigJobDlg" class="notice">
+    <h2>🔥 Big job mate: the fire dome</h2>
+    <p>All our plans for the fire dome: the fire ceiling, the burner and gas, the stencils, the mat holder, the hand-outs.</p>
+    <div class="disclaimer"><b>Disclaimer.</b> These plans are a work in progress. They have <b>not all been tested</b>: much of it is worked out in theory only. Gas, fire and heavy steel overhead are dangerous. Anyone using these plans does so entirely at their own risk, and we take <b>zero liability</b> for anything built or done from them. Get every gas and structural part checked by a qualified person before use.</div>
+    <form method="dialog" class="row2"><button class="btn" value="no">Back</button><a class="btn primary" id="bigJobGo" href="https://dream.sc/fire-dome-6a73aeddec51/home.html" target="_blank" rel="noopener">I understand: open the plans ↗</a></form>
+  </dialog>
 
   <nav class="gallery" id="gallery" aria-label="Designs"><h2>Designs</h2></nav>
 
@@ -382,6 +406,8 @@ kbd { font: 13px var(--mono); border: 1px solid var(--line); border-radius: 5px;
       <button class="chip" id="vWeak" aria-pressed="true">Weak spots</button>
       <button class="chip" id="vPole" aria-pressed="true">Staff</button>
       <button class="chip" id="vBed" aria-pressed="true">Print bed</button>
+      <button class="chip" id="vCut" aria-pressed="false" title="Cut the design in half through the middle to see inside: sockets, chambers, coins, cores">Cross section</button>
+      <button class="chip" id="vAnim" aria-pressed="false" hidden title="Watch the parts come apart and go back together, to see how it works">How it works ▶</button>
       <button class="chip" id="vRef" aria-pressed="false" title="Show something you know next to the design, for scale: a person or a lighter. Tap again to change, and again to hide.">Size: off</button>
     </div>
     <aside class="cutPanel" id="cutPanel" hidden></aside>
@@ -491,5 +517,6 @@ kbd { font: 13px var(--mono); border: 1px solid var(--line); border-radius: 5px;
   </aside>
 </div>
 <script type="module" src="./app.js"></script>
+<div class="liability" id="liabilityLine" role="button" tabindex="0">Fire spinning comes with risks: you take part at your own risk, and we take no liability for these props. Thank you for understanding.</div>
 </body>
 </html>

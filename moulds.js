@@ -138,21 +138,31 @@ export function buildMould(wasm, p, opts = {}) {
       else warns.push('The wall at the pole is thin: tilt the mould a little as you pour so air leaves the rim.')
     } else {
       // rope dart or poi head from the dart builder, eye up, tip down
-      const nutWay = (p.attach || '').startsWith('cast-in')
-      const d = buildDart(wasm, { ...p, attach: nutWay ? 'swivel socket (M8)' : 'eye' }, { style, cnc: true })
+      const nutWay = (p.attach || '').startsWith('cast-in M8')
+      const ropeWay = (p.attach || '').startsWith('rope cast in')
+      const d = buildDart(wasm, { ...p, attach: nutWay || ropeWay ? 'swivel socket (M8)' : 'eye' }, { style, cnc: true })
       const { positions, indices } = d.meshes.combined
       master = k(k(new Manifold(new Mesh({ numProp: 3, vertProperties: positions, triVerts: indices }))).translate([0, 0, d.dart.H / 2]))
       top = master.boundingBox().max[2]
       R = d.dart.R
-      if (nutWay) master = k(master.add(cyl(3.6, top - 19, top))) // fill the tapped hole: the nut makes the thread
+      if (nutWay || ropeWay) master = k(master.add(cyl(3.6, top - 19, top))) // fill the tapped hole: the nut (or the rope) does the job
       // where it is widest: the pour goes in there, clear of the eye or the nut
       let zMax = 0, rMax = 0
       for (let i = 1; i < 40; i++) { const z = (top * i) / 40, r = sliceR(master, z); if (r > rMax) (rMax = r), (zMax = z) }
       sprR = Math.max(2.5, Math.min(3.5, rMax * 0.2)); sprX = Math.max(nutWay ? 4.2 + sprR + 2 : 0, rMax * 0.6); sprZ = zMax
       if (sprX + sprR > rMax - 1) sprX = rMax - sprR - 1
       vents.push([-sprX, zMax])
-      if (!nutWay) vents.push([0, top - 1.5]) // the top of the eye boss traps air
-      if (nutWay) {
+      if (!nutWay && !ropeWay) vents.push([0, top - 1.5]) // the top of the eye boss traps air
+      if (ropeWay) {
+        // the rope itself cast in: a stopper knot on its end sits in the middle of the head, the rope leaves through a channel in the top
+        const kr = Math.min(R * 0.55, p.ropeD * 1.6)
+        const zk = Math.max(kr + 4, top * 0.45)
+        channels.push(cyl(p.ropeD / 2 + 0.4, zk, top + W + 1, 0, 24))
+        hw.push(cyl(p.ropeD / 2, zk, top + W + 40, 0, 24), k(k(Manifold.sphere(kr, 24)).translate([0, 0, zk])))
+        nut = null
+        if (kr * 2 > 2 * R - 6) warns.push('The knot is nearly as wide as the head: use thinner rope or a bigger head.')
+        if (!(p.rubber || '').includes('50A') && !(p.rubber || '').startsWith('urethane')) warns.push('The rope takes the whole pull: cast it in 50A silicone or urethane rubber.')
+      } else if (nutWay) {
         // a hex nut and a big washer cast in, screwed onto a plain M8 bolt that holds them from the top of the mould
         let washer = 12, zn = null
         for (const wr of [12, 8]) {
@@ -379,7 +389,7 @@ export function mouldDesigns() {
   ]
   const dartP = (over = {}, round = false) => [
     ...pick(DART_PARAMS, round ? ['maxD', 'ropeD'] : ['length', 'maxD', 'ropeD'], over).map((q) => q.key === 'ropeD' ? { ...q, label: 'Rope or leash cord' } : q),
-    { key: 'attach', label: 'Rope or leash fixes to', options: ['cast-in M8 nut (screw in a swivel)', 'moulded eye'], value: over.attach || 'cast-in M8 nut (screw in a swivel)', hint: 'Cast-in nut: an M8 nut and a big washer are set in the rubber, then you screw in a stainless swivel eye bolt. Strongest. Moulded eye: a hole through the rubber head; cast it in 50A silicone or urethane rubber so it does not tear.' },
+    { key: 'attach', label: 'Rope or leash fixes to', options: ['cast-in M8 nut (screw in a swivel)', 'rope cast in (knotted end set in the rubber)', 'moulded eye'], value: over.attach || 'cast-in M8 nut (screw in a swivel)', hint: 'Cast-in nut: an M8 nut and a big washer are set in the rubber, then you screw in a stainless swivel eye bolt. Strongest. Rope cast in: tie a fat stopper knot (a double overhand, a figure-eight, or a small monkey\'s fist) in the rope end, hang it in the mould through the channel in the top, and pour: the rope comes out of the head with nothing to unscrew. Moulded eye: a hole through the rubber head; cast it in 50A silicone or urethane rubber so it does not tear.' },
     ...MOULD_PARAMS.map((x) => ({ ...x })),
   ]
   const acroP = (over = {}) => {
