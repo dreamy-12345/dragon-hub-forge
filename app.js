@@ -26,7 +26,7 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', TinyJuggle: 'Tiny juggling clubs', BubbleGiant: 'Giant bubbles', BubbleCircus: 'Circus bubble wands', BubbleOther: 'More bubble makers', TinyHubs: 'Tiny dragon staff hubs', TinyDarts: 'Tiny rope darts', TinyPoi: 'Tiny poi', TinyContact: 'Tiny contact ends', TinyAcro: 'Tiny acro ends', TinyAxes: 'Tiny axes', TinyBubbles: 'Tiny bubble toys', CageStaff: 'Ringed fire staff ends', BubbleHubs: 'Bubble spinners', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', Connectors: 'Connectors and mounts', TinyJuggle: 'Tiny juggling clubs', BubbleGiant: 'Giant bubbles', BubbleCircus: 'Circus bubble wands', BubbleOther: 'More bubble makers', TinyHubs: 'Tiny dragon staff hubs', TinyDarts: 'Tiny rope darts', TinyPoi: 'Tiny poi', TinyContact: 'Tiny contact ends', TinyAcro: 'Tiny acro ends', TinyAxes: 'Tiny axes', TinyBubbles: 'Tiny bubble toys', CageStaff: 'Ringed fire staff ends', BubbleHubs: 'Bubble spinners', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
@@ -1127,7 +1127,7 @@ const SECTION_OF = {
   DartClassic: 'rope', DartModern: 'rope', DartRound: 'rope', DartPattern: 'rope', DartNature: 'rope',
   Poi: 'poi', BubblePoi: 'poi', Hoops: 'hoops', HoopJoints: 'collapse', MouldContact: 'moulds', MouldDart: 'moulds', MouldPoi: 'moulds',
   SparkDragon: 'sparks', SparkRope: 'sparks', SparkStaff: 'sparks',
-  Adaptors: 'fittings', Sleeves: 'fittings', Dowels: 'fittings', Grips: 'fittings', Collapsible: 'fittings',
+  Adaptors: 'fittings', Connectors: 'fittings', Sleeves: 'fittings', Dowels: 'fittings', Grips: 'fittings', Collapsible: 'fittings',
 }
 for (const d of DESIGNS) if (!d.custom && d.group !== 'Creations' && !SECTION_OF[d.group]) SECTION_OF[d.group] = 'hubs'
 // first time with folders: hub styles start folded, except the one you are on, so the list is short
@@ -1514,6 +1514,7 @@ function show(hub, d, p, t0) {
   applyLook()
   renderGuide()
   renderVerdict(hub, p)
+  if (hub.connectorOnly) $('verdict').insertAdjacentHTML('afterbegin', `<div class="warnline">Showing just the connector from the ${hub.connectorOnly}: the notes below are for the whole ${hub.connectorOnly}.</div>`)
   if (hub.scale && hub.scale !== 1 && !hub.club) $('verdict').insertAdjacentHTML('afterbegin', `<div class="warnline">Scaled to ${Math.round(hub.scale * 100)}%: the weight and the files are at this size; sizes written below are full size, so multiply them by ${hub.scale}.${hub.scale < 0.5 ? ' Screws and nuts this small: use push-fits and a drop of glue instead.' : ''}</div>`)
   renderExports()
   if (hub.finishNote) $('exportNote').insertAdjacentHTML('beforeend', `<div class="hint">✨ ${hub.finishNote}</div>`)
@@ -2147,6 +2148,12 @@ function exportButtons(list) {
 }
 
 function renderCutExports(d) {
+  if (d.connectorOnly) {
+    const m = current?.design === d ? current.hub.meshes : null, key = d.connectorKey
+    exportButtons([[`${d.name} STL`, 'primary', () => download(toSTL(m[key], d.name), `${d.id}.stl`), !m?.[key]]])
+    $('exportNote').innerHTML = `Send the STL to a machine shop (aluminium or stainless), or print it in PETG or nylon at 100% infill for practice. It is the same part as in the ${d.connectorOf}: open that design to see it with everything it holds.`
+    return
+  }
   const hub0 = current && current.design === d ? current.hub : null
   const hub = hub0 && (hub0.cnc || hub0.spoke || hub0.cage || hub0.dart || hub0.sword) ? hub0 : null // a print build still on screen does not count
   const ready = !!hub

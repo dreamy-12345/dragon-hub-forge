@@ -16,12 +16,12 @@ import { applyLights } from './lights.js'
 const ready = Module(self.__MANIFOLD_OPTS || {}).then((w) => (w.setup(), w))
 const design = (id) => DESIGNS.find((d) => d.id === id)
 
-function buffers(obj, out = []) {
+function buffers(obj, out = new Set()) {
   if (obj && typeof obj === 'object') {
-    if (ArrayBuffer.isView(obj)) out.push(obj.buffer)
+    if (ArrayBuffer.isView(obj)) out.add(obj.buffer) // a set: the same mesh can be in a result twice
     else for (const v of Object.values(obj)) buffers(v, out)
   }
-  return out
+  return [...out]
 }
 
 self.onmessage = async ({ data }) => {
@@ -75,6 +75,17 @@ self.onmessage = async ({ data }) => {
         : buildPlate(wasm, buildHub(wasm, d, { ...data.params, ring: 'off', snap: 'off' }), data.params, c)
     } else if (op === 'fit') result = buildFitTest(wasm, data.params)
     else if (op === 'captest') result = buildCapsuleTest(wasm, data.params)
+    // a connector on its own: keep just that part of the big design
+    const dd = design(data.design)
+    if (dd?.connectorOnly && result?.meshes?.[dd.connectorKey]) {
+      const part = result.meshes[dd.connectorKey]
+      result.meshes = { combined: part, [dd.connectorKey]: part }
+      result.anim = []
+      let r = 0
+      for (let i = 0; i < part.positions.length; i += 3) r = Math.max(r, Math.hypot(part.positions[i], part.positions[i + 1], part.positions[i + 2]))
+      result.viewR = Math.max(40, r * 1.3)
+      result.connectorOnly = dd.connectorOf
+    }
     // Scale (tiny props, or bigger): everything shrinks or grows together before the finish, lights and infill go on
     if (op === 'build' && data.scale && data.scale !== 1 && result) {
       const s = data.scale

@@ -3333,6 +3333,17 @@ DESIGNS.push(...fistDesigns(), ...hiltDesigns(), ...cageDesigns())
 DESIGNS.push(...nzDesigns(), ...canDesigns(), ...shroomDesigns())
 // tiny props (tiny copies of the designs above, at a small scale) and tiny juggling clubs: keep this last
 DESIGNS.push(...bubbleToyDesigns())
+// the connectors and mounts inside the big designs, on their own under Pole fittings (built with the same settings)
+for (const [src, name, blurb, key] of [
+  ['taxeBearded', 'Tube Axe Pole Connector', 'The block that holds a tube fire axe head on the pole, on its own: pole socket below, the head tubes into its side sockets. Machine it in aluminium, or print it for practice. Every size from the full axe is here.'],
+  ['taxeDouble', 'Double Axe Pole Connector', 'The connector for a double-headed tube axe: the pole below, a head tube each side.'],
+  ['tmaceFire', 'Mace Pole Connector', 'The block that holds a fire mace head on the pole.'],
+  ['paxeBearded', 'Axe Plate Mounting Block', 'The internal mounting block that clamps a solid metal axe plate to the pole: the plate slots into it and bolts through.'],
+  ['cageStaff', 'Internal Pole Mount (M8 stud)', 'A turned stainless plug that goes inside a hollow pole, cross-bolted through it, with a lip over the end and a neck: bolt anything with an M8 stud to its top. The mount from the Ringed Staff End.', 'cageMount'],
+]) {
+  const d = DESIGNS.find((x) => x.id === src)
+  if (d) DESIGNS.push({ ...d, id: `fit_${src}`, name, blurb, group: 'Connectors', alsoIn: ['fittings'], connectorOnly: true, connectorKey: key || 'connFlat', connectorOf: d.name, added: '2026-11-23' })
+}
 DESIGNS.push(...tinyDesigns(DESIGNS))
 
 const polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)]
