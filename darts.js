@@ -15,8 +15,15 @@ import { coneScales, CONE_SHAPES, CONE_PARAMS } from './pinecone.js'
 export const DART_PARAMS = [
   { key: 'length', label: 'Length', unit: 'mm', min: 60, max: 180, step: 1, value: 110, hint: 'Tip to the top of the eye.' },
   { key: 'maxD', label: 'Widest', unit: 'mm', min: 20, max: 70, step: 0.5, value: 34 },
-  { key: 'attach', label: 'Rope attaches by', options: ['eye', 'swivel socket (M8)'], value: 'eye', hint: 'Eye: tie the rope through the hole (figure-eight loop). Swivel socket: a threaded M8 socket at the top for a stainless swivel eye bolt, so the rope never twists; lock the thread with a drop of thread-locker (metal) or the printed nut trap (print).' },
+  { key: 'attach', label: 'Attach by', options: ['eye', 'two holes: big for the rope, small for a swivel', 'rope through the middle, knot at the tip', 'swivel socket (M8)'], value: 'eye', rerender: true, hint: 'Eye: one hole for the rope, a swivel or a ring. Two holes: like a rescue 8, a big hole for the rope and a small one above it for a swivel. Rope through the middle: the rope threads down the whole head and a stopper knot sits in a recess at the tip. Swivel socket: an M8 thread (or nut trap) at the top for a stainless swivel eye bolt.' },
+  { key: 'hole2D', label: 'Small hole (swivel)', unit: 'mm', min: 3, max: 8, step: 0.5, value: 4.5, showIf: (p) => (p.attach || '').startsWith('two') },
   { key: 'capsule', label: 'LED capsule inside', options: ['none', 'yes: a capsule slides in from the tip'], value: 'none', showIf: () => false, rerender: true, hint: 'A pocket for an LED capsule (Flowtoys Capsule 2.C or 2.0, or any you measure) from the tip, closed by a printed plug. Print it in clear or natural TPU so the whole head glows. The forge warns if the shape is too slim.' },
+  { key: 'holeD', label: 'Eye hole', unit: 'mm', min: 3, max: 14, step: 0.5, value: 8, presets: [4, 5, 6, 8], hint: 'The hole the rope, a swivel or a ring goes through. A swivel or split ring wants a small hole (4 to 6 mm); a rope tied straight through wants a millimetre more than the rope.' },
+  { key: 'eyeTurn', label: 'Eye faces', unit: '°', min: 0, max: 90, step: 5, value: 0, hint: 'Turns the hole round the dart: 0 is side to side, 90 front to back.' },
+  { key: 'eyeLift', label: 'Eye stands off', unit: 'mm', min: 0, max: 15, step: 0.5, value: 0, hint: 'Lifts the eye further off the body, so a swivel or ring moves freely.' },
+  { key: 'ring', label: 'Ring for the swivel', options: ['none', 'stainless split ring', 'stainless welded O-ring'], value: 'none', hint: 'A metal ring through the eye for the swivel to clip on: stronger than anything printed. The forge sizes it to buy.' },
+  { key: 'weightG', label: 'Added weight', unit: 'g', min: 0, max: 250, step: 5, value: 0, hint: 'Steel shot in a sealed chamber: pause the print at the height the forge gives, pour it in, carry on.' },
+  { key: 'weightPos', label: 'Weight sits at', unit: '% from tip', min: 5, max: 95, step: 1, value: 35, hint: 'Near the tip: it flies point first and strikes hard. Near the eye: it swings and wraps more gently.' },
   { key: 'ropeD', label: 'Rope', unit: 'mm', min: 3, max: 14, step: 0.5, value: 7, presets: [6, 8, 10], hint: 'The eye fits this rope with a millimetre to spare.' },
 ]
 
@@ -141,9 +148,12 @@ export function buildDart(wasm, p, opts = {}) {
   try {
     const style = opts.style || 'classic'
     const R = p.maxD / 2
-    const eyeR = p.ropeD / 2 + 0.5 // the hole
-    const bossR = Math.max(eyeR + 4, p.ropeD * 1.1)
-    const bossH = 2 * eyeR + 8
+    const eyeR = (p.holeD ?? p.ropeD + 1) / 2 // the hole
+    const lift = p.eyeLift || 0, turn = p.eyeTurn || 0
+    const bossR = Math.max(eyeR + 4, 2 * eyeR * 1.05)
+    const att = p.attach || 'eye', two = att.startsWith('two'), thru = att.startsWith('rope through')
+    const r2 = (p.hole2D || 4.5) / 2
+    const bossH = 2 * eyeR + 8 + lift + (two ? 2 * r2 + 3.5 : 0)
     let L = p.length - bossH + 2 // the body below the eye (round ones reset it from their size)
     const warns = []
     let body, prof = null, Lr = 0
@@ -414,11 +424,28 @@ export function buildDart(wasm, p, opts = {}) {
     const top = k(k(Manifold.sphere(bossR * 0.92, 48)).translate([0, 0, L - 2 + bossH - bossR * 0.92 * 0.5]))
     let m = k(Manifold.union([body, boss]))
     m = k(m.add(k(top.intersect(k(k(Manifold.cylinder(bossR * 2, bossR * 2, bossR * 2, 16)).translate([0, 0, L - 2]))))))
-    const eyeZ = L - 2 + bossH / 2 + 1
-    const hole = k(k(k(Manifold.cylinder(4 * bossR, eyeR, eyeR, 32)).rotate([90, 0, 0])).translate([0, 2 * bossR, eyeZ]))
-    const flare = k(k(k(Manifold.cylinder(2.2, eyeR + 1.4, eyeR, 32)).rotate([90, 0, 0])).translate([0, bossR + 0.6, eyeZ]))
-    const flare2 = k(k(k(Manifold.cylinder(2.2, eyeR, eyeR + 1.4, 32)).rotate([90, 0, 0])).translate([0, -bossR + 1.6, eyeZ]))
-    if ((p.attach || 'eye').startsWith('swivel')) {
+    const eyeZ = L - 2 + eyeR + 5 + lift // near the top of the boss, however far it stands off
+    const turnZ = (m) => (turn ? k(m.rotate([0, 0, turn])) : m)
+    const hole = turnZ(k(k(k(Manifold.cylinder(4 * bossR, eyeR, eyeR, 32)).rotate([90, 0, 0])).translate([0, 2 * bossR, eyeZ])))
+    const flare = turnZ(k(k(k(Manifold.cylinder(2.2, eyeR + 1.4, eyeR, 32)).rotate([90, 0, 0])).translate([0, bossR + 0.6, eyeZ])))
+    const flare2 = turnZ(k(k(k(Manifold.cylinder(2.2, eyeR, eyeR + 1.4, 32)).rotate([90, 0, 0])).translate([0, -bossR + 1.6, eyeZ])))
+    if (two) {
+      // a rescue-8 eye: the small swivel hole above the big rope hole
+      const z2 = eyeZ + eyeR + 2.5 + r2
+      const h2 = turnZ(k(k(k(Manifold.cylinder(4 * bossR, r2, r2, 24)).rotate([90, 0, 0])).translate([0, 2 * bossR, z2])))
+      const f2a = turnZ(k(k(k(Manifold.cylinder(1.6, r2 + 1, r2, 24)).rotate([90, 0, 0])).translate([0, bossR + 0.6, z2])))
+      const f2b = turnZ(k(k(k(Manifold.cylinder(1.6, r2, r2 + 1, 24)).rotate([90, 0, 0])).translate([0, -bossR + 1, z2])))
+      m = k(m.subtract(k(Manifold.union([hole, flare, flare2, h2, f2a, f2b]))))
+    } else if (thru) {
+      // the rope runs down the middle; its stopper knot sits in a recess at the tip
+      const rr = p.ropeD / 2 + 0.6
+      m = k(m.subtract(k(Manifold.union([
+        k(k(Manifold.cylinder(L + bossH + 10, rr, rr, 32)).translate([0, 0, -2])),
+        k(k(Manifold.cylinder(p.ropeD * 2, p.ropeD * 1.3, p.ropeD * 1.3, 32)).translate([0, 0, -0.01])),
+        k(k(Manifold.cylinder(2, rr, rr + 1.5, 32)).translate([0, 0, L - 2 + bossH - 1.5])),
+      ]))))
+      if (2 * p.ropeD * 1.3 + 4 > 2 * R) warns.push('The knot recess is nearly as wide as the tip: use thinner rope or a fatter dart.')
+    } else if ((p.attach || 'eye').startsWith('swivel')) {
       // no eye: a flat top with an M8 socket (tapped in metal; a hex nut trap in a print)
       m = k(m.subtract(k(k(Manifold.cube([4 * bossR, 4 * bossR, bossH + 4], true)).translate([0, 0, L - 2 + bossH / 2 + 4.5]))))
       const topZ = L + 2.5
@@ -428,7 +455,8 @@ export function buildDart(wasm, p, opts = {}) {
     m = k(m.trimByPlane([0, 0, 1], 0))
 
     let plug = null
-    if (style === 'glow' || (p.capsule || '').startsWith('yes')) {
+    if ((style === 'glow' || (p.capsule || '').startsWith('yes')) && (p.attach || '').startsWith('rope through')) warns.push('The rope runs down the middle, where the capsule would go: pick one.')
+    else if (style === 'glow' || (p.capsule || '').startsWith('yes')) {
       // an LED capsule slides in from the tip; a TPU plug closes it
       const cd = (p.capD || 21) + 0.6, cl = (p.capL || 88) + 1
       if (cd / 2 + 1.6 > R) warns.push(`A Ø${p.capD || 21} capsule needs the dart at least ${Math.ceil(cd + 3.2)} mm wide.`)
@@ -439,13 +467,57 @@ export function buildDart(wasm, p, opts = {}) {
       plug = k(k(Manifold.cylinder(4, cd / 2 - 1.1, cd / 2 - 1.1, 48)).add(k(k(Manifold.cylinder(1.2, cd / 2 - 0.4, cd / 2 - 0.4, 48)).translate([0, 0, 4]))))
     }
 
+    // added weight: steel shot in a sealed chamber on the axis, where you put it
     const density = opts.density || 1.21
+    const sliceR2 = (z) => Math.sqrt(Math.max(0, k(m.slice(z)).area()) / Math.PI)
+    let weight = null
+    if ((p.weightG || 0) > 0 && !opts.cnc && thru) warns.push('The rope runs down the middle, where the weight would go: pick one.')
+    else if ((p.weightG || 0) > 0 && !opts.cnc) {
+      if (plug) warns.push('The capsule fills the middle: there is no room for an added weight as well. Pick one.')
+      else {
+        const SHOT = 4.6 // g/cm³, steel shot packed
+        const vol0 = ((p.weightG / SHOT) * 1000) / 0.97
+        const zc = (L * (p.weightPos ?? 35)) / 100
+        const rc = Math.max(3, Math.min(sliceR2(zc) - 3.2, R - 3.2))
+        let lc = vol0 / (Math.PI * rc * rc)
+        let z0 = Math.max(3, zc - lc / 2), z1 = z0 + lc
+        if (z1 > L - 3) { z1 = L - 3; z0 = Math.max(3, z1 - lc) }
+        if (z1 - z0 < lc - 0.5) warns.push(`${p.weightG} g of shot does not fit: there is room for about ${Math.round(((z1 - z0) * Math.PI * rc * rc * 0.97 * SHOT) / 1000)} g. Make the dart bigger or lighten it.`)
+        for (const z of [z0 + 1, (z0 + z1) / 2, z1 - 1]) if (sliceR2(z) < rc + 2) { warns.push('The weight chamber comes close to the outside there: move it towards the thickest part, or lighten it.'); break }
+        m = k(m.subtract(k(k(Manifold.cylinder(z1 - z0, rc, rc, 48)).translate([0, 0, z0]))))
+        const gw = (((z1 - z0) * Math.PI * rc * rc * 0.97) / 1000) * SHOT
+        weight = { g: Math.min(p.weightG, gw), z0, z1, rc, zc: (z0 + z1) / 2 }
+      }
+    }
+    // drop loose slivers a cut can leave (a scale tip, a hairline of a facet)
+    {
+      const ps = m.decompose()
+      if (ps.length > 1) { for (const q of ps) live.push(q); const big = Math.max(...ps.map((q) => q.volume())); m = k(Manifold.compose(ps.filter((q) => q.volume() > big * 0.01))) }
+    }
     const g = (m.volume() / 1000) * density
     const vol = m.volume()
     const H = m.boundingBox().max[2]
+    // the balance point, from the tip, with the weight in
+    const cz = (() => { const mesh = m.getMesh(), P = mesh.vertProperties, I = mesh.triVerts, np = mesh.numProp; let V = 0, Z = 0; for (let t = 0; t < I.length; t += 3) { const a = I[t] * np, b = I[t + 1] * np, c = I[t + 2] * np; const v = (P[a] * (P[b + 1] * P[c + 2] - P[b + 2] * P[c + 1]) - P[a + 1] * (P[b] * P[c + 2] - P[b + 2] * P[c]) + P[a + 2] * (P[b] * P[c + 1] - P[b + 1] * P[c])) / 6; V += v; Z += (v * (P[a + 2] + P[b + 2] + P[c + 2])) / 4 } return V ? Z / V : H / 2 })()
+    const gAll = g + (weight?.g || 0)
+    const balance = weight ? (g * cz + weight.g * weight.zc) / gAll : cz
+    if (weight) weight.pauseAt = Math.floor((H - weight.z0 - 0.3) / 0.2) * 0.2 // printed eye-down: the chamber's roof closes here
+    // the ring for the swivel: shown through the eye, sized to buy
+    let ring = null
+    if ((p.ring || 'none') !== 'none' && !(p.attach || 'eye').startsWith('swivel') && !thru) {
+      const rz = two ? eyeZ + eyeR + 2.5 + r2 : eyeZ, rh = two ? r2 : eyeR
+      const wire = Math.max(1.2, Math.min(3, 2 * rh - 1))
+      const need = 2 * bossR * 0.92 + 2 // it loops round the top of the boss
+      const id = [12, 15, 18, 20, 22, 25, 28, 30, 35].find((x) => x >= need) || Math.ceil(need)
+      const rM = id / 2 + wire / 2
+      ring = { id, wire, kind: p.ring.includes('split') ? 'split ring' : 'welded O-ring' }
+      ring.mesh = k(k(k(k(k(CrossSection.circle(wire / 2, 16)).translate([rM, 0])).revolve(48)).rotate([0, 90, 0])).translate([0, 0, rz + rM]))
+      if (turn) ring.mesh = k(ring.mesh.rotate([0, 0, turn]))
+    }
     // print it eye-down: flip so the boss sits on the bed
     const flat = k(k(m.rotate([180, 0, 0])).translate([0, 0, H]))
     const meshes = { combined: meshData(k(m.translate([0, 0, -H / 2]))), printFlat: meshData(flat) }
+    if (ring) meshes.rods = meshData(k(ring.mesh.translate([0, 0, -H / 2])))
     if (plug) meshes.plugFlat = meshData(plug)
     const circle = []
     for (let i = 0; i < 48; i++) circle.push([R * Math.cos((TAU * i) / 48), R * Math.sin((TAU * i) / 48)])
@@ -457,13 +529,13 @@ export function buildDart(wasm, p, opts = {}) {
       side = [[...right, [bossR, L - 2], [bossR * 0.92, L - 2 + bossH], [-bossR * 0.92, L - 2 + bossH], [-bossR, L - 2], ...left]]
     }
     return {
-      dart: { style, turned, H, vol, R, bossR, eyeR, eyeZ, prof, side, L, plug: !!plug },
+      dart: { attach: two ? 'two' : thru ? 'thru' : (p.attach || 'eye').startsWith('swivel') ? 'socket' : 'eye', hole2: two ? 2 * r2 : 0, style, turned, H, vol, R, bossR, eyeR, eyeZ, prof, side, L, plug: !!plug, weight, balance, balancePct: (100 * balance) / H, ring: ring && { id: ring.id, wire: ring.wire, kind: ring.kind }, gAll },
       meshes,
       viewR: Math.min(59, H * 0.55),
       polygons: { base: [circle], relief: [], pods: [], weak: [] },
       layers: side ? { cut: side, holes: [], drill: [], pocket: [], pocketDepth: 0, engrave: [] } : null,
       podH: 0, ring: null, snap: null,
-      stats: { tris: meshes.combined.indices.length / 3, grams: g, gramsTotal: g, warns, height: H },
+      stats: { tris: meshes.combined.indices.length / 3, grams: g, gramsTotal: gAll, gShot: weight?.g || 0, warns, height: H },
     }
   } finally {
     for (const o of live) o.delete?.()
@@ -500,7 +572,7 @@ ${rows.join('\n')}
 export function dartDesigns() {
   const d = (id, name, style, group, blurb, over = {}) => ({
     id, name, group, blurb, dart: true, style, added: '2026-11-20',
-    params: DART_PARAMS.map((x) => ({ ...x, ...(over[x.key] !== undefined ? { value: over[x.key] } : {}) })),
+    params: DART_PARAMS.map((x) => ({ ...x, ...(over[x.key] !== undefined ? { value: over[x.key] } : x.key === 'holeD' && over.ropeD ? { value: over.ropeD + 1 } : {}) })),
     draw: () => {},
   })
   const ROUND = ['orb', 'geodesic', 'pod', 'cone-stone', 'shroom-button', 'shroom-puff']

@@ -1637,8 +1637,12 @@ function renderDartVerdict(hub, p, mat) {
   const s = hub.stats, v = hub.dart, cnc = isCnc()
   const mName = cnc ? matOf(cncp()).name : mat.name
   $('verdict').innerHTML = `
-    <div class="big">${s.grams.toFixed(0)} g<small>in ${mName}${v.style === 'glow' ? ', plus the capsule' : ''}</small></div>
+    <div class="big">${s.gramsTotal.toFixed(0)} g<small>in ${mName}${v.weight ? `, with ${v.weight.g.toFixed(0)} g of steel shot` : ''}${v.plug ? ', plus the capsule' : ''}</small></div>
     <div class="row"><span>Size</span><span>${v.H.toFixed(0)} mm long · Ø${(2 * v.R).toFixed(0)} widest</span></div>
+    <div class="row"><span>Balance point</span><span>${v.balancePct.toFixed(0)}% of the way from the tip to the eye${v.balancePct < 42 ? ': tip-heavy, flies point first and strikes hard' : v.balancePct > 58 ? ': eye-heavy, swings and wraps gently' : ': in the middle'}</span></div>
+    ${v.weight ? `<div class="row"><span>Added weight</span><span>${v.weight.g.toFixed(0)} g of fine steel shot · <b>pause the print at ${v.weight.pauseAt.toFixed(1)} mm</b> (it prints eye-down), pour the shot in, tap it level, carry on</span></div>` : ''}
+    <div class="row"><span>Attach</span><span>${v.attach === 'thru' ? `the rope threads down the middle (Ø${(p.ropeD + 1.2).toFixed(1)} channel); tie a stopper knot (a double overhand or a small monkey's fist) and pull it into the recess at the tip` : v.attach === 'two' ? `two holes: Ø${(2 * v.eyeR).toFixed(1)} for the rope, Ø${v.hole2.toFixed(1)} above it for a swivel or split ring` : v.attach === 'socket' ? 'M8 swivel socket' : `Ø${(2 * v.eyeR).toFixed(1)} mm eye`}</span></div>
+    <div class="row"><span>Eye</span><span>Ø${(2 * v.eyeR).toFixed(1)} mm hole${p.eyeTurn ? `, turned ${p.eyeTurn}°` : ''}${p.eyeLift ? `, standing ${p.eyeLift} mm off the body` : ''}${v.ring ? ` · ${v.ring.kind}: buy stainless, ${v.ring.id} mm inside, about ${v.ring.wire.toFixed(1)} mm wire (it loops round the top of the eye); clip the swivel to the ring` : ''}</span></div>
     <div class="row"><span>${design().poi ? 'Leash' : 'Rope'}</span><span>${(p.attach || 'eye').startsWith('swivel') ? (cnc ? 'M8 tapped socket: screw in a stainless swivel eye bolt' : 'M8 nut trap: drop in an M8 nut while printing (pause), screw in a swivel eye bolt') : `Ø${(2 * v.eyeR).toFixed(1)} mm eye for ${p.ropeD} mm rope`}</span></div>
     <div class="row"><span>Same shape in</span><span>TPU ${((v.vol / 1000) * 1.21).toFixed(0)} g · alu ${((v.vol / 1000) * 2.7).toFixed(0)} g · brass ${((v.vol / 1000) * 8.5).toFixed(0)} g</span></div>
     <div class="row"><span>${cnc ? 'Made on' : 'Prints'}</span><span>${cnc ? (v.turned ? 'a lathe (drawing below)' : '4-axis mill or metal 3D print') : 'eye-down, with a brim'}</span></div>
