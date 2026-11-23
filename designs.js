@@ -29,6 +29,7 @@ import { gripDesigns } from './grip.js'
 import { mouldDesigns } from './moulds.js'
 import { hoopDesigns, jointDesigns } from './hoops.js'
 import { bubblePoiDesigns } from './bubblepoi.js'
+import { bubbleHubDesigns } from './bubblehub.js'
 import { swordDesigns } from './swords.js'
 import { acroDesigns } from './acro.js'
 import { pineHubDesigns } from './pinecone.js'
@@ -3313,7 +3314,7 @@ DESIGNS.push(...hoopDesigns())
 // collapsible (travel) hoops: push-button and pin joints
 DESIGNS.push(...jointDesigns())
 // bubble poi heads, with printed loops or loops to wrap in cotton yarn
-DESIGNS.push(...bubblePoiDesigns())
+DESIGNS.push(...bubblePoiDesigns(), ...bubbleHubDesigns())
 // fire contact swords: cut from metal, Kevlar wicks
 DESIGNS.push(...swordDesigns())
 // acro staff ends: printed (coin + steel shot) and turned metal

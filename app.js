@@ -24,7 +24,7 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', BubbleHubs: 'Bubble spinners (practice hubs that blow bubbles)', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
@@ -69,7 +69,7 @@ state.cncp = {}
 for (const d of DESIGNS) state.cncp[d.id] = { ...cncDefaults(d), ...(saved.cncp?.[d.id] || {}) }
 const isCnc = () => state.mode === 'cnc'
 const cncOnly = (d) => !!d.cncOnly // fire swords: metal, cut on a CNC, never printed
-const printOnly = (d) => !!(d.fist || (d.acro && !d.acroMetal) || d.bubblePoi || d.hoop || d.mould || d.adaptor || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.grip) // always 3D printed, in either mode
+const printOnly = (d) => !!(d.bubbleHub || d.fist || (d.acro && !d.acroMetal) || d.bubblePoi || d.hoop || d.mould || d.adaptor || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.grip) // always 3D printed, in either mode
 const cncp = () => state.cncp[state.design]
 const design = () => DESIGNS.find((d) => d.id === state.design)
 const params = () => state.params[state.design]
@@ -667,7 +667,7 @@ function renderParams() {
   cp.innerHTML = ''
   $('matSection').hidden = isCnc() && !printOnly(d)
   if (isCnc() && !printOnly(d)) renderCncParams(d, cp, set)
-  const groups = d.adaptor || (isCnc() && !printOnly(d)) ? [] : d.sleeve || d.practiceSpoke || d.dart || d.cage || d.grip || d.mould || d.hoop || d.bubblePoi || d.acro || d.fist || d.hilt ? [] : d.spokeHub || d.ballEnd || d.novelty ? ['Fit'] : [...new Set(COMMON_PARAMS.map((p) => p.group))].filter((g) => g !== 'Glow' || d.pods)
+  const groups = d.adaptor || (isCnc() && !printOnly(d)) ? [] : d.sleeve || d.practiceSpoke || d.dart || d.cage || d.grip || d.mould || d.hoop || d.bubblePoi || d.acro || d.fist || d.hilt ? [] : d.spokeHub || d.ballEnd || d.novelty || d.bubbleHub ? ['Fit'] : [...new Set(COMMON_PARAMS.map((p) => p.group))].filter((g) => g !== 'Glow' || d.pods)
   const label = { Lock: 'Lock onto a metal dowel (optional)', Fit: 'Pole size and fit', Glow: 'Lanterns and capsules', 'Weight ring': 'Bubble weight ring', 'Snap weight': 'Snap-on weight ring' }
   for (const g of groups) {
     const det = document.createElement('details')
@@ -804,7 +804,7 @@ function infillReadout() {
     ? 'Solid: 100% infill. Set it lower to see the weight drop.'
     : `<b>Slicer:</b> ${s.text}.${inf ? ` <b>Weight:</b> ${inf.g.toFixed(0)} g instead of ${inf.gSolid.toFixed(0)} g solid (${Math.round(inf.ratio * 100)}%).` : ''}${s.zone && inf && !inf.zone ? ' (No solid zone could be found for this shape: it prints even.)' : ''}`
 }
-const infill3MF = (d) => !!(d.dart || d.acro || d.novelty || d.sleeve || d.adaptor || !(d.mould || d.ballEnd || d.bubblePoi || d.hoop || d.joint || d.fist || d.hilt || d.grip || d.practiceSpoke || d.spokeHub || d.acroMetal || d.dowel || d.cncOnly))
+const infill3MF = (d) => !d.bubbleHub && !!(d.dart || d.acro || d.novelty || d.sleeve || d.adaptor || !(d.mould || d.ballEnd || d.bubblePoi || d.hoop || d.joint || d.fist || d.hilt || d.grip || d.practiceSpoke || d.spokeHub || d.acroMetal || d.dowel || d.cncOnly))
 function infillExports(d) {
   const inf = current?.design === d ? current.hub.infill : null
   if (!inf) return
@@ -1259,7 +1259,7 @@ function show(hub, d, p, t0) {
   showZone()
   setGeo(pracMesh, m.practice)
   $('vSpokes').hidden = !(m.rods || m.kevlar || m.practice || hub.hoop)
-  $('vSpokes').textContent = hub.bubblePoi ? 'Swivels' : hub.hoop ? (hub.hoop.close ? '◀ Whole hoop' : 'Connector close-up ▶') : hub.fist ? 'Knot' : hub.acro ? (hub.acro.metal ? (hub.acro.plugIn ? 'Bolt, wedge, O-rings' : 'O-rings') : 'Coins') : hub.dowel ? 'Bolt and wedge' : hub.spoke ? 'Spokes' : hub.mould ? (hub.mould.box ? 'Master' : 'Cast part') : hub.novelty?.counter ? 'Counterweight' : hub.hoop ? 'Connector' : 'Wicks / ends'
+  $('vSpokes').textContent = hub.bubbleHub ? 'Yarn and stopper' : hub.bubblePoi ? 'Swivels' : hub.hoop ? (hub.hoop.close ? '◀ Whole hoop' : 'Connector close-up ▶') : hub.fist ? 'Knot' : hub.acro ? (hub.acro.metal ? (hub.acro.plugIn ? 'Bolt, wedge, O-rings' : 'O-rings') : 'Coins') : hub.dowel ? 'Bolt and wedge' : hub.spoke ? 'Spokes' : hub.mould ? (hub.mould.box ? 'Master' : 'Cast part') : hub.novelty?.counter ? 'Counterweight' : hub.hoop ? 'Connector' : 'Wicks / ends'
   if (view.spokes === false) for (const x of [rodMesh, kevMesh, pracMesh]) x.visible = false
   $('ringColourRow').hidden = !(m.ring || m.snap)
   $('glowRow').hidden = $('ledRow').hidden = !hasLeds() // the LED ring can switch them on for any design
@@ -1272,7 +1272,7 @@ function show(hub, d, p, t0) {
   drawHalo(hub, p)
   infillReadout()
   // no staff through things held by a hilt, or ends that sit on the pole's tip
-  const noPole = !!(hub.cageBall || hub.hilt || hub.fist || hub.sword || hub.tsword || hub.taxe || hub.acro || hub.dowel || hub.bubblePoi || hub.hoop || hub.mould || hub.ball || hub.novelty || hub.dart || hub.cage || hub.sleeve || hub.practiceSpoke || hub.grip)
+  const noPole = !!(hub.bubbleHub?.end || hub.cageBall || hub.hilt || hub.fist || hub.sword || hub.tsword || hub.taxe || hub.acro || hub.dowel || hub.bubblePoi || hub.hoop || hub.mould || hub.ball || hub.novelty || hub.dart || hub.cage || hub.sleeve || hub.practiceSpoke || hub.grip)
   $('vPole').hidden = noPole
   // swords, poi and rope darts are not spun on a staff: no spin controls
   const noSpin = !!(hub.sword || hub.tsword || hub.dart || hub.bubblePoi)
@@ -1550,6 +1550,19 @@ function renderCutPanel(hub, p) {
   box.querySelector('tr.on')?.scrollIntoView({ block: 'center' })
 }
 
+function renderBubbleHubVerdict(hub, p, mat) {
+  const s = hub.stats, v = hub.bubbleHub, bed = Number(state.bed)
+  const feedTxt = v.feed === 'tank' ? `the tank round the collar holds ${v.liquidMl.toFixed(0)} ml` : `the pole: about ${(v.liquidMl).toFixed(0)} ml if full; fill it a third (${(v.liquidMl / 3).toFixed(0)} ml) so the mix can run to the ends`
+  $('verdict').innerHTML = `
+    <div class="big">${s.grams.toFixed(0)} g<small>printed in ${mat.name}${v.feed === 'tank' ? ` · ${(s.gramsTotal).toFixed(0)} g with a full tank` : ''}</small></div>
+    <div class="row"><span>Bubble mix</span><span>${feedTxt}</span></div>
+    <div class="row"><span>Loops</span><span>${v.loops} edge-on, each fed by its own channel · ${v.outlet} mm outlets</span></div>
+    <div class="row"><span>How it feeds</span><span>The spin is the pump: it flings the mix out along the channel ${v.wheel ? 'in each spoke to a ring channel inside the rim, and out of an outlet at every loop' : 'inside each spoke to the outlet at its tip'}. Cotton yarn wrapped round each loop, its tail tucked into the outlet, soaks the mix up and keeps the loop wet.</span></div>
+    ${v.oRing ? `<div class="row"><span>Seals</span><span>${v.oRing.n} × O-rings ${v.oRing.id} × ${v.oRing.cs} mm (inside × thickness) ${v.oRing.where}, nitrile; a smear of silicone grease and they slide on</span></div>` : '<div class="row"><span>On the pole</span><span>slides on anywhere; an M5 grub screw in the collar above the tank holds it</span></div>'}
+    <div class="row"><span>Across</span><span>${v.span.toFixed(0)} mm · ${v.span <= bed - 2 ? pill('good', `fits the ${bed} mm bed`) : pill('bad', 'bigger than your bed')}</span></div>
+    ${mat.name.startsWith('TPU') ? '<div class="warnline">Print it in PETG: the channels need a rigid hub, and PETG holds water with 4 walls.</div>' : ''}
+    ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+}
 function renderBubblePoiVerdict(hub, p, mat) {
   const s = hub.stats, v = hub.bubblePoi
   $('verdict').innerHTML = `
@@ -1793,6 +1806,7 @@ function renderVerdict(hub, p) {
   if (hub.mould) return renderMouldVerdict(hub, p, mat)
   if (hub.hoop) return renderHoopVerdict(hub, p, mat)
   if (hub.bubblePoi) return renderBubblePoiVerdict(hub, p, mat)
+  if (hub.bubbleHub) return renderBubbleHubVerdict(hub, p, mat)
   if (hub.cnc) return renderCncVerdict(hub, p)
   if (hub.spoke) return renderSpokeVerdict(hub, p)
   if (hub.ball) return renderBallVerdict(hub, p, mat)
@@ -2028,6 +2042,15 @@ function renderExports0() {
       ...(v?.insertNames || []).map((n) => [`${n[0].toUpperCase() + n.slice(1)} insert STL${n === 'guard' ? ' (print 2)' : ''}`, '', () => download(toSTL(m[`ins_${n}`], `${d.name} ${n} insert`), `${nm}-${n}-insert.stl`), !m]),
     ])
     $('exportNote').innerHTML = 'Print the block in PETG or nylon at 100% infill, lying on its side; print the inserts standing on their collars. This printed block is for practice and LED swords: for fire, switch to CNC and have the block (and the inserts) machined in aluminium.'
+    return
+  }
+  if (d.bubbleHub) {
+    const v = current?.hub.bubbleHub, nm = `bubble-spinner-${d.id}-${params().reach}mm`
+    exportButtons([
+      ['Hub STL (prints flat, as shown)', 'primary', () => download(toSTL(m.combined, d.name), nm + '.stl'), !m],
+      ...(m?.stopperFlat ? [['Fill stopper STL (TPU)', '', () => download(toSTL(m.stopperFlat, d.name + ' stopper'), nm + '-stopper.stl'), false]] : []),
+    ])
+    $('exportNote').innerHTML = `Print the hub flat as shown, PETG, 4 walls, 0.2 mm layers, no supports: the channels are small tunnels, so slow the bridges and keep the fan on. Blow through each outlet to check its channel is open (a 1.5 mm drill bit by hand clears it). Print the stopper in TPU and push a pin through its vent hole. <b>Loops:</b> wrap each loop tightly in 100% cotton yarn, turns touching, and tuck a 15 mm tail of the yarn into the outlet with a toothpick: the tail is the wick that feeds the loop. ${v?.feed === 'tank' ? 'Fill the tank through the port with a syringe or squeeze bottle, about three quarters full, and push the stopper in.' : `Push the O-rings into ${v?.feed === 'socket' ? 'the socket grooves' : 'the spigot grooves'}, grease them, pour bubble mix into the pole (a third full), and push the hub on. The port in the end tops it up.`} Store it loops up: at rest some mix can drip from the outlets. Thick mix (glycerine or guar) needs bigger outlets.`
     return
   }
   if (d.fist) {

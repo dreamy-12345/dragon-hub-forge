@@ -31,6 +31,7 @@ import { buildSword } from './swords.js'
 import { buildAcro, buildAcroMetal } from './acro.js'
 import { buildTubeSword, buildTubeAxe, buildTubeMace, buildPlateAxe } from './tubeswords.js'
 import { buildFist } from './fist.js'
+import { buildBubbleHub } from './bubblehub.js'
 import { buildHilt } from './hilt.js'
 import { buildCage } from './cages.js'
 import { buildDowel, LOCK_PARAMS, LOCKS, lockKey, hubLockZ } from './dowel.js'
@@ -250,6 +251,7 @@ export function buildHub(wasm, design, p, opts = {}) {
   if (design.acro) return buildAcro(wasm, p, { density: opts.material?.density, cone: design.cone })
   if (design.sword) return buildSword(wasm, p, { style: design.style }) // the preview in print mode: 5 mm aluminium
   if (design.bubblePoi) return buildBubblePoi(wasm, p, { density: opts.material?.density })
+  if (design.bubbleHub) return buildBubbleHub(wasm, p, { density: opts.material?.density, bed: opts.bed })
   if (design.joint) return buildHoopJoint(wasm, p, { style: design.joint, density: opts.material?.density, materialName: opts.material?.name })
   if (design.hoop) return buildHoop(wasm, p, { density: opts.material?.density })
   if (design.mould) return buildMould(wasm, p, { kind: design.kind, style: design.style })
