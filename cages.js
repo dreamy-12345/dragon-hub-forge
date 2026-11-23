@@ -22,8 +22,13 @@ export const CAGE_PARAMS = [
   { key: 'join', label: 'Join with', options: ['tabs twisted through the slots (no welding)', 'weld or braze the joints', 'stainless wire lashing'], value: 'tabs twisted through the slots (no welding)', hint: 'Twist: each hoop end has a tab that goes through a slot in the pole plate and is twisted a quarter turn with pliers. Weld: tack every joint. Lashing: tie each crossing with stainless wire through the small holes.' },
   { key: 'wickW', label: 'Kevlar tape', unit: 'mm', min: 25, max: 75, step: 1, value: 50, presets: [25, 38, 50] },
   { key: 'eyeD', label: 'Top eye', unit: 'mm', min: 6, max: 16, step: 0.5, value: 10, hint: 'The hole in the top plate for the shackle that takes the swivel and chain.' },
+  { key: 'mount', label: 'Mount', options: ['swivel eye on top (poi, meteor, rope dart)', 'on a staff end (internal pole mount)'], value: 'swivel eye on top (poi, meteor, rope dart)', rerender: true, hint: 'Staff end: a turned stainless plug goes inside the pole, cross-bolted through it, with a lip over the pole end and a neck that holds the ball clear of the pole; an M8 stud bolts it to the bottom plate.' },
+  { key: 'poleOD', label: 'Pole (outside)', unit: 'mm', min: 16, max: 32, step: 0.1, value: 22, presets: [19, 22, 25.4], showIf: (p) => (p.mount || '').startsWith('on a staff') },
+  { key: 'poleIn', label: 'Pole (inside)', unit: 'mm', min: 10, max: 29, step: 0.1, value: 19, showIf: (p) => (p.mount || '').startsWith('on a staff'), hint: 'Measure the hole: the plug is turned 0.2 mm under it.' },
+  { key: 'neck', label: 'Neck', unit: 'mm', min: 15, max: 80, step: 1, value: 35, showIf: (p) => (p.mount || '').startsWith('on a staff'), hint: 'Gap between the pole end and the ball: keeps the flame off your pole and hands.' },
 ]
 
+const eq3k = (m) => m
 function meshData(m) {
   const mesh = m.getMesh(), np = mesh.numProp, n = mesh.vertProperties.length / np
   const positions = new Float32Array(n * 3)
@@ -68,7 +73,8 @@ export function buildCage(wasm, p, opts = {}) {
       for (let i = 0; i < 4; i++) sl.push(k(rect(rs0 - 0.15, -s / 2, rs0 + tw + 0.15, s / 2).rotate(90 * i)))
       return k(d.subtract(k(CrossSection.union([...sl, hole(0, 0, eye / 2)]))))
     }
-    const topP = pole(p.eyeD), botP = pole(8)
+    const staff = (p.mount || '').startsWith('on a staff')
+    const topP = pole(p.eyeD), botP = pole(staff ? 8.5 : 8)
     // ---- 3D: assemble for the view
     const ex = (cs) => k(k(cs.extrude(T)).translate([0, 0, -T / 2]))
     const parts3 = []
@@ -79,6 +85,34 @@ export function buildCage(wasm, p, opts = {}) {
     const bot3 = k(k(ex(botP).rotate([0, 0, 45])).translate([0, 0, -R - T / 2 - 0.3]))
     parts3.push(top3, bot3)
     const cage = k(Manifold.union(parts3))
+    // How it works: the equator stays, the hoops and plates slide out and back
+    const anim = [], animMeshes = {}
+    for (let i = 0; i < 4; i++) {
+      const a = ((90 * i + 45) * Math.PI) / 180
+      animMeshes[`cageHoop${i}`] = meshData(parts3[1 + i])
+      anim.push({ key: `cageHoop${i}`, dir: [Math.cos(a) * R * 0.6, Math.sin(a) * R * 0.6, 0], look: 'part' })
+    }
+    animMeshes.cageTop = meshData(top3); anim.push({ key: 'cageTop', dir: [0, 0, R * 0.7], look: 'part', lead: 1.3 })
+    animMeshes.cageBot = meshData(bot3); anim.push({ key: 'cageBot', dir: [0, 0, -R * 0.7], look: 'part', lead: 1.3 })
+    // the staff mount: plug in the pole, lip on its end, a neck, a flange under the bottom plate, an M8 stud through it
+    let mountG = 0, mount = null
+    if (staff) {
+      const zb = -R - T - 0.3, ri = p.poleIn / 2 - 0.1, ro = p.poleOD / 2
+      const cyl = (r, z0, z1, n = 48) => k(k(Manifold.cylinder(z1 - z0, r, r, n)).translate([0, 0, z0]))
+      const flangeR = Math.min(plateR, ro + 6), neckR = Math.max(7, ro * 0.6)
+      let m = k(Manifold.union([cyl(flangeR, zb - 5, zb), cyl(neckR, zb - 5 - p.neck, zb - 5), cyl(ro, zb - 9 - p.neck, zb - 5 - p.neck), cyl(ri, zb - 9 - p.neck - 45, zb - 9 - p.neck)]))
+      m = k(m.subtract(cyl(3.4, zb - 30, zb + 1, 24))) // M8 tapped 25 mm deep
+      const pinZ = zb - 9 - p.neck - 22
+      m = k(m.subtract(k(k(k(Manifold.cylinder(2 * ro + 4, 2.75, 2.75, 16)).rotate([90, 0, 0])).translate([0, ro + 2, pinZ])))) // M5 cross bolt
+      mount = m
+      mountG = (m.volume() / 1000) * 7.93
+      animMeshes.cageMount = meshData(m); anim.push({ key: 'cageMount', dir: [0, 0, -R * 0.9], look: 'rod', lead: 1.5 })
+      const stud = k(Manifold.union([cyl(4, zb - 25, zb + T + 12, 16), k(k(Manifold.cylinder(6.5, 7.5, 7.5, 6)).translate([0, 0, zb + T + 0.6]))]))
+      animMeshes.cageStud = meshData(stud); anim.push({ key: 'cageStud', dir: [0, 0, R * 0.25], look: 'rod', lead: 1.7 })
+      const poleStub = k(cyl(ro, zb - 9 - p.neck - 160, zb - 9 - p.neck).subtract(cyl(p.poleIn / 2, zb - 9 - p.neck - 161, zb - 9 - p.neck + 1)))
+      animMeshes.cagePole = meshData(poleStub); anim.push({ key: 'cagePole', dir: [0, 0, -R * 1.2], look: 'ghost', lead: 1.8 })
+      if (p.poleIn >= p.poleOD - 1) warns.push('Pole inside is bigger than its outside: check the two pole sizes.')
+    }
     const g = (cage.volume() / 1000) * mat.density
     // Kevlar: wound round every band
     const kv = []
@@ -102,13 +136,14 @@ export function buildCage(wasm, p, opts = {}) {
     }
     if (bw > R * 0.35) warns.push('The bands are very wide for this ball: narrow them or make the ball bigger.')
     if (T > 3 && mat.density > 7) warns.push('Steel over 3 mm makes a very heavy head: 2–3 mm stainless is plenty.')
-    const meshes = { combined: meshData(cage), kevlar: meshData(kev) }
+    const meshes = { combined: meshData(eq3k(parts3[0])), kevlar: meshData(kev), ...animMeshes, cageAll: meshData(cage) }
     const circle = []
     for (let i = 0; i < 64; i++) circle.push([R * Math.cos((TAU * i) / 64), R * Math.sin((TAU * i) / 64)])
     return {
-      cageBall: { R, bw, T, g, kevG, tapeM, total: g + kevG, join: p.join, parts: flat.map(([name, , n]) => `${n} × ${name}`), mat: mat.name, sheet: [xo, 2 * R + 2 * tabL] },
+      cageBall: { R, bw, T, g, kevG, tapeM, total: g + kevG + mountG, join: p.join, parts: flat.map(([name, , n]) => `${n} × ${name}`), mat: mat.name, sheet: [xo, 2 * R + 2 * tabL], staff, mountG, poleOD: p.poleOD, poleIn: p.poleIn, neck: p.neck },
+      anim,
       meshes,
-      viewR: R * 1.4,
+      viewR: staff ? R * 1.4 + p.neck * 0.6 + 40 : R * 1.4,
       polygons: { base: [circle], relief: [], pods: [], weak: [] },
       layers,
       podH: 0, ring: null, snap: null, cnc: true,
@@ -128,6 +163,7 @@ export function cageDesigns() {
   return [
     d('cageMeteor', 'Big Meteor Cage', 'MeteorCages', 'A big ringed meteorite: a ball of crossed metal bands cut from flat stainless, slotted together, and wound in Kevlar so the whole sphere burns. Make two for a meteor; a shackle and swivel on the top eye.', { ballD: 240, band: 18 }),
     d('cagePoi', 'Ringed Fire Poi', 'CagePoi', 'An oversized ringed fire poi head: crossed bands wound in Kevlar, a big ball of fire on a chain.', { ballD: 150, band: 14 }),
+    d('cageStaff', 'Ringed Staff End', 'CageStaff', 'A big ringed fire ball on the end of a staff: crossed stainless bands wound in Kevlar, bolted to an internal pole mount. A turned stainless plug slides inside the pole and is cross-bolted through it, a lip covers the pole end, and a neck holds the burning ball clear of the pole and your hands. Press How it works to see it go together.', { ballD: 130, band: 13, mount: 'on a staff end (internal pole mount)' }),
     d('cageDart', 'Ringed Rope Dart', 'MeteorCages', 'A ringed fire rope dart head: a smaller cage of crossed bands wound in Kevlar, on a swivel at the top eye.', { ballD: 110, band: 12 }),
   ]
 }

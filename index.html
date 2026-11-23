@@ -84,6 +84,10 @@ header .grow { flex: 1; }
 
 .stagectl { position: absolute; right: 14px; bottom: 14px; width: min(260px, 45%); display: grid; gap: 8px; background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
 .stagectl .swatches { grid-column: 1 / -1; }
+.vpanels { position: absolute; left: 14px; top: 56px; width: min(240px, 40%); display: grid; gap: 8px; z-index: 3; pointer-events: none; }
+.vpanels > * { pointer-events: auto; }
+.xsec[hidden] { display: none; }
+.xsec { display: grid; gap: 6px; background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
 .blurb { right: calc(min(260px, 45%) + 28px); }
 .gallery h3 { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ember); margin: 10px 0 0; }
 .swatch.rainbow { background: conic-gradient(#f44, #fd4, #4f8, #4df, #84f, #f4c, #f44); }
@@ -197,6 +201,7 @@ details > div { display: grid; gap: 10px; margin-top: 10px; }
 .catbar small { color: var(--muted); font: 500 11px var(--mono); }
 .catbar .subs { grid-column: 1 / -1; }
 .subs .chip { padding: 3px 8px; min-height: 26px; font-size: 12px; }
+#unitSel { background: var(--raise); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; color: var(--fg); font-size: 13px; }
 .fitlist { margin-top: 6px; }
 .commPanel .cl { display: block; font-size: 12px; color: var(--muted); margin-top: 8px; }
 .commPanel textarea, .commPanel input, .commPanel select { width: 100%; background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; color: var(--fg); font: inherit; font-size: 13px; }
@@ -452,7 +457,7 @@ kbd { font: 13px var(--mono); border: 1px solid var(--line); border-radius: 5px;
       <button class="chip" id="vWeak" aria-pressed="true">Weak spots</button>
       <button class="chip" id="vPole" aria-pressed="true">Staff</button>
       <button class="chip" id="vBed" aria-pressed="true">Print bed</button>
-      <button class="chip" id="vCut" aria-pressed="false" title="Cut the design in half through the middle to see inside: sockets, chambers, coins, cores">Cross section</button>
+      <button class="chip" id="vCut" aria-pressed="false" title="Cut the design open to see inside: sockets, chambers, coins, cores. Sliders move the cut.">Cross section</button>
       <button class="chip" id="vAnim" aria-pressed="false" hidden title="Watch the parts come apart and go back together, to see how it works">How it works ▶</button>
       <button class="chip" id="vRef" aria-pressed="false" title="Show something you know next to the design, for scale: a person or a lighter. Tap again to change, and again to hide.">Size: off</button>
     </div>

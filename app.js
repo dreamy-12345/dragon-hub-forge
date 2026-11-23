@@ -26,7 +26,7 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', BubbleHubs: 'Bubble spinners', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', CageStaff: 'Ringed fire staff ends', BubbleHubs: 'Bubble spinners', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
@@ -66,6 +66,7 @@ state.finish = saved.finish && typeof saved.finish === 'object' ? saved.finish :
 state.infill = saved.infill && typeof saved.infill === 'object' ? saved.infill : {}
 // gloving-light pockets per design
 state.lights = saved.lights && typeof saved.lights === 'object' ? saved.lights : {}
+state.units = ['mm', 'in', 'banana'].includes(saved.units) ? saved.units : 'mm'
 // How it is made: 3D print (everything above) or CNC cut. CNC settings are per design
 // and live apart from the print settings, so switching never changes a print design.
 state.mode = saved.mode === 'cnc' ? 'cnc' : 'print'
@@ -182,7 +183,7 @@ const EYE_COLOURS = { whole: ['#13369a', '#f4f4f2', '#58b4ff', '#0b0b0e'], nazar
 function paintEye(mesh, e) {
   ;(EYE_COLOURS[e.kind] || EYE_COLOURS.classic).forEach((h, i) => eyeU.eyeC.value[i].set(h))
   eyeU.eyeZ.value.set(e.pupilZ, e.irisZ, e.whiteZ ?? e.irisZ)
-  eyeMat.clippingPlanes = frameMat.clippingPlanes; eyeMat.side = frameMat.side; eyeMat.needsUpdate = true
+  eyeMat.clippingPlanes = frameMat.clippingPlanes; eyeMat.clipIntersection = true; eyeMat.side = frameMat.side; eyeMat.needsUpdate = true
   mesh.material = eyeMat
 }
 const glowMesh = new THREE.Mesh(new THREE.BufferGeometry(), glowMat)
@@ -518,6 +519,14 @@ renderer.setAnimationLoop((t) => {
 })
 
 // --------------------------------------------------------------- controls --
+// sizes shown in mm, inches or bananas (one banana = 178 mm); everything inside stays in mm
+const UNITS = { mm: 'mm', in: 'inches', banana: 'bananas' }
+const showLen = (v) => {
+  v = +v
+  if (state.units === 'in') return `${+(v / 25.4).toFixed(v < 25.4 ? 3 : 2)}″`
+  if (state.units === 'banana') { const b = v / 178; return `${+b.toPrecision(b < 1 ? 2 : 3)} 🍌` }
+  return `${+v.toFixed(2)} mm`
+}
 function control(def, get, set) {
   const id = 'p_' + def.key
   const wrap = document.createElement('div')
@@ -529,7 +538,7 @@ function control(def, get, set) {
     wrap.innerHTML = `<label for="${id}">${def.label}</label><select id="${id}">${def.options.map((o) => `<option${o === get() ? ' selected' : ''}>${o}</option>`).join('')}</select>`
     wrap.querySelector('select').onchange = (e) => set(e.target.value)
   } else {
-    const fmt = (v) => `${+(+v).toFixed(2)}${def.unit ? ' ' + def.unit : ''}`
+    const fmt = (v) => (def.unit === 'mm' ? showLen(v) : `${+(+v).toFixed(2)}${def.unit ? ' ' + def.unit : ''}`)
     wrap.innerHTML = `<label for="${id}">${def.label}</label><output>${fmt(get())}</output>
       <input type="range" id="${id}" min="${def.min}" max="${def.max}" step="${def.step}" value="${get()}">`
     const out = wrap.querySelector('output')
@@ -541,7 +550,8 @@ function control(def, get, set) {
       for (const v of def.presets) {
         const b = document.createElement('button')
         b.className = 'chip'
-        b.textContent = def.unit ? `${v} ${def.unit}` : String(v)
+        b.textContent = def.unit === 'mm' ? showLen(v) : def.unit ? `${v} ${def.unit}` : String(v)
+        b.dataset.v = v
         b.setAttribute('aria-pressed', String(+get() === v))
         b.onclick = () => {
           input.value = v; out.textContent = fmt(v); set(v)
@@ -549,7 +559,7 @@ function control(def, get, set) {
         }
         row.append(b)
       }
-      input.addEventListener('input', () => { for (const c of row.children) c.setAttribute('aria-pressed', String(parseFloat(c.textContent) === +input.value)) })
+      input.addEventListener('input', () => { for (const c of row.children) c.setAttribute('aria-pressed', String(+c.dataset.v === +input.value)) })
       wrap.append(row)
     }
     if (def.seed) {
@@ -652,7 +662,7 @@ function renderParams() {
       def = { ...def0, options: def0.options.filter((o) => !o.startsWith('fire')) }
       if (!def.options.includes(params().ends)) params().ends = SPOKE_ENDS.tpu
     }
-    dp.append(control(def, () => params()[def.key], def.rerender ? (v) => { set(def.key)(v); renderParams() } : set(def.key)))
+    dp.append(control(def, () => params()[def.key], def.applies ? (v) => { Object.assign(params(), def.applies[v] || {}, { [def.key]: v }); schedule(); renderParams() } : def.rerender ? (v) => { set(def.key)(v); renderParams() } : set(def.key)))
   }
   const bal = d.params.find((x) => x.balance)
   if (bal) {
@@ -797,6 +807,14 @@ const community = createCommunity({
     status(`Opened "${v.name || 'a shared version'}": change anything, then save or share your own.`)
   },
 })
+// units: a small switch in the header
+{
+  const sel = document.createElement('select')
+  sel.id = 'unitSel'; sel.title = 'Show sizes in'; sel.setAttribute('aria-label', 'Show sizes in')
+  sel.innerHTML = Object.entries(UNITS).map(([k2, v]) => `<option value="${k2}"${state.units === k2 ? ' selected' : ''}>${v}</option>`).join('')
+  sel.onchange = () => { state.units = sel.value; persist(); renderParams(); if (sel.value === 'banana') status('Sizes in bananas: one banana is 178 mm (7 inches). The drawings and files stay in mm.') }
+  $('knotsBtn').after(sel)
+}
 if (community.on) {
   const btn = document.createElement('button')
   btn.className = 'btn'; btn.id = 'mapBtn'; btn.textContent = '🌍 Map'; btn.title = 'Where people use the forge from (signed-in members)'
@@ -1064,7 +1082,7 @@ function entries() {
 // the big folders in the design list, and which groups live in each
 const SECTIONS = { hubs: 'Dragon staff hubs', fire: 'Fire and metal (CNC)', sparks: 'Spark cages (charcoal, CNC only)', rope: 'Rope dart heads', poi: 'Poi', contact: 'Contact staff ends', acro: 'Acro staff ends', moulds: 'Silicone and rubber moulds', hoops: 'Hoops', collapse: 'Collapsible hoops', fittings: 'Pole fittings' }
 const SECTION_OF = {
-  Fire: 'fire', Swords: 'fire', TubeSwords: 'fire', TubeAxes: 'fire', SpokeHubs: 'fire', PracticeSpokes: 'fire',
+  Fire: 'fire', CageStaff: 'fire', Swords: 'fire', TubeSwords: 'fire', TubeAxes: 'fire', SpokeHubs: 'fire', PracticeSpokes: 'fire',
   Contact: 'contact', Axes: 'contact', Acro: 'acro', AcroMetal: 'acro', FistContact: 'contact', Eyes: 'contact', MeteorCages: 'rope', CagePoi: 'poi', FistRope: 'rope', FistPoi: 'poi', PineContact: 'contact', DartPine: 'rope', MouldAcro: 'moulds',
   DartClassic: 'rope', DartModern: 'rope', DartRound: 'rope', DartPattern: 'rope', DartNature: 'rope',
   Poi: 'poi', BubblePoi: 'poi', Hoops: 'hoops', HoopJoints: 'collapse', MouldContact: 'moulds', MouldDart: 'moulds', MouldPoi: 'moulds',
@@ -1428,8 +1446,9 @@ function show(hub, d, p, t0) {
   pole.visible = !noPole && $('vPole').getAttribute('aria-pressed') === 'true'
   const poleD = hub.adaptor ? p.small : p.poleOD // an adaptor shows its thin pole running through it
   setAnim(hub)
+  applyLayers(); renderLayers()
   placeRef()
-  if (view.cut) for (const o of [...animGroup.children, ...refGroup.children]) for (const m of [].concat(o.material)) { m.clippingPlanes = [cutPlane]; m.side = THREE.DoubleSide; m.needsUpdate = true }
+  if (view.cut) for (const o of [...animGroup.children, ...refGroup.children]) for (const m of [].concat(o.material)) { m.clippingPlanes = [cutPlane, cutPlane2]; m.clipIntersection = true; m.side = THREE.DoubleSide; m.needsUpdate = true }
   frameView(Math.max(hub.viewR || p.diameter / 2, state.ref === 'person' ? state.refH * 10 * 0.6 : 0))
   if (state.ref !== 'off' || hub.tsword || hub.taxe) setMain(false) // standing things and the size reference read from the side
   pole.scale.set(poleD / 22, 1, poleD / 22)
@@ -1713,8 +1732,8 @@ function renderBubblePoiVerdict(hub, p, mat) {
   const s = hub.stats, v = hub.bubblePoi
   $('verdict').innerHTML = `
     <div class="big">${s.gramsTotal.toFixed(0)} g<small>one poi, all its circles · make a pair</small></div>
-    <div class="row"><span>Circles</span><span>${v.small} × Ø${p.smallD}, then Ø${p.bigD} at the bottom${v.crossed ? ' crossed by a second Ø' + p.bigD + ' ring' : ''} (inside sizes)</span></div>
-    <div class="row"><span>Print</span><span>1 top circle (leash eye) · ${Math.max(0, v.small - 1)} small circles · 1 big ring${v.crossed ? ' · 1 crossing ring' : ''}, all lying flat</span></div>
+    <div class="row"><span>Loops</span><span>${v.small} small (Ø${p.smallD}${(p.taper || '').startsWith('same') ? '' : ', ' + p.taper}), then Ø${p.bigD} at the bottom${v.crossed ? ' crossed by a second Ø' + p.bigD + ' ring' : ''} (inside sizes)</span></div>
+    <div class="row"><span>Print</span><span>${(v.pieces || []).map((pc) => `${pc.n} × ${pc.label}`).join(' · ')}, all lying flat</span></div>
     <div class="row"><span>Linking</span><span>${v.swivels} small swivels or Ø${(p.linkD + 4).toFixed(0)} mm split rings, one between each pair of circles, through the Ø${p.linkD} eyes</span></div>
     ${v.crossed ? '<div class="row"><span>Big rings</span><span>slide the crossing ring onto the big ring at right angles: the slots at top and bottom lock them together. A drop of superglue in each slot if they are loose.</span></div>' : ''}
     <div class="row"><span>Film</span><span>${v.yarn ? `wrap each circle in 100% cotton yarn · about ${Math.ceil(v.yarnM)} m for one poi` : 'printed notches hold the mix: just dip'}</span></div>
@@ -1901,7 +1920,7 @@ function renderVerdict(hub, p) {
       <div class="row"><span>Parts</span><span>${v.parts.join(' · ')}</span></div>
       <div class="row"><span>Joining</span><span>${twist ? 'slot the four half hoops onto the equator ring (inside notches over outside notches), push the tabs through the pole plates and twist each a quarter turn with pliers' : wire ? 'slot it together, then lash every crossing and every tab with 1 mm stainless wire through the small holes, twisted tight and tucked' : 'slot it together and tack-weld or braze every crossing and every tab'}</span></div>
       <div class="row"><span>Kevlar</span><span>${v.tapeM.toFixed(1)} m of ${p.wickW} mm tape spiralled round the bands, each turn half over the last, ends wired down · ${v.kevG.toFixed(0)} g fuelled</span></div>
-      <div class="row"><span>Hang it</span><span>a stainless shackle through the Ø${p.eyeD} top eye, then a ball-bearing swivel and the chain; the bottom plate's hole takes a tail or another head</span></div>
+      ${v.staff ? `<div class="row"><span>On the staff</span><span>a turned stainless mount (${v.mountG.toFixed(0)} g): a plug Ø${(v.poleIn - 0.2).toFixed(1)} inside the pole, cross-bolted with M5, a lip over the pole end, a ${v.neck} mm neck holding the ball clear, and an M8 stud up through the bottom plate, nutted inside the cage. Press <b>How it works ▶</b> to watch it go together.</span></div>` : `<div class="row"><span>Hang it</span><span>a stainless shackle through the Ø${p.eyeD} top eye, then a ball-bearing swivel and the chain; the bottom plate's hole takes a tail or another head. Press <b>How it works ▶</b> to see how the bands go together.</span></div>`}
       ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
     return
   }
@@ -2068,10 +2087,11 @@ function renderCutExports(d) {
     exportButtons([
       ['Cut file, all parts (DXF)', 'primary', txt(() => toDXF(hub.layers, d.name), nm + '.dxf', 'application/dxf'), !ready],
       ['Cut file (SVG, true size)', '', txt(() => toCutSVG(hub.layers, 0), nm + '.svg', 'image/svg+xml'), !ready],
-      ['3D model (STL)', '', () => download(toSTL(hub.meshes.combined, d.name), nm + '.stl'), !ready],
+      ['3D model (STL)', '', () => download(toSTL(hub.meshes.cageAll || hub.meshes.combined, d.name), nm + '.stl'), !ready],
+      ...(hub?.meshes?.cageMount ? [['Staff mount for the lathe (STL)', '', () => download(toSTL(hub.meshes.cageMount, d.name + ' staff mount'), `${nm}-staff-mount-${p.poleOD}x${p.poleIn}.stl`), !ready]] : []),
       ['Knots and wicking 101', '', openKnotGuide],
     ])
-    $('exportNote').innerHTML = `Send the DXF to a laser or waterjet shop: ${c.thick} mm ${matOf(c).name}, every part laid out in a row. Ask for the edges deburred. Make two for a meteor.`
+    $('exportNote').innerHTML = `Send the DXF to a laser or waterjet shop: ${c.thick} mm ${matOf(c).name}, every part laid out in a row. Ask for the edges deburred. ${hub?.cageBall?.staff ? `The staff mount is one turned stainless part: send its STL to a lathe shop (plug Ø${(p.poleIn - 0.2).toFixed(1)} into your Ø${p.poleOD} pole, M8 tapped hole in the top, an M5 cross hole). Drill the pole to match the cross hole and bolt through with an M5 stainless bolt and all-metal lock nut. Screw an M8 stainless stud into the mount, put the cage's bottom plate on it, and lock it with a washer and two nuts inside the cage.` : 'Make two for a meteor.'}`
     return
   }
   if (d.hilt) {
@@ -2220,13 +2240,8 @@ function renderExports0() {
   if (d.bubblePoi) {
     const p = params(), v = current?.hub.bubblePoi
     const nm = `bubble-poi-${d.id}-${p.smallD}-${p.bigD}mm${(p.film || '').startsWith('string') ? '-string' : ''}`
-    exportButtons([
-      ['Top circle STL (with the leash eye)', 'primary', () => download(toSTL(m.flat_top, d.name + ' top'), nm + '-top.stl'), !m?.flat_top],
-      ...(m?.flat_small ? [[`Small circle STL (print ${p.smallN - 1})`, 'primary', () => download(toSTL(m.flat_small, d.name + ' small'), nm + '-small.stl'), false]] : []),
-      ['Big ring STL', 'primary', () => download(toSTL(m.flat_bigA, d.name + ' big ring'), nm + '-big.stl'), !m?.flat_bigA],
-      ...(m?.flat_smallB ? [[`Small crossing ring STL (print ${p.smallN})`, 'primary', () => download(toSTL(m.flat_smallB, d.name + ' small crossing ring'), nm + '-small-cross.stl'), false]] : []),
-      ...(m?.flat_bigB ? [['Crossing ring STL', 'primary', () => download(toSTL(m.flat_bigB, d.name + ' crossing ring'), nm + '-cross.stl'), false]] : []),
-    ])
+    // one STL per different piece, each with how many to print
+    exportButtons((v?.pieces || []).map((pc, i) => [`${pc.label}${pc.n > 1 ? ` (print ${pc.n})` : ''}`, 'primary', () => download(toSTL(m[pc.key], `${d.name} ${pc.label}`), `${nm}-${i + 1}-${pc.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')}.stl`), !m?.[pc.key]]))
     $('exportNote').innerHTML = `Print every piece lying flat, PETG, 100% infill, 0.2 mm layers. Link the circles top to bottom with small swivels (or split rings) through the eyes, ${v?.crossSmall ? 'slot a small crossing ring through each small circle (the slots meet half way), ' : ''}${v?.crossed ? 'slot the crossing ring through the big ring, ' : ''}and clip the leash swivel to the top eye. ${(p.film || '').startsWith('string') ? 'Wrap each circle in 100% cotton yarn, tight turns about 3 mm apart, tied off on the wire.' : 'Dip in a tray of mix, lift out slowly, and spin.'} Make two.`
     return
   }
@@ -2677,15 +2692,76 @@ setMain(true)
 toggle('vWeak', true, () => applyLook())
 toggle('vPole', true, (on) => (pole.visible = on))
 toggle('vAnim', false, (on) => (view.anim = on))
-// cross section: cut every part in half through the middle so you can see inside
+// cross section: cut away the front of the design to see inside. Two sliders: where the cut goes
+// (front to back), and how far up from the bottom it starts, so you can cut out just a corner
 const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0)
+const cutPlane2 = new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e5) // off until moved
 renderer.localClippingEnabled = true
+const cutUI = document.createElement('div')
+cutUI.className = 'xsec'
+cutUI.hidden = true
+cutUI.innerHTML = `<div class="ctl"><label for="xsA">Cut position</label><output id="xsAOut">middle</output><input type="range" id="xsA" min="-100" max="100" step="1" value="0"></div>
+  <div class="ctl"><label for="xsB">Cut down to</label><output id="xsBOut">the bottom</output><input type="range" id="xsB" min="-100" max="100" step="1" value="-100"></div>
+  <div class="hint">Drag the view as usual: these only move the cut.</div>`
+const vpanels = document.createElement('div')
+vpanels.className = 'vpanels'
+$('gl').parentElement.append(vpanels)
+vpanels.append(cutUI)
+// layers: show or hide each part the design is made of, and an X-ray to see through the body
+const LAYERS = [
+  ['body', 'Body', () => frameMesh], ['glow', 'Glowing parts (colour B)', () => glowMesh], ['lids', 'Lids', () => lidMesh], ['ring', 'Weight ring', () => ringMesh], ['snap', 'Snap ring', () => snapMesh],
+  ['metal', 'Metal hardware', () => rodMesh], ['kev', 'Kevlar', () => kevMesh], ['soft', 'Yarn, heads and cast parts', () => pracMesh], ['zone', 'Solid infill zone', () => zoneMesh], ['moving', 'Moving parts', () => animGroup],
+]
+view.hidden = new Set()
+const layUI = document.createElement('div')
+layUI.className = 'xsec'
+layUI.hidden = true
+vpanels.append(layUI)
+function applyLayers() {
+  for (const [key, , get] of LAYERS) if (view.hidden.has(key)) get().visible = false
+  const x = view.xray || 0
+  if (x > 0) {
+    frameMat.transparent = true; frameMat.opacity = 1 - (x / 100) * 0.85; frameMat.depthWrite = x < 30; frameMat.needsUpdate = true
+    view.xrayOn = true
+  } else if (view.xrayOn) { view.xrayOn = false; frameMat.depthWrite = true; applyLook() } // back to the material's own look
+}
+function renderLayers() {
+  if (layUI.hidden) return
+  const has = (o) => (o.isGroup ? o.children.length > 0 : !!o.geometry?.attributes?.position?.count)
+  const rows = LAYERS.filter(([, , get]) => has(get()))
+  layUI.innerHTML = `${rows.map(([key, label]) => `<label class="check"><input type="checkbox" data-k="${key}"${view.hidden.has(key) ? '' : ' checked'}> ${label}</label>`).join('')}
+    <div class="ctl"><label for="xray">X-ray the body</label><output id="xrayOut">${view.xray || 0}%</output><input type="range" id="xray" min="0" max="100" step="5" value="${view.xray || 0}"></div>`
+  for (const cb of layUI.querySelectorAll('input[type=checkbox]')) cb.onchange = () => {
+    const key = cb.dataset.k, o = LAYERS.find((l) => l[0] === key)[2]()
+    if (cb.checked) { view.hidden.delete(key); if (current) show(current.hub, current.design, current.params, performance.now()) } else { view.hidden.add(key); o.visible = false }
+  }
+  $('xray').oninput = (e) => { view.xray = +e.target.value; $('xrayOut').textContent = view.xray + '%'; applyLayers() }
+}
+{
+  const chip = document.createElement('button')
+  chip.className = 'chip'; chip.id = 'vLayers'; chip.setAttribute('aria-pressed', 'false'); chip.textContent = 'Layers'
+  chip.title = 'Show or hide each part of the design, and see through the body, to see how it is made inside'
+  $('vCut').after(chip)
+  chip.onclick = () => { layUI.hidden = !layUI.hidden; chip.setAttribute('aria-pressed', String(!layUI.hidden)); renderLayers() }
+}
+const cutSize = () => Math.max(20, current?.hub?.viewR || framedR || 140)
+function placeCut() {
+  const a = +$('xsA').value, b = +$('xsB').value, R = cutSize()
+  cutPlane.constant = (a / 100) * R
+  cutPlane2.constant = b <= -100 ? -1e5 : (b / 100) * R * 1.2 // 'the bottom': the whole front comes off
+  $('xsAOut').textContent = a === 0 ? 'middle' : showLen((a / 100) * R)
+  $('xsBOut').textContent = b <= -100 ? 'the bottom' : showLen(((b + 100) / 200) * 2.4 * R) + ' up'
+}
+$('xsA').oninput = placeCut
+$('xsB').oninput = placeCut
 toggle('vCut', false, (on) => {
   view.cut = on
+  cutUI.hidden = !on
+  placeCut()
   showZone()
   scene.traverse((o) => {
     if (!o.isMesh || !o.material || o === pole) return
-    for (const m of [].concat(o.material)) { m.clippingPlanes = on ? [cutPlane] : []; m.side = on ? THREE.DoubleSide : m.userData.side ?? (m.userData.side = m.side, m.side); m.needsUpdate = true }
+    for (const m of [].concat(o.material)) { m.clippingPlanes = on ? [cutPlane, cutPlane2] : []; m.clipIntersection = true; m.side = on ? THREE.DoubleSide : m.userData.side ?? (m.userData.side = m.side, m.side); m.needsUpdate = true }
   })
 })
 $('vRef').onclick = () => { state.ref = REFS[(REFS.indexOf(state.ref) + 1) % REFS.length]; persist(); placeRef(); if (current) { frameView(Math.max(current.hub.viewR || 140, state.ref === 'person' ? state.refH * 10 * 0.6 : 0)); setMain(state.ref === 'off' && framedR >= 140 && !current.hub.tsword && !current.hub.taxe) } }
