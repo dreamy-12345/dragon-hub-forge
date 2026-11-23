@@ -60,7 +60,7 @@ export const COMMON_PARAMS = [
   { key: 'fillet', label: 'Corner fillet', unit: 'mm', min: 0, max: 5, step: 0.1, value: 1.6, group: 'Levels', hint: 'Rounds every inside corner of the frame.' },
 
   { key: 'capD', label: 'Capsule diameter', unit: 'mm', min: 10, max: 30, step: 0.1, value: 21, group: 'Glow', hint: 'A common LED capsule is Ø21 mm. Measure yours.' },
-  { key: 'capL', label: 'Capsule length', unit: 'mm', min: 40, max: 120, step: 0.5, value: 88, group: 'Glow', hint: 'Listed as 88 mm (some pages say 95 with the end ring). Measure yours.' },
+  { key: 'capL', label: 'Capsule length', unit: 'mm', min: 40, max: 120, step: 0.5, value: 88, group: 'Glow', hint: 'Capsule 2.C is 88 mm, the older Capsule 2.0 is 95 mm. Measure yours.' },
   { key: 'capMass', label: 'Capsule weight', unit: 'g', min: 0, max: 80, step: 1, value: 32, group: 'Glow' },
   { key: 'capClr', label: 'Capsule clearance', unit: 'mm', min: 0, max: 2, step: 0.05, value: 0.5, group: 'Glow' },
   { key: 'slotPct', label: 'Snap opening', unit: '%', min: 60, max: 100, step: 1, value: 82, group: 'Glow', hint: 'Width of the slot the capsule pushes through, as % of its diameter. Smaller holds tighter.' },

@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from './vendor/OrbitControls.js'
 import { DESIGNS, COMMON_PARAMS, MATERIALS, defaults, toSTL, toSVG, to3MF, zipStore } from './hub.js'
 import { INFILL0, PLACES, slicerSettings, to3MFPrint } from './infill.js'
-import { LIGHTS0, LIGHT_SIZES, LIGHTS_THAT_FIT, lightDims, CAP_H, WALL } from './lights.js'
+import { LIGHTS0, LIGHT_SIZES, LIGHTS_THAT_FIT, CAPSULES, lightDims, CAP_H, WALL } from './lights.js'
 import { createCommunity } from './community.js'
 import { LED_MODES, PAGE_NAMES } from './leds.js'
 import { BubbleSim } from './bubbles.js'
@@ -695,6 +695,7 @@ function renderParams() {
   }
   if (!d.custom) cp.append(finishPanel(d))
   if (!d.custom && !d.cncOnly && !(isCnc() && !printOnly(d))) cp.append(infillPanel(d))
+  if ((d.pods || d.style === 'glow' || (d.dart && (params().capsule || '').startsWith('yes'))) && !(isCnc() && !printOnly(d))) cp.append(capsulePanel(d))
   if (lightsOK(d) && !(isCnc() && !printOnly(d))) cp.append(lightsPanel(d))
   else placing = false
   if (!d.custom) cp.append(community.panel(d, () => ({ design: d.id, params: { ...params() }, material: state.material, infill: state.infill[d.id] || null, lights: state.lights[d.id] || null })))
@@ -886,6 +887,30 @@ canvas.addEventListener('pointerup', (e) => {
   if (!ok) status('That light is too close to an edge or a hollow: it will break through. Undo it and try somewhere thicker.')
   persist(); schedule(100); renderParams()
 })
+// LED capsules: one tap sets the pocket to a capsule that fits, with where to buy it
+function capsulePanel(d) {
+  const p = params()
+  const det = document.createElement('details')
+  det.className = 'finishPanel'
+  det.innerHTML = '<summary>🔦 LED capsules that fit</summary><div></div>'
+  const box = det.lastChild
+  const row = document.createElement('div'); row.className = 'btns'
+  for (const c of CAPSULES) {
+    const b = document.createElement('button')
+    const on = Math.abs(p.capD - c.d) < 0.05 && Math.abs(p.capL - c.len) < 0.6
+    b.className = 'btn' + (on ? ' primary' : ''); b.textContent = `${on ? '✓ ' : ''}${c.name.replace('Flowtoys ', '')}`
+    b.onclick = () => { p.capD = c.d; p.capL = c.len; persist(); schedule(); renderParams() }
+    row.append(b)
+  }
+  box.append(row)
+  if (!d.pods) { // the darts and poi have no capsule sliders of their own
+    box.append(control({ key: 'capD', label: 'Capsule diameter', unit: 'mm', min: 10, max: 30, step: 0.1 }, () => p.capD, (v) => { p.capD = v; schedule() }))
+    box.append(control({ key: 'capL', label: 'Capsule length', unit: 'mm', min: 40, max: 120, step: 0.5 }, () => p.capL, (v) => { p.capL = v; schedule() }))
+  }
+  box.insertAdjacentHTML('beforeend', `<ul class="fitlist">${CAPSULES.map((c) => `<li><a href="${c.url}" target="_blank" rel="noopener">${c.name}</a> <small>(${c.note})</small></li>`).join('')}</ul>
+    <div class="hint">Any LED capsule works if you measure it and set the size. Vision props have their lights built in, so there is no loose capsule to fit. Not affiliated with any maker: sizes are from their own listings; check yours before printing (the capsule test cup is quick).</div>`)
+  return det
+}
 function lightsPanel(d) {
   const L = litOf(d.id)
   const det = document.createElement('details')

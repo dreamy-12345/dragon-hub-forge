@@ -33,6 +33,12 @@ export const LIGHTS_THAT_FIT = [
   { size: 'classic', name: 'LEDGloves classic-size chips (about 16 mm)', url: 'https://ledgloves.com/', note: 'they describe classic chips as 16 mm wide' },
 ]
 
+/** LED capsules for the glowing lanterns, the Glow Drop dart and Glow Poi. Plain links: not affiliated. */
+export const CAPSULES = [
+  { id: '2c', d: 21, len: 88, name: 'Flowtoys Capsule 2.C (USB-C)', url: 'https://flowtoys.com/products/capsule-light-2c', note: '21 × 88 mm' },
+  { id: '20', d: 21, len: 95, name: 'Flowtoys Capsule 2.0 (older)', url: 'https://flowtoys.com/capsule-remote', note: '21 × 95 mm' },
+]
+
 export function lightDims(L) {
   const s = LIGHT_SIZES[L.size] || LIGHT_SIZES.nano
   return L.size === 'custom' ? { d: L.d, len: L.len } : { d: s.d, len: s.len }
