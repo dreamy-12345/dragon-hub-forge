@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { OrbitControls } from './vendor/OrbitControls.js'
 import { DESIGNS, COMMON_PARAMS, MATERIALS, defaults, toSTL, toSVG, to3MF, zipStore } from './hub.js'
 import { INFILL0, PLACES, slicerSettings, to3MFPrint } from './infill.js'
+import { LIGHTS0, LIGHT_SIZES, LIGHTS_THAT_FIT, lightDims, CAP_H, WALL } from './lights.js'
+import { createCommunity } from './community.js'
 import { LED_MODES, PAGE_NAMES } from './leds.js'
 import { BubbleSim } from './bubbles.js'
 import { initCreate, traceCanvas } from './create.js'
@@ -62,6 +64,8 @@ state.v = 5
 state.finish = saved.finish && typeof saved.finish === 'object' ? saved.finish : {}
 // infill (how solid, and where the solid goes) per design
 state.infill = saved.infill && typeof saved.infill === 'object' ? saved.infill : {}
+// gloving-light pockets per design
+state.lights = saved.lights && typeof saved.lights === 'object' ? saved.lights : {}
 // How it is made: 3D print (everything above) or CNC cut. CNC settings are per design
 // and live apart from the print settings, so switching never changes a print design.
 state.mode = saved.mode === 'cnc' ? 'cnc' : 'print'
@@ -681,6 +685,9 @@ function renderParams() {
   }
   if (!d.custom) cp.append(finishPanel(d))
   if (!d.custom && !d.cncOnly && !(isCnc() && !printOnly(d))) cp.append(infillPanel(d))
+  if (lightsOK(d) && !(isCnc() && !printOnly(d))) cp.append(lightsPanel(d))
+  else placing = false
+  if (!d.custom) cp.append(community.panel(d, () => ({ design: d.id, params: { ...params() }, material: state.material, infill: state.infill[d.id] || null, lights: state.lights[d.id] || null })))
   const reset = document.createElement('button')
   reset.className = 'btn'
   reset.textContent = `Reset ${d.name} to defaults`
@@ -773,6 +780,130 @@ function finishPanel(d) {
     if (f.kind === 'text' && !f.loops?.length) traceFinish(f)
   }
   return det
+}
+
+// --------------------------------------------------------------- community --
+// reviews, shared versions, download tally and the visit map (dream.sc copy); private notes everywhere
+const community = createCommunity({
+  db: window.dreamDB && window.dreamDB.available ? window.dreamDB : null,
+  status: (m) => status(m),
+  onOpenVersion: (d, v) => {
+    state.design = d.id
+    state.params[d.id] = { ...defaults(d), ...(v.params || {}) }
+    if (v.infill) state.infill[d.id] = v.infill
+    if (v.lights) state.lights[d.id] = v.lights
+    if (v.material && MATERIALS[v.material]) state.material = v.material
+    persist(); renderGallery(); renderParams(); applyLook(); schedule(0)
+    status(`Opened "${v.name || 'a shared version'}": change anything, then save or share your own.`)
+  },
+})
+if (community.on) {
+  const btn = document.createElement('button')
+  btn.className = 'btn'; btn.id = 'mapBtn'; btn.textContent = '🌍 Map'; btn.title = 'Where people use the forge from (signed-in members)'
+  $('knotsBtn').after(btn)
+  const dlg = document.createElement('dialog')
+  dlg.className = 'mapdlg'
+  dlg.innerHTML = '<form method="dialog" class="mapclose"><button class="btn">Close</button></form><h2>Where the forge is used</h2><div class="mapbox"></div>'
+  document.body.append(dlg)
+  btn.onclick = () => { dlg.showModal(); community.showMap(dlg) }
+}
+
+// ---------------------------------------------------------- gloving lights --
+// Pockets for gloving lights, placed by clicking on the design; a green or red marker shows if one fits.
+const lightsOK = (d) => !(d.custom || d.mould || d.ballEnd || d.bubblePoi || d.hoop || d.joint || d.fist || d.hilt || d.grip || d.practiceSpoke || d.spokeHub || d.acroMetal || d.dowel || d.cncOnly || d.bubbleHub || d.sword || d.tsword || d.taxe || d.cage || d.cageBall)
+let placing = false, downXY = null
+const ray = new THREE.Raycaster()
+const markMat = new THREE.MeshBasicMaterial({ color: 0x6cd39a, transparent: true, opacity: 0.55, depthTest: false })
+const hoverMark = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 32), markMat)
+hoverMark.visible = false
+hoverMark.renderOrder = 10
+frameMesh.add(hoverMark)
+function pickSurface(ev) {
+  const r = canvas.getBoundingClientRect()
+  ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), mainCam())
+  const hit = ray.intersectObject(frameMesh, false)[0]
+  if (!hit?.face) return null
+  return { p: frameMesh.worldToLocal(hit.point.clone()), n: hit.face.normal.clone().normalize() }
+}
+function lightFits(p, n) {
+  const { d, len } = lightDims(litOf(design().id)), r = (d + 0.4) / 2, depth = len + CAP_H
+  const side0 = frameMesh.material.side
+  frameMesh.material.side = THREE.DoubleSide
+  const cast = (o, dir) => {
+    const oW = frameMesh.localToWorld(o.clone()), dW = frameMesh.localToWorld(o.clone().add(dir)).sub(oW).normalize()
+    ray.set(oW, dW); ray.far = 1e4
+    const h = ray.intersectObject(frameMesh, false)
+    return h.length ? h[0].distance : 0
+  }
+  const inw = n.clone().negate()
+  let ok = cast(p.clone().addScaledVector(inw, 0.3), inw) >= depth + WALL - 0.3
+  if (ok) {
+    const q = p.clone().addScaledVector(inw, depth * 0.5)
+    const u = new THREE.Vector3().crossVectors(inw, Math.abs(inw.z) < 0.9 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0)).normalize()
+    const v = new THREE.Vector3().crossVectors(inw, u)
+    for (const dir of [u, u.clone().negate(), v, v.clone().negate()]) if (cast(q, dir) < r + WALL) { ok = false; break }
+  }
+  frameMesh.material.side = side0
+  return { ok, r, depth }
+}
+function showMark(s) {
+  if (!s) { hoverMark.visible = false; return }
+  const { ok, r, depth } = lightFits(s.p, s.n)
+  const inw = s.n.clone().negate()
+  hoverMark.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), inw)
+  hoverMark.position.copy(s.p).addScaledVector(inw, depth / 2)
+  hoverMark.scale.set(r, depth, r)
+  markMat.color.set(ok ? 0x6cd39a : 0xff6070)
+  hoverMark.visible = true
+  return ok
+}
+canvas.addEventListener('pointerdown', (e) => { downXY = [e.clientX, e.clientY] })
+canvas.addEventListener('pointermove', (e) => { if (placing && !e.buttons) showMark(pickSurface(e)) })
+canvas.addEventListener('pointerup', (e) => {
+  if (!placing || !downXY || Math.hypot(e.clientX - downXY[0], e.clientY - downXY[1]) > 5) return
+  const s = pickSurface(e)
+  if (!s) return
+  const ok = showMark(s), L = litOf(design().id)
+  L.spots = [...L.spots, [[s.p.x, s.p.y, s.p.z].map((v) => +v.toFixed(2)), [s.n.x, s.n.y, s.n.z].map((v) => +v.toFixed(4))]]
+  if (!ok) status('That light is too close to an edge or a hollow: it will break through. Undo it and try somewhere thicker.')
+  persist(); schedule(100); renderParams()
+})
+function lightsPanel(d) {
+  const L = litOf(d.id)
+  const det = document.createElement('details')
+  det.className = 'finishPanel'
+  if (L.on) det.open = true
+  det.innerHTML = '<summary>💡 Gloving lights</summary><div></div>'
+  const box = det.lastChild
+  const changed = (re) => { persist(); schedule(150); if (re) renderParams() }
+  box.append(control({ key: 'litOn', label: 'Pockets for gloving lights', check: true, hint: 'Small LED lights worn on glove fingertips, set into the design: click on the design to place each one.' }, () => L.on, (v) => { L.on = v; if (!v) placing = false; changed(true) }))
+  if (L.on) {
+    box.append(control({ key: 'litSize', label: 'Light size', options: Object.values(LIGHT_SIZES).map((s) => s.label), hint: 'Measure your light across its widest part with calipers: the size class is set by its batteries.' }, () => LIGHT_SIZES[L.size].label, (v) => { L.size = Object.keys(LIGHT_SIZES).find((k2) => LIGHT_SIZES[k2].label === v) || 'nano'; changed(true) }))
+    if (L.size === 'custom') {
+      box.append(control({ key: 'litD', label: 'Light width', unit: 'mm', min: 8, max: 22, step: 0.1, hint: 'Across the widest part.' }, () => L.d, (v) => { L.d = v; changed() }))
+      box.append(control({ key: 'litLen', label: 'Light length', unit: 'mm', min: 12, max: 45, step: 0.5, hint: 'Base to the top of the LED.' }, () => L.len, (v) => { L.len = v; changed() }))
+    }
+    const row = document.createElement('div'); row.className = 'btns'
+    row.innerHTML = `<button class="btn ${placing ? 'primary' : ''}" id="litPlace">${placing ? '✓ Placing: click the design' : '📍 Place lights'}</button><button class="btn" id="litUndo" ${L.spots.length ? '' : 'disabled'}>Undo last</button>`
+    box.append(row)
+    row.querySelector('#litPlace').onclick = () => { placing = !placing; if (!placing) hoverMark.visible = false; renderParams() }
+    row.querySelector('#litUndo').onclick = () => { L.spots = L.spots.slice(0, -1); changed(true) }
+    const lit = current?.design === d ? current.hub.lights : null
+    box.insertAdjacentHTML('beforeend', `<div class="hint">${placing ? 'Move over the design: the marker is <b style="color:var(--good)">green</b> where a light fits and <b style="color:var(--bad)">red</b> where it would break through. Click to place. Turn the view to reach other sides.' : `${L.spots.length} light${L.spots.length === 1 ? '' : 's'} placed.`}${lit ? ` Pockets Ø${(lit.d + 0.4).toFixed(1)} × ${lit.depth.toFixed(0)} mm deep, with a seat for a clear TPU diffuser cap and a notch to lift the light out.` : ''}</div>`)
+    if (L.spots.length) { const c = document.createElement('button'); c.className = 'btn'; c.textContent = 'Clear all lights'; c.onclick = () => { L.spots = []; changed(true) }; box.append(c) }
+    const fit = LIGHTS_THAT_FIT.filter((x) => L.size === 'custom' || x.size === L.size)
+    box.insertAdjacentHTML('beforeend', `<details class="fitlist"><summary>Lights that fit</summary><ul>${fit.map((x) => `<li><a href="${x.url}" target="_blank" rel="noopener">${x.name}</a>${x.note ? ` <small>(${x.note})</small>` : ''}</li>`).join('') || '<li>Measure your light and use Custom.</li>'}</ul><div class="hint">Not affiliated with any of these makers: sizes are from their own listings. Check your light with calipers before you print. Buying through them supports the people who make the lights.</div></details>`)
+  }
+  return det
+}
+function lightsExports(d) {
+  const lit = current?.design === d ? current.hub.lights : null
+  if (!lit) return
+  const b = document.createElement('button'); b.className = 'btn'
+  b.textContent = `Diffuser caps STL (${lit.n}, clear TPU)`
+  b.onclick = () => download(toSTL(current.hub.meshes.lightCaps, d.name + ' light caps'), `${d.id}-light-caps-${lit.d}mm.stl`)
+  $('exports').append(b)
+  $('exportNote').insertAdjacentHTML('beforeend', `<div class="hint" style="margin-top:8px"><b>Gloving lights:</b> ${lit.n} pocket${lit.n === 1 ? '' : 's'} for ${lit.d} mm lights. Print the caps in clear or natural TPU. Push a light in LED up, press the cap into the seat over it; lift the light out by the notch to change its mode. Check the fit with one light before you print the whole design.</div>`)
 }
 
 // ---------------------------------------------------------------- infill --
@@ -1140,8 +1271,10 @@ const FINISH0 = { kind: 'none', text: 'DREAM', font: 'bold sans', style: 'raised
 const finOf = (id) => (state.finish[id] = { ...FINISH0, ...(state.finish[id] || {}) })
 const finishPayload = (id) => { const f = state.finish[id]; return f && f.kind !== 'none' && f.loops?.length ? { ...f } : null }
 const infOf = (id) => (state.infill[id] = { ...INFILL0, ...(state.infill[id] || {}) })
+const litOf = (id) => (state.lights[id] = { ...LIGHTS0, ...(state.lights[id] || {}) })
+const lightsPayload = (id) => { const L = state.lights[id]; return L && L.on && L.spots?.length ? { ...LIGHTS0, ...L } : null }
 const infillPayload = (id) => { const f = state.infill[id]; return f && f.fill < 100 ? { ...INFILL0, ...f } : null }
-const keyOf = (id, p, mode = 'print') => { const f = finishPayload(id); return JSON.stringify([id, p, state.material, state.bed, mode === 'cnc' ? state.cncp[id] : 0, f ? { ...f, loops: f.sig } : 0, mode === 'cnc' ? 0 : infillPayload(id)]) }
+const keyOf = (id, p, mode = 'print') => { const f = finishPayload(id); return JSON.stringify([id, p, state.material, state.bed, mode === 'cnc' ? state.cncp[id] : 0, f ? { ...f, loops: f.sig } : 0, mode === 'cnc' ? 0 : infillPayload(id), mode === 'cnc' ? 0 : lightsPayload(id)]) }
 function remember(k, hub) {
   cache.delete(k)
   cache.set(k, hub)
@@ -1238,7 +1371,7 @@ async function rebuild() {
   try {
     hub = cncNow
       ? await work('cnc', { design: d.id, params: p, cnc: { ...cncp() }, finish: finishPayload(d.id) })
-      : await work('build', { design: d.id, params: p, material: state.material, bed: Number(state.bed), finish: finishPayload(d.id), infill: infillPayload(d.id) })
+      : await work('build', { design: d.id, params: p, material: state.material, bed: Number(state.bed), finish: finishPayload(d.id), infill: infillPayload(d.id), lights: lightsOK(d) ? lightsPayload(d.id) : null })
     remember(k, hub)
   } catch (e) {
     inflight = false
@@ -2041,7 +2174,7 @@ function renderCutExports(d) {
 function renderExports() {
   renderExports0()
   const d = design()
-  if (!(isCnc() && !printOnly(d)) && !d.cncOnly) infillExports(d)
+  if (!(isCnc() && !printOnly(d)) && !d.cncOnly) { lightsExports(d); infillExports(d) }
 }
 function renderExports0() {
   const d = design()
@@ -2449,6 +2582,7 @@ function renderGuide() {
 }
 
 function download(data, name, type = 'model/stl') {
+  if (/model|stl|3mf|dxf|svg/i.test(type + name)) community.downloaded(design().id)
   const url = URL.createObjectURL(new Blob([data], { type }))
   const a = Object.assign(document.createElement('a'), { href: url, download: name })
   document.body.append(a)

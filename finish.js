@@ -151,7 +151,7 @@ export function applyFinish(wasm, result, f) {
 }
 
 /** If B is A moved rigidly (same vertex order), the 4x4 column-major transform, else null. */
-function fitRigid(A, B) {
+export function fitRigid(A, B) {
   const n = A.length / 3
   if (n < 4) return null
   const pick = [0, Math.floor(n / 3), Math.floor((2 * n) / 3), n - 1]

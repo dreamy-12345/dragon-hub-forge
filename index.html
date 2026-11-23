@@ -197,6 +197,25 @@ details > div { display: grid; gap: 10px; margin-top: 10px; }
 .catbar small { color: var(--muted); font: 500 11px var(--mono); }
 .catbar .subs { grid-column: 1 / -1; }
 .subs .chip { padding: 3px 8px; min-height: 26px; font-size: 12px; }
+.fitlist { margin-top: 6px; }
+.commPanel .cl { display: block; font-size: 12px; color: var(--muted); margin-top: 8px; }
+.commPanel textarea, .commPanel input, .commPanel select { width: 100%; background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; color: var(--fg); font: inherit; font-size: 13px; }
+.cform { display: grid; gap: 6px; margin-top: 6px; }
+.clist { display: grid; gap: 6px; margin-top: 4px; max-height: 260px; overflow-y: auto; }
+.citem { background: var(--raise); border-radius: 8px; padding: 6px 8px; font-size: 13px; position: relative; overflow-wrap: anywhere; }
+.citem small { color: var(--muted); }
+.citem .stars { color: var(--ember); }
+.citem .openv { margin-top: 4px; padding: 3px 10px; font-size: 12px; }
+.cdel { all: unset; cursor: pointer; position: absolute; top: 6px; right: 8px; font-size: 11px; color: var(--muted); }
+.cdel:hover { color: var(--bad); }
+.mapdlg { width: min(1000px, 94vw); background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 12px; }
+.mapclose { float: right; }
+.worldmap { width: 100%; height: auto; background: var(--raise); border-radius: 8px; }
+.worldmap .land { fill: #2d2937; stroke: #3d3847; stroke-width: .5; }
+.worldmap circle { fill: var(--ember); fill-opacity: .7; stroke: #fff; stroke-width: .6; }
+.toplist { columns: 3 160px; font-size: 13px; }
+.toplist small { color: var(--muted); }
+.fitlist ul { padding-left: 18px; margin: 6px 0; font-size: 13px; }
 .subsel { width: 100%; background: var(--raise); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; color: var(--fg); font-size: 13px; }
 .dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .dgrid .design { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 4px; padding: 6px 4px 8px; border: 1px solid var(--line); }
