@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from './vendor/OrbitControls.js'
-import { DESIGNS, COMMON_PARAMS, MATERIALS, defaults, toSTL, toSVG, to3MF } from './hub.js'
+import { DESIGNS, COMMON_PARAMS, MATERIALS, defaults, toSTL, toSVG, to3MF, zipStore } from './hub.js'
+import { INFILL0, PLACES, slicerSettings, to3MFPrint } from './infill.js'
 import { LED_MODES, PAGE_NAMES } from './leds.js'
 import { BubbleSim } from './bubbles.js'
 import { initCreate, traceCanvas } from './create.js'
@@ -59,6 +60,8 @@ for (const d of DESIGNS) {
 state.v = 5
 // finish (logo, text, picture) per design
 state.finish = saved.finish && typeof saved.finish === 'object' ? saved.finish : {}
+// infill (how solid, and where the solid goes) per design
+state.infill = saved.infill && typeof saved.infill === 'object' ? saved.infill : {}
 // How it is made: 3D print (everything above) or CNC cut. CNC settings are per design
 // and live apart from the print settings, so switching never changes a print design.
 state.mode = saved.mode === 'cnc' ? 'cnc' : 'print'
@@ -193,6 +196,11 @@ const rodMesh = new THREE.Mesh(new THREE.BufferGeometry(), rodMat)
 const kevMesh = new THREE.Mesh(new THREE.BufferGeometry(), kevMat)
 const pracMesh = new THREE.Mesh(new THREE.BufferGeometry(), pracMat)
 spinner.add(rodMesh, kevMesh, pracMesh)
+// the infill's solid zone, seen inside the part when the cross section is on
+const zoneMat = new THREE.MeshStandardMaterial({ color: 0xff7a2a, roughness: 0.6, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 2 })
+const zoneMesh = new THREE.Mesh(new THREE.BufferGeometry(), zoneMat)
+spinner.add(zoneMesh)
+const showZone = () => { zoneMesh.visible = !!(view.cut && current?.hub.infill?.zone && current.hub.infill.bodyKey === 'combined') }
 // "How it works": a design can hand over moving parts (hub.anim) that slide out and back to show how it goes together
 const animGroup = new THREE.Group()
 spinner.add(animGroup)
@@ -672,6 +680,7 @@ function renderParams() {
     cp.append(det)
   }
   if (!d.custom) cp.append(finishPanel(d))
+  if (!d.custom && !d.cncOnly && !(isCnc() && !printOnly(d))) cp.append(infillPanel(d))
   const reset = document.createElement('button')
   reset.className = 'btn'
   reset.textContent = `Reset ${d.name} to defaults`
@@ -764,6 +773,46 @@ function finishPanel(d) {
     if (f.kind === 'text' && !f.loops?.length) traceFinish(f)
   }
   return det
+}
+
+// ---------------------------------------------------------------- infill --
+// How solid the print is, and where the solid goes: the weight follows, and the 3MF carries it to the slicer.
+const fillWords = (hub) => (hub?.infill ? `at ${hub.infill.fill}% infill, ${hub.infill.place === 'even' ? 'even' : hub.infill.place === 'outside' ? 'solid outside' : 'solid inside'}` : 'at 100% infill')
+const loadBearing = (d) => !!(d.grip || d.sleeve || d.practiceSpoke || d.hilt || d.adaptor || d.joint || d.spokeHub || d.dowel || (d.hoop && !d.hoopDance))
+function infillPanel(d) {
+  const f = infOf(d.id)
+  const det = document.createElement('details')
+  det.className = 'finishPanel'
+  if (f.fill < 100) det.open = true
+  det.innerHTML = '<summary>🧱 Infill: how solid, and where</summary><div></div>'
+  const box = det.lastChild
+  const changed = (re) => { persist(); schedule(150); if (re) renderParams() }
+  box.append(control({ key: 'infFill', label: 'Infill', unit: '%', min: 0, max: 100, step: 5, hint: '100% is solid. Lower is lighter, faster and uses less filament, but softer and weaker. 0% is walls only.' }, () => f.fill, (v) => { const was = f.fill < 100; f.fill = v; changed(was !== (v < 100)) }))
+  if (f.fill < 100) {
+    box.append(control({ key: 'infPlace', label: 'Where the solid goes', options: Object.values(PLACES), hint: 'Even: the slicer\'s usual walls with the same infill all through. Solid outer edges: a thick solid skin (the band) round a lighter inside: tough to knock, the most common choice. Solid inner edges: solid round the pole hole or the core, lighter towards the outside: the grip and the weight stay in the middle, and a softer outside is kinder to the body.' }, () => PLACES[f.place], (v) => { f.place = Object.keys(PLACES).find((k2) => PLACES[k2] === v) || 'even'; changed(true) }))
+    if (f.place !== 'even') box.append(control({ key: 'infBand', label: f.place === 'outside' ? 'Solid skin' : 'Solid round the middle', unit: 'mm', min: 1, max: 20, step: 0.5, hint: f.place === 'outside' ? 'How thick the solid outside is: walls and top and bottom layers.' : 'How far out from the pole hole (or the core) it stays solid.' }, () => f.band, (v) => { f.band = v; changed() }))
+  }
+  if (loadBearing(d) && f.fill < 100) box.insertAdjacentHTML('beforeend', '<div class="warnline">This part carries load: print it solid (100%).</div>')
+  box.insertAdjacentHTML('beforeend', '<div class="hint" id="infillOut"></div>')
+  return det
+}
+function infillReadout() {
+  const el = $('infillOut')
+  if (!el || !current) return
+  const d = current.design, f = infOf(d.id), s = slicerSettings(f), inf = current.hub.infill
+  el.innerHTML = f.fill >= 100
+    ? 'Solid: 100% infill. Set it lower to see the weight drop.'
+    : `<b>Slicer:</b> ${s.text}.${inf ? ` <b>Weight:</b> ${inf.g.toFixed(0)} g instead of ${inf.gSolid.toFixed(0)} g solid (${Math.round(inf.ratio * 100)}%).` : ''}${s.zone && inf && !inf.zone ? ' (No solid zone could be found for this shape: it prints even.)' : ''}`
+}
+const infill3MF = (d) => !!(d.dart || d.acro || d.novelty || d.sleeve || d.adaptor || !(d.mould || d.ballEnd || d.bubblePoi || d.hoop || d.joint || d.fist || d.hilt || d.grip || d.practiceSpoke || d.spokeHub || d.acroMetal || d.dowel || d.cncOnly))
+function infillExports(d) {
+  const inf = current?.design === d ? current.hub.infill : null
+  if (!inf) return
+  const box = $('exports'), m = current.hub.meshes, base = `${d.id}-${inf.fill}pc-infill`
+  const btn = (label, fn) => { const b = document.createElement('button'); b.className = 'btn'; b.textContent = label; b.onclick = fn; box.append(b) }
+  if (infill3MF(d)) btn('3MF with these print settings', () => download(to3MFPrint(zipStore, m[inf.bodyKey], inf.zone ? m.solidZone : null, inf.settings, d.name), base + '.3mf', 'model/3mf'))
+  if (inf.zone) btn('Solid zone STL (slicer modifier)', () => download(toSTL(m.solidZone, d.name + ' solid zone'), base + '-solid-zone.stl'))
+  $('exportNote').insertAdjacentHTML('beforeend', `<div class="warnline" style="margin-top:8px"><b>Your infill:</b> ${inf.settings.text}. ${infill3MF(d) ? 'The 3MF carries these settings into PrusaSlicer (and slicers that read its files)' : 'Set these in your slicer'}${inf.zone ? '; in any other slicer, load the solid zone STL as a modifier (right-click the part, add modifier, load) and set it to 100% infill' : ''}. This replaces any infill the steps above mention.</div>`)
 }
 
 function drawThumb(cv, polys, R, glow = '#ffae2a') {
@@ -1077,7 +1126,9 @@ const cache = new Map()
 const FINISH0 = { kind: 'none', text: 'DREAM', font: 'bold sans', style: 'raised', depth: 1, size: 40, where: 'top', copies: 1, across: 0, up: 0, turn: 0, threshold: 128, invert: false, loops: null, sig: '' }
 const finOf = (id) => (state.finish[id] = { ...FINISH0, ...(state.finish[id] || {}) })
 const finishPayload = (id) => { const f = state.finish[id]; return f && f.kind !== 'none' && f.loops?.length ? { ...f } : null }
-const keyOf = (id, p, mode = 'print') => { const f = finishPayload(id); return JSON.stringify([id, p, state.material, state.bed, mode === 'cnc' ? state.cncp[id] : 0, f ? { ...f, loops: f.sig } : 0]) }
+const infOf = (id) => (state.infill[id] = { ...INFILL0, ...(state.infill[id] || {}) })
+const infillPayload = (id) => { const f = state.infill[id]; return f && f.fill < 100 ? { ...INFILL0, ...f } : null }
+const keyOf = (id, p, mode = 'print') => { const f = finishPayload(id); return JSON.stringify([id, p, state.material, state.bed, mode === 'cnc' ? state.cncp[id] : 0, f ? { ...f, loops: f.sig } : 0, mode === 'cnc' ? 0 : infillPayload(id)]) }
 function remember(k, hub) {
   cache.delete(k)
   cache.set(k, hub)
@@ -1174,7 +1225,7 @@ async function rebuild() {
   try {
     hub = cncNow
       ? await work('cnc', { design: d.id, params: p, cnc: { ...cncp() }, finish: finishPayload(d.id) })
-      : await work('build', { design: d.id, params: p, material: state.material, bed: Number(state.bed), finish: finishPayload(d.id) })
+      : await work('build', { design: d.id, params: p, material: state.material, bed: Number(state.bed), finish: finishPayload(d.id), infill: infillPayload(d.id) })
     remember(k, hub)
   } catch (e) {
     inflight = false
@@ -1204,6 +1255,8 @@ function show(hub, d, p, t0) {
   setGeo(snapMesh, m.snap)
   setGeo(rodMesh, m.rods)
   setGeo(kevMesh, m.kevlar)
+  setGeo(zoneMesh, hub.infill?.zone && hub.infill.bodyKey === 'combined' ? m.solidZone : null)
+  showZone()
   setGeo(pracMesh, m.practice)
   $('vSpokes').hidden = !(m.rods || m.kevlar || m.practice || hub.hoop)
   $('vSpokes').textContent = hub.bubblePoi ? 'Swivels' : hub.hoop ? (hub.hoop.close ? '◀ Whole hoop' : 'Connector close-up ▶') : hub.fist ? 'Knot' : hub.acro ? (hub.acro.metal ? (hub.acro.plugIn ? 'Bolt, wedge, O-rings' : 'O-rings') : 'Coins') : hub.dowel ? 'Bolt and wedge' : hub.spoke ? 'Spokes' : hub.mould ? (hub.mould.box ? 'Master' : 'Cast part') : hub.novelty?.counter ? 'Counterweight' : hub.hoop ? 'Connector' : 'Wicks / ends'
@@ -1217,6 +1270,7 @@ function show(hub, d, p, t0) {
     weakGroup.add(w)
   }
   drawHalo(hub, p)
+  infillReadout()
   // no staff through things held by a hilt, or ends that sit on the pole's tip
   const noPole = !!(hub.cageBall || hub.hilt || hub.fist || hub.sword || hub.tsword || hub.taxe || hub.acro || hub.dowel || hub.bubblePoi || hub.hoop || hub.mould || hub.ball || hub.novelty || hub.dart || hub.cage || hub.sleeve || hub.practiceSpoke || hub.grip)
   $('vPole').hidden = noPole
@@ -1525,7 +1579,7 @@ function renderAcroVerdict(hub, p, mat) {
     }
     if (a.grooves.length) rows.push(['O-rings', `${a.grooves.length} × ${p.oRingCS} mm cross-section, inside Ø${a.grooves[0].d.toFixed(1)} (buy that size, stretched on)`])
   } else {
-    rows.push(['TPU', `${a.g.toFixed(0)} g at 100% infill`])
+    rows.push(['TPU', `${(hub.infill ? hub.infill.g : a.g).toFixed(0)} g ${fillWords(hub)}`])
     if (a.coin) rows.push(['Coins', `${a.coin.n} × Ø${a.coin.d} · about ${a.coin.g.toFixed(0)} g (weigh yours)`])
     if (a.shot) rows.push(['Steel shot', `${a.shot.g.toFixed(0)} g${a.shot.full ? ' (all that fits)' : ''}`])
     rows.push(['Size', `Ø${a.D.toFixed(1)} (${p.circ} mm round${a.sides ? `, ${a.sides} faces` : ''}) × ${a.L} mm`])
@@ -1562,7 +1616,7 @@ function renderSwordVerdict(hub, p) {
 function renderNoveltyVerdict(hub, p, mat) {
   const s = hub.stats, v = hub.novelty
   $('verdict').innerHTML = `
-    <div class="big">${s.gramsTotal.toFixed(0)} g<small>${s.gShot ? 'with its steel shot' : 'at 100% infill'} · ${(s.gramsTotal * 2).toFixed(0)} g a pair</small></div>
+    <div class="big">${s.gramsTotal.toFixed(0)} g<small>${s.gShot ? 'with its steel shot' : fillWords(hub)} · ${(s.gramsTotal * 2).toFixed(0)} g a pair</small></div>
     ${s.gShot ? `<div class="row"><span>Print · steel shot</span><span>${s.grams.toFixed(0)} g · ${s.gShot.toFixed(0)} g</span></div>
     <div class="row"><span>Pause the print at</span><span>${s.pauseAt.toFixed(1)} mm: fill the chambers with steel shot</span></div>` : ''}
     <div class="row"><span>Balance point</span><span>${s.comAbove.toFixed(0)} mm past the pole tip${s.gShot ? ` (${s.comPrinted.toFixed(0)} mm without shot)` : ''} · ${s.comOff < 0.3 ? pill('good', 'on the axis') : pill('warn', s.comOff.toFixed(1) + ' mm off')}</span></div>
@@ -1958,6 +2012,11 @@ function renderCutExports(d) {
 }
 
 function renderExports() {
+  renderExports0()
+  const d = design()
+  if (!(isCnc() && !printOnly(d)) && !d.cncOnly) infillExports(d)
+}
+function renderExports0() {
   const d = design()
   const box = $('exports')
   const m = current && current.design === d ? current.hub.meshes : null
@@ -2453,6 +2512,7 @@ const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0)
 renderer.localClippingEnabled = true
 toggle('vCut', false, (on) => {
   view.cut = on
+  showZone()
   scene.traverse((o) => {
     if (!o.isMesh || !o.material || o === pole) return
     for (const m of [].concat(o.material)) { m.clippingPlanes = on ? [cutPlane] : []; m.side = on ? THREE.DoubleSide : m.userData.side ?? (m.userData.side = m.side, m.side); m.needsUpdate = true }

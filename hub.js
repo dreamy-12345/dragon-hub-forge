@@ -883,7 +883,7 @@ function crc32(bytes) {
   return (c ^ 0xffffffff) >>> 0
 }
 
-function zipStore(files) {
+export function zipStore(files) {
   const enc = new TextEncoder()
   const parts = [], central = []
   let offset = 0

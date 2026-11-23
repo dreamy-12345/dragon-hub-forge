@@ -10,6 +10,7 @@ import { buildTubeSword, buildTubeAxe, buildTubeMace, buildPlateAxe } from './tu
 import { buildHilt } from './hilt.js'
 import { buildCage } from './cages.js'
 import { applyFinish } from './finish.js'
+import { applyInfill } from './infill.js'
 
 const ready = Module(self.__MANIFOLD_OPTS || {}).then((w) => (w.setup(), w))
 const design = (id) => DESIGNS.find((d) => d.id === id)
@@ -74,6 +75,7 @@ self.onmessage = async ({ data }) => {
     } else if (op === 'fit') result = buildFitTest(wasm, data.params)
     else if (op === 'captest') result = buildCapsuleTest(wasm, data.params)
     if ((op === 'build' || op === 'cnc') && data.finish && result) result = applyFinish(wasm, result, data.finish)
+    if (op === 'build' && data.infill && result) result = applyInfill(wasm, result, data.infill)
     self.postMessage({ id, result }, buffers(result))
   } catch (e) {
     self.postMessage({ id, error: String(e && e.message ? e.message : e) })
