@@ -26,7 +26,7 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', TinyJuggle: 'Tiny juggling clubs', TinyHubs: 'Tiny dragon staff hubs', TinyDarts: 'Tiny rope darts', TinyPoi: 'Tiny poi', TinyContact: 'Tiny contact ends', TinyAcro: 'Tiny acro ends', TinyAxes: 'Tiny axes', TinyBubbles: 'Tiny bubble toys', CageStaff: 'Ringed fire staff ends', BubbleHubs: 'Bubble spinners', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', TinyJuggle: 'Tiny juggling clubs', BubbleGiant: 'Giant bubbles', BubbleCircus: 'Circus bubble wands', BubbleOther: 'More bubble makers', TinyHubs: 'Tiny dragon staff hubs', TinyDarts: 'Tiny rope darts', TinyPoi: 'Tiny poi', TinyContact: 'Tiny contact ends', TinyAcro: 'Tiny acro ends', TinyAxes: 'Tiny axes', TinyBubbles: 'Tiny bubble toys', CageStaff: 'Ringed fire staff ends', BubbleHubs: 'Bubble spinners', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
@@ -76,7 +76,7 @@ state.cncp = {}
 for (const d of DESIGNS) state.cncp[d.id] = { ...cncDefaults(d), ...(saved.cncp?.[d.id] || {}) }
 const isCnc = () => state.mode === 'cnc'
 const cncOnly = (d) => !!d.cncOnly // fire swords: metal, cut on a CNC, never printed
-const printOnly = (d) => !!(d.club || d.bubbleHub || d.fist || (d.acro && !d.acroMetal) || d.bubblePoi || d.hoop || d.mould || d.adaptor || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.grip) // always 3D printed, in either mode
+const printOnly = (d) => !!(d.bubbleToy || d.club || d.bubbleHub || d.fist || (d.acro && !d.acroMetal) || d.bubblePoi || d.hoop || d.mould || d.adaptor || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.grip) // always 3D printed, in either mode
 const cncp = () => state.cncp[state.design]
 const design = () => DESIGNS.find((d) => d.id === state.design)
 const params = () => state.params[state.design]
@@ -835,7 +835,7 @@ if (community.on) {
 
 // ---------------------------------------------------------- gloving lights --
 // Pockets for gloving lights, placed by clicking on the design; a green or red marker shows if one fits.
-const lightsOK = (d) => !(d.mould || d.bubblePoi || d.hoop || d.joint || d.fist || d.grip || d.practiceSpoke || d.acroMetal || d.dowel || d.cncOnly || d.sword || d.tsword || d.taxe || d.cage || d.cageBall) // everything printed with room for a light
+const lightsOK = (d) => !(d.bubbleToy || d.mould || d.bubblePoi || d.hoop || d.joint || d.fist || d.grip || d.practiceSpoke || d.acroMetal || d.dowel || d.cncOnly || d.sword || d.tsword || d.taxe || d.cage || d.cageBall) // everything printed with room for a light
 let placing = false, downXY = null
 const ray = new THREE.Raycaster()
 const markMat = new THREE.MeshBasicMaterial({ color: 0x6cd39a, transparent: true, opacity: 0.55, depthTest: false })
@@ -1140,7 +1140,7 @@ if (!listUI.folders) {
 
 // the browser: prop tiles first, then one prop's designs as a thumbnail grid with style chips
 const CATS = [['hubs', 'Dragon staff hubs', '🐉'], ['tiny', 'Tiny props', '🔹'], ['bubbles', 'Bubble toys', '🫧'], ['rope', 'Rope darts and meteors', '🪢'], ['poi', 'Poi', '🌀'], ['contact', 'Contact staff ends', '⚪'], ['acro', 'Acro staff ends', '🤸'], ['hoops', 'Hoops', '⭕'], ['fire', 'Swords, axes and fire metal', '🔥'], ['moulds', 'Rubber moulds', '🧪'], ['fittings', 'Pole fittings', '🔩']]
-const BUBBLE_GROUPS = ['BubblePoi', 'BubbleHubs']
+const BUBBLE_GROUPS = ['BubblePoi', 'BubbleHubs', 'BubbleGiant', 'BubbleCircus', 'BubbleOther']
 const catOf = (g) => { if (String(g).startsWith('Tiny')) return 'tiny'; if (BUBBLE_GROUPS.includes(g)) return 'bubbles'; const x = SECTION_OF[g]; return x === 'collapse' ? 'hoops' : x === 'sparks' ? 'fire' : x }
 const METAL_HUB_GROUPS = ['Fire', 'SpokeHubs', 'PracticeSpokes']
 const inCatOf = (e, cat) => catOf(e.group) === cat || !!e.design?.alsoIn?.includes(cat) || (cat === 'hubs' && METAL_HUB_GROUPS.includes(e.group))
@@ -1494,7 +1494,7 @@ function show(hub, d, p, t0) {
   drawHalo(hub, p)
   infillReadout()
   // no staff through things held by a hilt, or ends that sit on the pole's tip
-  const noPole = !!(hub.club || hub.scale < 0.9 || hub.bubbleHub?.end || hub.cageBall || hub.hilt || hub.fist || hub.sword || hub.tsword || hub.taxe || hub.acro || hub.dowel || hub.bubblePoi || hub.hoop || hub.mould || hub.ball || hub.novelty || hub.dart || hub.cage || hub.sleeve || hub.practiceSpoke || hub.grip)
+  const noPole = !!(hub.bubbleToy || hub.club || hub.scale < 0.9 || hub.bubbleHub?.end || hub.cageBall || hub.hilt || hub.fist || hub.sword || hub.tsword || hub.taxe || hub.acro || hub.dowel || hub.bubblePoi || hub.hoop || hub.mould || hub.ball || hub.novelty || hub.dart || hub.cage || hub.sleeve || hub.practiceSpoke || hub.grip)
   $('vPole').hidden = noPole
   // swords, poi and rope darts are not spun on a staff: no spin controls
   const noSpin = !!(hub.sword || hub.tsword || hub.dart || hub.bubblePoi)
@@ -2035,6 +2035,15 @@ function renderVerdict(hub, p) {
   if (hub.hoop) return renderHoopVerdict(hub, p, mat)
   if (hub.bubblePoi) return renderBubblePoiVerdict(hub, p, mat)
   if (hub.bubbleHub) return renderBubbleHubVerdict(hub, p, mat)
+  if (hub.bubbleToy) {
+    const t = hub.bubbleToy, s = hub.stats
+    $('verdict').innerHTML = `<div class="big">${s.grams.toFixed(0)} g<small>printed in ${mat.name}${t.pieces.some((pc) => pc.n > 1) ? ', all the pieces' : ''}</small></div>
+      <div class="row"><span>Print</span><span>${t.pieces.map((pc) => `${pc.n} × ${pc.label.replace(/ \(print \d\)/, '')}`).join(' · ')}</span></div>
+      ${t.rows.map(([a, b]) => `<div class="row"><span>${a}</span><span>${b}</span></div>`).join('')}
+      ${mat.name.startsWith('TPU') ? '<div class="warnline">Print bubble toys in PETG or PLA: TPU loops flop and drop the film.</div>' : ''}
+      ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+    return
+  }
   if (hub.club) {
     const c = hub.club, s = hub.stats
     $('verdict').innerHTML = `<div class="big">${s.grams.toFixed(0)} g<small>one club in ${mat.name} · ${(s.grams * 3).toFixed(0)} g for a set of three</small></div>
@@ -2280,6 +2289,12 @@ function renderExports0() {
       ...(v?.insertNames || []).map((n) => [`${n[0].toUpperCase() + n.slice(1)} insert STL${n === 'guard' ? ' (print 2)' : ''}`, '', () => download(toSTL(m[`ins_${n}`], `${d.name} ${n} insert`), `${nm}-${n}-insert.stl`), !m]),
     ])
     $('exportNote').innerHTML = 'Print the block in PETG or nylon at 100% infill, lying on its side; print the inserts standing on their collars. This printed block is for practice and LED swords: for fire, switch to CNC and have the block (and the inserts) machined in aluminium.'
+    return
+  }
+  if (d.bubbleToy) {
+    const t = current?.design === d ? current.hub.bubbleToy : null
+    exportButtons((t?.pieces || []).map((pc, i) => [`${pc.label} STL${pc.n > 1 && !/print \d/.test(pc.label) ? ` (print ${pc.n})` : ''}`, i ? '' : 'primary', () => download(toSTL(m[pc.key], `${d.name} ${pc.label}`), `${d.id}-${pc.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '')}.stl`), !m?.[pc.key]]))
+    $('exportNote').innerHTML = 'Print in PETG or PLA as each piece comes, no supports unless the notes say so. A good mix: 600 ml water, 50 ml washing-up liquid, 25 ml glycerine; for giants, rest it overnight and add a pinch of guar gum.'
     return
   }
   if (d.club) {
