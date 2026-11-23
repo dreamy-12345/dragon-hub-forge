@@ -93,16 +93,18 @@ export function buildHilt(wasm, p, opts = {}) {
     const meshes = { combined: meshData(block) }
     for (const [name, phi] of S) {
       const t = tubes[name], d = depth[name], z0 = inserts ? c / 2 + d + 1 : c / 2 - 1
-      const key = `anim${name}${phi}`.replace(/\W/g, '')
+      const side = name === 'guard' ? (phi < 0 ? 'L' : 'R') : ''
+      const key = `anim${name}${side}`
+      const nice = name === 'guard' ? `${phi < 0 ? 'Left' : 'Right'} guard` : name[0].toUpperCase() + name.slice(1)
       const len = name === 'handle' ? 120 : name === 'blade' ? 140 : 90
       const tube = k(k(k(Manifold.cylinder(len, t.od / 2, t.od / 2, 32)).subtract(k(k(Manifold.cylinder(len + 2, t.od / 2 - t.wall, t.od / 2 - t.wall, 32)).translate([0, 0, -1])))).translate([0, 0, z0]))
       meshes[key] = meshData(k(tube.rotate([0, phi, 0])))
       const dir = [Math.sin((phi * Math.PI) / 180) * 60, 0, Math.cos((phi * Math.PI) / 180) * 60]
-      anim.push({ key, dir, look: 'ghost' })
+      anim.push({ key, dir, look: 'ghost', label: `${nice} tube` })
       if (inserts && ins[name]) {
         const ik = key + 'i'
         meshes[ik] = meshData(k(k(k(ins[name].rotate([180, 0, 0])).translate([0, 0, c / 2 + d + 1])).rotate([0, phi, 0]))) // spigot in the socket, collar on the mouth
-        anim.push({ key: ik, dir: dir.map((v) => v * 0.8), look: 'part', lead: 1.2 })
+        anim.push({ key: ik, dir: dir.map((v) => v * 0.8), look: 'part', lead: 1.2, label: `${nice} insert` })
       }
     }
     // the inserts laid flat for printing (or the machinist), spigot up
@@ -127,7 +129,7 @@ export function buildHilt(wasm, p, opts = {}) {
 
 export function hiltDesigns() {
   return [{
-    id: 'hiltConnector', name: 'Hilt Connector', group: 'TubeSwords', added: '2026-11-22', hilt: true, cnc: { material: 'al6061' },
+    id: 'hiltConnector', name: 'Hilt Connector', group: 'TubeSwords', alsoIn: ['fittings'], added: '2026-11-22', hilt: true, cnc: { material: 'al6061' },
     blurb: 'The four-way block that holds a tube fire sword together, on its own: handle pole below, blade above, a guard arm each side. 3D print it in PETG or nylon, or switch to CNC and have it machined in aluminium. Lock the tubes with through-bolts, or with pole inserts that click in with a grub screw or a twist-lock. Press How it works to see it go together.',
     params: HILT_PARAMS.map((x) => ({ ...x })),
     draw: () => {},

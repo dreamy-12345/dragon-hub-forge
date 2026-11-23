@@ -1099,8 +1099,11 @@ if (!listUI.folders) {
 }
 
 // the browser: prop tiles first, then one prop's designs as a thumbnail grid with style chips
-const CATS = [['hubs', 'Dragon staff hubs', '🐉'], ['rope', 'Rope darts and meteors', '🪢'], ['poi', 'Poi', '🌀'], ['contact', 'Contact staff ends', '⚪'], ['acro', 'Acro staff ends', '🤸'], ['hoops', 'Hoops', '⭕'], ['fire', 'Swords, axes and fire metal', '🔥'], ['moulds', 'Rubber moulds', '🧪'], ['fittings', 'Pole fittings', '🔩']]
-const catOf = (g) => { const x = SECTION_OF[g]; return x === 'collapse' ? 'hoops' : x === 'sparks' ? 'fire' : x }
+const CATS = [['hubs', 'Dragon staff hubs', '🐉'], ['bubbles', 'Bubble toys', '🫧'], ['rope', 'Rope darts and meteors', '🪢'], ['poi', 'Poi', '🌀'], ['contact', 'Contact staff ends', '⚪'], ['acro', 'Acro staff ends', '🤸'], ['hoops', 'Hoops', '⭕'], ['fire', 'Swords, axes and fire metal', '🔥'], ['moulds', 'Rubber moulds', '🧪'], ['fittings', 'Pole fittings', '🔩']]
+const BUBBLE_GROUPS = ['BubblePoi', 'BubbleHubs']
+const catOf = (g) => { if (BUBBLE_GROUPS.includes(g)) return 'bubbles'; const x = SECTION_OF[g]; return x === 'collapse' ? 'hoops' : x === 'sparks' ? 'fire' : x }
+const METAL_HUB_GROUPS = ['Fire', 'SpokeHubs', 'PracticeSpokes']
+const inCatOf = (e, cat) => catOf(e.group) === cat || !!e.design?.alsoIn?.includes(cat) || (cat === 'hubs' && METAL_HUB_GROUPS.includes(e.group))
 function renderGallery() {
   galleryTools()
   const g = $('gallery')
@@ -1145,7 +1148,7 @@ function renderGallery() {
     }
     const box = document.createElement('div'); box.className = 'cats'
     const count = {}
-    for (const e of rows) if (e.design && !e.design.custom) count[catOf(e.group)] = (count[catOf(e.group)] || 0) + 1
+    for (const e of rows) if (e.design && !e.design.custom) for (const [key] of CATS) if (inCatOf(e, key)) count[key] = (count[key] || 0) + 1
     const mineN = rows.filter((e) => e.group === 'Creations' || e.design?.custom).length
     const tile = (icon, name, n, fn) => { const b = document.createElement('button'); b.className = 'cat'; b.innerHTML = `<span class="ci">${icon}</span><b>${name}</b><small>${n}</small>`; b.onclick = fn; box.append(b) }
     for (const [key, name, icon] of CATS) if (count[key]) tile(icon, name, count[key], () => { listUI.cat = key; listUI.sub = 'all'; keepList(); renderGallery(); g.scrollTop = 0 })
@@ -1155,9 +1158,23 @@ function renderGallery() {
   }
   // inside one prop: back, style chips, the grid
   const name = CATS.find(([key]) => key === listUI.cat)?.[1] || ''
-  const inCat = rows.filter((e) => e.design && !e.design.custom && catOf(e.group) === listUI.cat)
+  let inCat = rows.filter((e) => e.design && !e.design.custom && inCatOf(e, listUI.cat))
   const bar = document.createElement('div'); bar.className = 'catbar'
-  bar.innerHTML = `<button class="back">← All props</button><b>${name}</b><small>${inCat.length}</small><div class="chips subs"></div>`
+  bar.innerHTML = `<button class="back">← All props</button><b>${name}</b><small>${inCat.length}</small><div class="chips kinds"></div><div class="chips subs"></div>`
+  if (listUI.cat === 'hubs') {
+    // two sections first: printed hubs, and metal ones (CNC cut or machined)
+    const metal = (e) => !!(e.design.cnc || e.design.cncOnly || e.design.spokeHub || METAL_HUB_GROUPS.includes(e.group))
+    const kind = listUI.hubKind === 'metal' ? 'metal' : 'print'
+    const kinds = bar.querySelector('.kinds')
+    for (const [k2, lab] of [['print', '3D printed'], ['metal', 'Metal (CNC)']]) {
+      const c = document.createElement('button'); c.className = 'chip'
+      c.textContent = `${lab} ${inCat.filter((e) => (k2 === 'metal') === metal(e)).length}`
+      c.setAttribute('aria-pressed', String(kind === k2))
+      c.onclick = () => { listUI.hubKind = k2; listUI.sub = 'all'; keepList(); renderGallery() }
+      kinds.append(c)
+    }
+    inCat = inCat.filter((e) => (kind === 'metal') === metal(e))
+  }
   bar.querySelector('.back').onclick = () => { listUI.cat = null; keepList(); renderGallery(); g.scrollTop = 0 }
   const groups = [...new Set(inCat.map((e) => e.group))]
   const subs = bar.querySelector('.subs')
@@ -2719,6 +2736,7 @@ layUI.hidden = true
 vpanels.append(layUI)
 function applyLayers() {
   for (const [key, , get] of LAYERS) if (view.hidden.has(key)) get().visible = false
+  for (const m of animGroup.children) if (view.hidden.has('p:' + m.userData?.key)) m.visible = false
   const x = view.xray || 0
   if (x > 0) {
     frameMat.transparent = true; frameMat.opacity = 1 - (x / 100) * 0.85; frameMat.depthWrite = x < 30; frameMat.needsUpdate = true
@@ -2729,9 +2747,17 @@ function renderLayers() {
   if (layUI.hidden) return
   const has = (o) => (o.isGroup ? o.children.length > 0 : !!o.geometry?.attributes?.position?.count)
   const rows = LAYERS.filter(([, , get]) => has(get()))
-  layUI.innerHTML = `${rows.map(([key, label]) => `<label class="check"><input type="checkbox" data-k="${key}"${view.hidden.has(key) ? '' : ' checked'}> ${label}</label>`).join('')}
+  const pretty = (key) => { const t = String(key).replace(/^(anim|cage)/, '').replace(/([a-z])([A-Z0-9])/g, '$1 $2').replace(/(\d+)/, (n) => String(+n + 1)).trim(); return t ? t[0].toUpperCase() + t.slice(1) : 'Part' }
+  const parts = animGroup.children.map((m) => m.userData?.key).filter(Boolean)
+  layUI.innerHTML = `${rows.filter(([key]) => key !== 'moving' || !parts.length).map(([key, label]) => `<label class="check"><input type="checkbox" data-k="${key}"${view.hidden.has(key) ? '' : ' checked'}> ${label}</label>`).join('')}
+    ${parts.length ? `<div class="hint">Parts</div>${parts.map((key) => `<label class="check"><input type="checkbox" data-p="${key}"${view.hidden.has('p:' + key) ? '' : ' checked'}> ${animGroup.children.find((m) => m.userData.key === key)?.userData.label || pretty(key)}</label>`).join('')}` : ''}
     <div class="ctl"><label for="xray">X-ray the body</label><output id="xrayOut">${view.xray || 0}%</output><input type="range" id="xray" min="0" max="100" step="5" value="${view.xray || 0}"></div>`
-  for (const cb of layUI.querySelectorAll('input[type=checkbox]')) cb.onchange = () => {
+  for (const cb of layUI.querySelectorAll('input[data-p]')) cb.onchange = () => {
+    const key = cb.dataset.p, m = animGroup.children.find((c) => c.userData.key === key)
+    if (cb.checked) view.hidden.delete('p:' + key); else view.hidden.add('p:' + key)
+    if (m) m.visible = cb.checked
+  }
+  for (const cb of layUI.querySelectorAll('input[data-k]')) cb.onchange = () => {
     const key = cb.dataset.k, o = LAYERS.find((l) => l[0] === key)[2]()
     if (cb.checked) { view.hidden.delete(key); if (current) show(current.hub, current.design, current.params, performance.now()) } else { view.hidden.add(key); o.visible = false }
   }
