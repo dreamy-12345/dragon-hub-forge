@@ -97,8 +97,15 @@ export function applyLights(wasm, result, L) {
       const O = k(new Manifold(new Mesh({ numProp: 3, vertProperties: md.positions, triVerts: md.indices })))
       result.meshes[key] = meshData(k(O.subtract(P)))
     }
+    // print pieces cut from the whole (a ball's two halves): the same pockets, moved the way each piece was
+    for (const [key, T] of Object.entries(result.pieceTransforms || {})) {
+      const md = result.meshes[key]
+      if (!md?.positions) continue
+      const O = k(new Manifold(new Mesh({ numProp: 3, vertProperties: md.positions, triVerts: md.indices })))
+      result.meshes[key] = meshData(k(O.subtract(k(P.transform(T)))))
+    }
     for (const [key, md] of Object.entries(result.meshes)) {
-      if (['combined', 'frame', 'glow', 'lids'].includes(key) || !md?.positions || md.positions.length !== data.positions.length) continue
+      if (['combined', 'frame', 'glow', 'lids', ...Object.keys(result.pieceTransforms || {})].includes(key) || !md?.positions || md.positions.length !== data.positions.length) continue
       const T = fitRigid(data.positions, md.positions)
       if (T) result.meshes[key] = meshData(k(out.transform(T)))
     }

@@ -16,7 +16,7 @@ export const DART_PARAMS = [
   { key: 'length', label: 'Length', unit: 'mm', min: 60, max: 180, step: 1, value: 110, hint: 'Tip to the top of the eye.' },
   { key: 'maxD', label: 'Widest', unit: 'mm', min: 20, max: 70, step: 0.5, value: 34 },
   { key: 'attach', label: 'Rope attaches by', options: ['eye', 'swivel socket (M8)'], value: 'eye', hint: 'Eye: tie the rope through the hole (figure-eight loop). Swivel socket: a threaded M8 socket at the top for a stainless swivel eye bolt, so the rope never twists; lock the thread with a drop of thread-locker (metal) or the printed nut trap (print).' },
-  { key: 'capsule', label: 'LED capsule inside', options: ['none', 'yes: a capsule slides in from the tip'], value: 'none', rerender: true, hint: 'A pocket for an LED capsule (Flowtoys Capsule 2.C or 2.0, or any you measure) from the tip, closed by a printed plug. Print it in clear or natural TPU so the whole head glows. The forge warns if the shape is too slim.' },
+  { key: 'capsule', label: 'LED capsule inside', options: ['none', 'yes: a capsule slides in from the tip'], value: 'none', showIf: () => false, rerender: true, hint: 'A pocket for an LED capsule (Flowtoys Capsule 2.C or 2.0, or any you measure) from the tip, closed by a printed plug. Print it in clear or natural TPU so the whole head glows. The forge warns if the shape is too slim.' },
   { key: 'ropeD', label: 'Rope', unit: 'mm', min: 3, max: 14, step: 0.5, value: 7, presets: [6, 8, 10], hint: 'The eye fits this rope with a millimetre to spare.' },
 ]
 

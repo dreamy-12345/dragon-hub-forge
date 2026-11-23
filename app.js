@@ -695,8 +695,7 @@ function renderParams() {
   }
   if (!d.custom) cp.append(finishPanel(d))
   if (!d.custom && !d.cncOnly && !(isCnc() && !printOnly(d))) cp.append(infillPanel(d))
-  if ((d.pods || d.style === 'glow' || (d.dart && (params().capsule || '').startsWith('yes'))) && !(isCnc() && !printOnly(d))) cp.append(capsulePanel(d))
-  if (lightsOK(d) && !(isCnc() && !printOnly(d))) cp.append(lightsPanel(d))
+  if ((lightsOK(d) || capsuleOK(d)) && !(isCnc() && !printOnly(d))) cp.append(lightsPanel(d))
   else placing = false
   if (!d.custom) cp.append(community.panel(d, () => ({ design: d.id, params: { ...params() }, material: state.material, infill: state.infill[d.id] || null, lights: state.lights[d.id] || null })))
   const reset = document.createElement('button')
@@ -829,7 +828,7 @@ if (community.on) {
 
 // ---------------------------------------------------------- gloving lights --
 // Pockets for gloving lights, placed by clicking on the design; a green or red marker shows if one fits.
-const lightsOK = (d) => !(d.custom || d.mould || d.ballEnd || d.bubblePoi || d.hoop || d.joint || d.fist || d.hilt || d.grip || d.practiceSpoke || d.spokeHub || d.acroMetal || d.dowel || d.cncOnly || d.bubbleHub || d.sword || d.tsword || d.taxe || d.cage || d.cageBall)
+const lightsOK = (d) => !(d.mould || d.bubblePoi || d.hoop || d.joint || d.fist || d.grip || d.practiceSpoke || d.acroMetal || d.dowel || d.cncOnly || d.sword || d.tsword || d.taxe || d.cage || d.cageBall) // everything printed with room for a light
 let placing = false, downXY = null
 const ray = new THREE.Raycaster()
 const markMat = new THREE.MeshBasicMaterial({ color: 0x6cd39a, transparent: true, opacity: 0.55, depthTest: false })
@@ -888,12 +887,10 @@ canvas.addEventListener('pointerup', (e) => {
   persist(); schedule(100); renderParams()
 })
 // LED capsules: one tap sets the pocket to a capsule that fits, with where to buy it
-function capsulePanel(d) {
+const capsuleOK = (d) => !!(d.pods || d.dart)
+const capsuleOn = (d) => !!(d.pods || d.style === 'glow' || (d.dart && (params().capsule || '').startsWith('yes')))
+function capsuleBody(d, box) {
   const p = params()
-  const det = document.createElement('details')
-  det.className = 'finishPanel'
-  det.innerHTML = '<summary>🔦 LED capsules that fit</summary><div></div>'
-  const box = det.lastChild
   const row = document.createElement('div'); row.className = 'btns'
   for (const c of CAPSULES) {
     const b = document.createElement('button')
@@ -909,17 +906,28 @@ function capsulePanel(d) {
   }
   box.insertAdjacentHTML('beforeend', `<ul class="fitlist">${CAPSULES.map((c) => `<li><a href="${c.url}" target="_blank" rel="noopener">${c.name}</a> <small>(${c.note})</small></li>`).join('')}</ul>
     <div class="hint">Any LED capsule works if you measure it and set the size. Vision props have their lights built in, so there is no loose capsule to fit. Not affiliated with any maker: sizes are from their own listings; check yours before printing (the capsule test cup is quick).</div>`)
-  return det
 }
 function lightsPanel(d) {
   const L = litOf(d.id)
   const det = document.createElement('details')
   det.className = 'finishPanel'
   if (L.on) det.open = true
-  det.innerHTML = '<summary>💡 Gloving lights</summary><div></div>'
+  det.innerHTML = '<summary>💡 Lights</summary><div></div>'
   const box = det.lastChild
   const changed = (re) => { persist(); schedule(150); if (re) renderParams() }
-  box.append(control({ key: 'litOn', label: 'Pockets for gloving lights', check: true, hint: 'Small LED lights worn on glove fingertips, set into the design: click on the design to place each one.' }, () => L.on, (v) => { L.on = v; if (!v) placing = false; changed(true) }))
+  // which light: none, gloving LEDs placed by clicking, or an LED capsule (only what this design can take)
+  const CH = { none: 'none', glove: 'gloving LEDs (click to place them)', capsule: d.pods ? 'LED capsules (in the lanterns)' : 'an LED capsule inside' }
+  const can = ['none', ...(lightsOK(d) ? ['glove'] : []), ...(capsuleOK(d) ? ['capsule'] : [])].filter((k2) => !(d.pods && k2 === 'none'))
+  const now = L.on ? 'glove' : capsuleOn(d) ? 'capsule' : 'none'
+  if (now !== 'none') det.open = true
+  box.append(control({ key: 'litKind', label: 'Light', options: can.map((k2) => CH[k2]), hint: 'Gloving LEDs: small fingertip lights set in pockets wherever you click. LED capsule: a flow-prop capsule inside, glowing through clear TPU.' }, () => CH[now], (v) => {
+    const k2 = Object.keys(CH).find((x) => CH[x] === v)
+    L.on = k2 === 'glove'
+    if (!L.on) placing = false
+    if (d.dart && d.style !== 'glow') params().capsule = k2 === 'capsule' ? 'yes: a capsule slides in from the tip' : 'none'
+    changed(true)
+  }))
+  if (now === 'capsule') capsuleBody(d, box)
   if (L.on) {
     box.append(control({ key: 'litSize', label: 'Light size', options: Object.values(LIGHT_SIZES).map((s) => s.label), hint: 'Measure your light across its widest part with calipers: the size class is set by its batteries.' }, () => LIGHT_SIZES[L.size].label, (v) => { L.size = Object.keys(LIGHT_SIZES).find((k2) => LIGHT_SIZES[k2].label === v) || 'nano'; changed(true) }))
     if (L.size === 'custom') {
@@ -2377,9 +2385,11 @@ function renderExports0() {
       ['Lower half STL (socket)', 'primary', () => download(toSTL(m.lowerFlat, d.name + ' lower'), nm + '-lower.stl'), !ready],
       ['Upper half STL', 'primary', () => download(toSTL(m.upperFlat, d.name + ' upper'), nm + '-upper.stl'), !ready],
       ['Joiner ring STL', '', () => download(toSTL(m.joinerFlat, d.name + ' joiner'), nm + '-joiner.stl'), !ready],
+      ...(m?.lidFlat ? [['Light lid with cradle STL', 'primary', () => download(toSTL(m.lidFlat, d.name + ' light lid'), nm + '-light-lid.stl'), false]] : []),
       ['Fit-test ring', '', async () => download(toSTL(await work('fit', { params: params() }), 'fit test'), `fit-test-${params().poleOD}pole-${params().fit}clear.stl`)],
     ])
     $('exportNote').innerHTML = 'Print all three flat as they come, no supports, TPU 95A, 3+ walls. Print the fit-test ring first and push it on your pole. Press the joiner ring into the lower half, pour in any sand or steel shot, then press the upper half on. A drop of TPU-safe glue (or a hot soldering iron run round the seam) makes it permanent. Push the ball onto the staff end; the ribs grip it.'
+    if (m?.lidFlat) $('exportNote').insertAdjacentHTML('beforeend', ` <b>Light inside:</b> print the halves and lid in clear or natural TPU and leave the ball hollow. Print the lid domed side down with a brim and supports touching the bed only. Push the ${current?.hub.ball?.light?.kind === 'capsule' ? 'capsule' : 'light'} up into the cradle, switch it on, and press the lid into the top of the ball until the snap ring clicks; lift it out by the notch.`)
     return
   }
   if (d.adaptor) {

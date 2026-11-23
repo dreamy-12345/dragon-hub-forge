@@ -14,6 +14,8 @@ export const BALL_PARAMS = [
   { key: 'depth', label: 'Socket depth', unit: 'mm', min: 20, max: 70, step: 1, value: 38, hint: 'How far the pole goes in. Deeper holds better; it stops just short of the centre.' },
   { key: 'fill', label: 'Inside', options: ['hollow', 'sand', 'steel shot', 'heaviest: packed steel shot'], value: 'hollow', hint: 'Pour sand or steel shot into the lower half before you press the halves together. Heaviest: pack the chamber right up with steel shot (tap it down as you fill), with thick walls and a big ball. Steel shot, not lead: lead is toxic to handle.' },
   { key: 'fillPct', label: 'How full', unit: '%', min: 0, max: 100, step: 5, value: 40 },
+  { key: 'light', label: 'Light inside', options: ['none', 'gloving LED on a clip-in lid', 'LED capsule on a clip-in lid'], value: 'none', rerender: true, hint: 'A round lid in the top of the ball pushes in with a snap ring; a sprung cradle under it holds the light in the hollow middle, so the whole ball glows through clear or natural TPU. Pop the lid out with a fingernail to switch it on or change the mode. The ball must stay hollow.' },
+  { key: 'lightSize', label: 'Gloving LED size', options: ['nano 12.5 mm', 'mid 14.5 mm', 'classic 16 mm'], value: 'nano 12.5 mm', showIf: (p) => (p.light || '').startsWith('gloving') },
 ]
 
 const RIB = 0.55
@@ -52,6 +54,35 @@ export function buildBallEnd(wasm, p, opts = {}) {
     solid = k(solid.subtract(k(k(Manifold.cylinder(R - depth - capT, boreR, boreR, 48)).translate([0, 0, -R + depth + capT]))))
 
 
+    // a light inside: a round lid in the top with a snap ring, and a sprung cradle under it that holds the light
+    let lid = null, lightShow = null, lightInfo = null
+    const lightKind = (p.light || '').startsWith('gloving') ? 'glove' : (p.light || '').startsWith('LED capsule') ? 'capsule' : null
+    if (lightKind) {
+      const gl = { nano: [12.5, 24], mid: [14.5, 26], classic: [16, 28] }[(p.lightSize || 'nano').split(' ')[0]] || [12.5, 24]
+      const [ld, ll] = lightKind === 'glove' ? gl : [p.capD || 21, p.capL || 88]
+      const lr = ld / 2 + 0.2, ro = Math.max(lr + 4, 12), top = ri // the inside of the shell at the top
+      // how far down the light can hang: to the socket's cap when it fits down the tube, else to the equator
+      const floorZ = lr <= boreR - 0.3 ? -R + depth + capT + 1 : 1
+      const room = top - 2 - floorZ
+      if (ll > room) warns.push(`The ${lightKind === 'glove' ? 'light' : 'capsule'} is ${ll} mm long but there is ${room.toFixed(0)} mm of room under the lid: make the ball bigger${lightKind === 'capsule' ? ' (about ' + Math.ceil((ll + depth + capT + 8) / 2) * 2 + ' mm)' : ''}.`)
+      if ((p.fill || 'hollow') !== 'hollow') warns.push('A light inside needs the ball hollow: no sand or shot.')
+      // the hole in the top of the shell
+      solid = k(solid.subtract(k(k(Manifold.cylinder(p.wall + 6, ro, ro, 64)).translate([0, 0, top - 2]))))
+      // the lid: the ball's own surface over the hole, a plug through the shell, a snap ring under it, a fingernail notch
+      const master2 = ballMaster(wasm, k, R, style, p) // already registered
+      let L = k(master2.intersect(k(k(Manifold.cylinder(R - top + 4, ro - 0.15, ro - 0.15, 64)).translate([0, 0, top - 0.5]))))
+      L = k(L.add(k(k(Manifold.cylinder(2.2, ro - 0.15, ro - 0.15, 64)).translate([0, 0, top - 2.6]))))
+      L = k(L.add(k(k(Manifold.cylinder(1.0, ro + 0.5, ro - 0.1, 64)).translate([0, 0, top - 3.4])))) // snap ring, tapered so it pushes in
+      L = k(L.subtract(k(k(Manifold.cube([3, 8, 3], true)).translate([ro - 1, 0, R - 0.5])))) // fingernail notch
+      // the cradle: a tube with three slots so its fingers spring round the light
+      const cl = Math.min(ll * 0.6, room - 2), cz1 = top - 3.4, cz0 = cz1 - cl
+      let cr = k(k(k(Manifold.cylinder(cl, lr + 1.6, lr + 1.6, 48)).subtract(k(k(Manifold.cylinder(cl + 2, lr - 0.15, lr - 0.15, 48)).translate([0, 0, -1])))).translate([0, 0, cz0]))
+      for (let i = 0; i < 3; i++) cr = k(cr.subtract(k(k(k(Manifold.cube([2.2, lr + 4, cl * 0.7], false)).translate([-1.1, 0, cz0 - 0.01])).rotate([0, 0, 120 * i]))))
+      lid = k(L.add(cr))
+      lightShow = k(k(Manifold.cylinder(ll, ld / 2, ld / 2, 32)).translate([0, 0, top - 3.4 - ll + 1]))
+      lightInfo = { kind: lightKind, d: ld, len: ll, room, lidD: 2 * ro }
+    }
+
     // split at the equator; a joiner ring presses into both halves
     const big = R * 3
     const lower = k(solid.trimByPlane([0, 0, -1], 0))
@@ -69,13 +100,20 @@ export function buildBallEnd(wasm, p, opts = {}) {
       return { positions, indices: Uint32Array.from(mesh.triVerts) }
     }
     // in the view: the ball sits on the staff end (pole runs along z), shown whole
-    const shown = k(Manifold.union([lower, upper, joiner]))
+    const shown = k(Manifold.union([lower, upper, joiner, ...(lid ? [lid] : [])]))
     const meshes = {
       combined: meshData(shown),
       lowerFlat: meshData(k(k(lower.rotate([180, 0, 0])).translate([0, 0, 0]))), // equator down, socket up
       upperFlat: meshData(upper), // equator down
       joinerFlat: meshData(k(joiner.translate([0, 0, jh / 2]))),
     }
+    if (lid) {
+      const fl = k(lid.rotate([180, 0, 0])), b = fl.boundingBox() // domed top down, cradle up
+      meshes.lidFlat = meshData(k(fl.translate([0, 0, -b.min[2]])))
+      meshes.practice = meshData(lightShow)
+    }
+    // how each print piece sits relative to the whole ball (for pockets cut into it later)
+    const pieceTransforms = { lowerFlat: [1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1], upperFlat: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] }
     const density = opts.density || 1.21
     const gShell = ((lower.volume() + upper.volume() + joiner.volume()) / 1000) * density
     const cavity = (4 / 3) * Math.PI * ri ** 3 - Math.PI * tubeR ** 2 * R - joiner.volume()
@@ -85,13 +123,14 @@ export function buildBallEnd(wasm, p, opts = {}) {
     const fullShot = (cavity / 1000) * 4.6
     const squeeze = p.poleOD - 2 * (boreR - (p.ribs > 0 ? RIB : 0))
     return {
-      ball: { R, depth, style, squeeze, cavityCm3: cavity / 1000, fullShot, gFill, fill: p.fill, jh, eye: style.startsWith('eye-') ? (() => {
+      ball: { light: lightInfo, R, depth, style, squeeze, cavityCm3: cavity / 1000, fullShot, gFill, fill: p.fill, jh, eye: style.startsWith('eye-') ? (() => {
         const ri = R * (p.iris ?? 45) / 100, rp = ri * (p.pupil ?? 42) / 100, kind = style.slice(4)
         const z = (r) => Math.sqrt(Math.max(0, R * R - r * r))
         const pr = kind === 'dragon' ? ri * 0.85 : kind === 'cat' ? ri * 0.85 : kind === 'nazar' ? ri * 0.42 : kind === 'whole' ? rp + 0.5 : rp
         return { kind, irisZ: z(kind === 'nazar' ? ri * 0.66 : ri), pupilZ: z(pr), ...(kind === 'whole' ? { whiteZ: z(Math.min(R * 0.9, ri + R * 0.22)) } : {}) }
       })() : null },
       meshes,
+      pieceTransforms,
       viewR: R * 1.15,
       polygons: { base: k(CrossSection.circle(R, 96)).toPolygons(), relief: [], pods: [], weak: [] },
       podH: 0, ring: null, snap: null,
