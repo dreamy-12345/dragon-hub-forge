@@ -23,19 +23,19 @@ import { buildDart, DART_PARAMS } from './darts.js'
 import { acroOuter, ACRO_SHAPE_PARAMS, ACRO_POLE_PARAMS, ACRO_COIN_PARAMS, PROFILES } from './acro.js'
 
 export const RUBBERS = {
-  'platinum silicone 30A': { d: 1.08, silicone: true, note: 'The all-rounder: soft, grippy, lasts for years, skin safe once cured. Mix 1:1.' },
-  'platinum silicone 20A (extra soft)': { d: 1.07, silicone: true, note: 'Squishy and kind to the body; tears more easily, so not for eyes or nuts.' },
-  'platinum silicone 50A (firm)': { d: 1.15, silicone: true, note: 'Firm and tough: the one for rope darts and poi that pull on a cast-in nut or a moulded eye.' },
-  'tin silicone 25A (cheaper, moulds only)': { d: 1.12, silicone: true, tin: true, note: 'Cheaper and never inhibited by prints, but it shrinks a little and is not skin safe: use it for mould boxes, not ends you touch.' },
-  'urethane rubber 60A (tough, cheaper)': { d: 1.04, urethane: true, note: 'Tougher than silicone and cheaper. Sticks to everything: seal the print and use release.' },
-  'heavy: silicone 30A with steel shot': { d: 2.4, silicone: true, heavy: true, note: 'About 2 parts fine steel shot to 1 part mixed silicone by weight, stirred in just before pouring: more than twice the weight. Printed moulds only.' },
+  'platinum silicone 30A': { d: 1.08, shrink: 0.1, silicone: true, note: 'The all-rounder: soft, grippy, lasts for years, skin safe once cured. Mix 1:1.' },
+  'platinum silicone 20A (extra soft)': { d: 1.07, shrink: 0.1, silicone: true, note: 'Squishy and kind to the body; tears more easily, so not for eyes or nuts.' },
+  'platinum silicone 50A (firm)': { d: 1.15, shrink: 0.1, hard: true, silicone: true, note: 'Firm and tough: the one for rope darts and poi that pull on a cast-in nut or a moulded eye.' },
+  'tin silicone 25A (cheaper, moulds only)': { d: 1.12, shrink: 0.5, silicone: true, tin: true, note: 'Cheaper and never inhibited by prints, but it shrinks a little and is not skin safe: use it for mould boxes, not ends you touch.' },
+  'urethane rubber 60A (tough, cheaper)': { d: 1.04, shrink: 0.3, hard: true, urethane: true, note: 'Tougher than silicone and cheaper. Sticks to everything: seal the print and use release.' },
+  'heavy: silicone 30A with steel shot': { d: 2.4, shrink: 0.1, silicone: true, heavy: true, note: 'About 2 parts fine steel shot to 1 part mixed silicone by weight, stirred in just before pouring: more than twice the weight. Printed moulds only.' },
 }
 const COPIES = {
-  'urethane resin (hard)': { d: 1.08, hot: false },
-  'urethane rubber (soft)': { d: 1.04, hot: false },
-  'silicone (needs release)': { d: 1.08, hot: false },
-  'casting wax (lost-wax brass)': { d: 0.95, hot: false, brass: true },
-  'low-melt pewter (high-heat silicone)': { d: 7.3, hot: true },
+  'urethane resin (hard)': { d: 1.08, shrink: 0.3, hot: false },
+  'urethane rubber (soft)': { d: 1.04, shrink: 0.3, hot: false },
+  'silicone (needs release)': { d: 1.08, shrink: 0.1, hot: false },
+  'casting wax (lost-wax brass)': { d: 0.95, shrink: 1.0, hot: false, brass: true },
+  'low-melt pewter (high-heat silicone)': { d: 7.3, shrink: 0.6, hot: true },
 }
 
 const PRINTED = 'printed mould: cast the end in rubber'
@@ -47,6 +47,7 @@ export const MOULD_PARAMS = [
   { key: 'rubber', label: 'Rubber', options: Object.keys(RUBBERS), value: 'platinum silicone 30A', hint: 'Printed mould: what the end is made of. Mould box: what the flexible mould is made of.' },
   { key: 'copies', label: 'Cast copies in', options: Object.keys(COPIES), value: 'urethane resin (hard)', showIf: isBox, hint: 'What you pour into the finished rubber mould.' },
   { key: 'mwall', label: 'Mould wall', unit: 'mm', min: 6, max: 25, step: 0.5, value: 10, hint: 'Printed mould: plastic round the cavity. Mould box: rubber round the shape (10 mm is plenty for silicone).' },
+  { key: 'pour', label: 'Pour', options: ['bottom fill (runner to the lowest point)', 'top pour (straight in)'], value: 'bottom fill (runner to the lowest point)', hint: 'Bottom fill: the rubber runs down a sprue beside the part and comes in at its lowest point, then rises and pushes the air out of the vents ahead of it. Far fewer bubbles: the way the pros do it. Top pour: simpler, fine for slow, thin silicone poured in a thin stream.' },
   { key: 'clamp', label: 'Hold it shut with', options: ['M5 bolts and wing nuts', 'clamps or rubber bands'], value: 'M5 bolts and wing nuts', showIf: (p) => !isBox(p) },
 ]
 
@@ -74,6 +75,81 @@ function clearance(polys, px, pz) {
     if ((bz > pz) !== (az > pz) && px < ((ax - bx) * (pz - bz)) / (az - bz) + bx) inside = !inside
   }
   return inside ? -d : d
+}
+
+/**
+ * Air traps: every spot where a ceiling of the cast is a local high point, so air
+ * rising through the rubber stops there and leaves a bubble. Vertical rays through
+ * the cast on a grid give each column its solid spans; the top of a span is a trap
+ * when no neighbouring column carries the same span any higher. Neighbouring traps
+ * at about the same height are one trap (a level ring, a flat ceiling).
+ */
+function airTraps(mesh, g) {
+  const P = mesh.positions, I = mesh.indices
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity
+  for (let i = 0; i < P.length; i += 3) { x0 = Math.min(x0, P[i]); x1 = Math.max(x1, P[i]); y0 = Math.min(y0, P[i + 1]); y1 = Math.max(y1, P[i + 1]) }
+  const nx = Math.ceil((x1 - x0) / g) + 1, ny = Math.ceil((y1 - y0) / g) + 1
+  const hits = Array.from({ length: nx * ny }, () => [])
+  const ox = 0.0137, oy = 0.0291 // off the grid so rays miss shared edges
+  for (let t = 0; t < I.length; t += 3) {
+    const a = I[t] * 3, b = I[t + 1] * 3, c = I[t + 2] * 3
+    const ax = P[a], ay = P[a + 1], bx = P[b], by = P[b + 1], cx = P[c], cy = P[c + 1]
+    const den = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy)
+    if (Math.abs(den) < 1e-12) continue
+    const i0 = Math.max(0, Math.ceil((Math.min(ax, bx, cx) - x0 - ox) / g)), i1 = Math.min(nx - 1, Math.floor((Math.max(ax, bx, cx) - x0 - ox) / g))
+    const j0 = Math.max(0, Math.ceil((Math.min(ay, by, cy) - y0 - oy) / g)), j1 = Math.min(ny - 1, Math.floor((Math.max(ay, by, cy) - y0 - oy) / g))
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+      const px = x0 + i * g + ox, py = y0 + j * g + oy
+      const l1 = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / den, l2 = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / den, l3 = 1 - l1 - l2
+      if (l1 < 0 || l2 < 0 || l3 < 0) continue
+      hits[i * ny + j].push(l1 * P[a + 2] + l2 * P[b + 2] + l3 * P[c + 2])
+    }
+  }
+  const spans = hits.map((h) => { if (h.length % 2) return []; h.sort((p, q) => p - q); const out = []; for (let i = 0; i < h.length; i += 2) out.push([h[i], h[i + 1]]); return out })
+  const tops = [] // [cell, z]
+  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) for (const [lo, hi] of spans[i * ny + j]) {
+    // a trap only if nothing within 3 mm carries the same rubber any higher (air slides along a ceiling to the nearest way up)
+    let isMax = true, seen = 0
+    const rr = Math.max(1, Math.round(3 / g))
+    for (let di = -rr; di <= rr && isMax; di++) for (let dj = -rr; dj <= rr; dj++) {
+      if ((!di && !dj) || di * di + dj * dj > rr * rr) continue
+      const ii = i + di, jj = j + dj
+      if (ii < 0 || jj < 0 || ii >= nx || jj >= ny) continue
+      for (const [l2, h2] of spans[ii * ny + jj]) if (l2 < hi + 0.3 && h2 > lo) { seen++; if (h2 > hi + 0.25) { isMax = false; break } }
+      if (!isMax) break
+    }
+    if (isMax && seen >= 3) tops.push([i, j, hi])
+  }
+  // group touching tops at about the same height
+  const key = new Map(tops.map((t, n) => [`${t[0]},${t[1]}`, n])), par = tops.map((_, n) => n)
+  const find = (n) => (par[n] === n ? n : (par[n] = find(par[n])))
+  const reach = Math.max(1, Math.round(3 / g)) // tops within 3 mm and about level are one trap
+  tops.forEach(([i, j, z], n) => { for (let di = -reach; di <= reach; di++) for (let dj = -reach; dj <= reach; dj++) { const m = key.get(`${i + di},${j + dj}`); if (m !== undefined && Math.abs(tops[m][2] - z) < 1.2) par[find(m)] = find(n) } })
+  const groups = new Map()
+  tops.forEach((t, n) => { const r = find(n); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(t) })
+  return [...groups.values()].map((list) => {
+    // vent where the trap is nearest the split (so it splits cleanly), then highest
+    const pts = list.map(([i, j, z]) => [x0 + i * g + ox, y0 + j * g + oy, z])
+    pts.sort((p, q) => Math.abs(p[1]) - Math.abs(q[1]) || q[2] - p[2])
+    return { x: pts[0][0], y: pts[0][1], z: pts[0][2], size: list.length * g * g }
+  }).sort((p, q) => q.size - p.size)
+}
+
+/** Undercuts for a two-part mould split on y = 0: surface that faces back towards the split from its own side. */
+function undercutShare(mesh, skip = () => false) {
+  const P = mesh.positions, I = mesh.indices
+  let all = 0, under = 0
+  for (let t = 0; t < I.length; t += 3) {
+    const a = I[t] * 3, b = I[t + 1] * 3, c = I[t + 2] * 3
+    const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2], vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2]
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, ar = Math.hypot(nx, ny, nz) / 2
+    if (!ar) continue
+    all += ar
+    const cy = (P[a + 1] + P[b + 1] + P[c + 1]) / 3
+    if (skip((P[a] + P[b] + P[c]) / 3, cy, (P[a + 2] + P[b + 2] + P[c + 2]) / 3)) { all -= ar; continue }
+    if (Math.abs(cy) > 0.3 && cy * ny < 0 && Math.abs(ny) / (2 * ar) > 0.08) under += ar
+  }
+  return all ? under / all : 0
 }
 
 export function buildMould(wasm, p, opts = {}) {
@@ -175,28 +251,79 @@ export function buildMould(wasm, p, opts = {}) {
         if ((p.rubber || '').includes('20A')) warns.push('20A silicone is too soft to hold a cast-in nut on a swinging head: use 50A or urethane rubber.')
       } else if (!(p.rubber || '').includes('50A') && !(p.rubber || '').startsWith('urethane')) warns.push('A rubber eye takes the whole pull of the rope: cast it in 50A silicone or urethane rubber, or pick the cast-in nut.')
     }
+    // ---- shrink allowance: the cavity is made a touch big so the cured part comes out true to size
+    const copy0 = COPIES[p.copies] || COPIES['urethane resin (hard)']
+    const shrinkPct = (rub.shrink || 0) + (box ? copy0.shrink || 0 : 0)
+    const f = 1 / (1 - shrinkPct / 100)
+    if (f !== 1) {
+      const sc = (m) => k(m.scale(f))
+      master = sc(master); channels = channels.map(sc); hw = hw.map(sc); cavityExtra = cavityExtra.map(sc)
+      top *= f; R *= f; pinR *= f; sprX *= f; sprZ *= f
+      if (pin) pin.z0 *= f
+      if (nut) nut.z *= f
+      vents = vents.map(([x, z, r]) => [x * f, z * f, r])
+    }
     const bb = master.boundingBox()
-    const x0 = bb.min[0] - W, x1 = bb.max[0] + W, z0 = bb.min[2] - W, z1 = top + W
+    let x0 = bb.min[0] - W, x1 = bb.max[0] + W, z0 = bb.min[2] - W
+    const z1 = top + W
     const ymax = Math.max(-bb.min[1], bb.max[1]) + W
 
-    // pour funnel, sprue and vents, all on the split plane so each half carries half of them
+    // ---- the core pin: a pointed tip (no flat ceiling for air to hang under; a flat one where coins are taped on)
+    // and a little draft so it pulls out of the rubber
+    const DRAFT = Math.tan((0.4 * Math.PI) / 180)
+    const tipH = pin && !cavityExtra.length ? pinR * 0.35 : 0
+    const pinTopR = pin ? pinR + DRAFT * (top - pin.z0 - tipH) : 0
+    const pinSolid = (zTop) => k(k(new CrossSection([[[0, pin.z0], [pinR, pin.z0 + tipH], [pinTopR, top], [pinTopR, zTop], [0, zTop]]], 'Positive')).revolve(64))
+
+    // ---- the cast part (what comes out of a printed mould): the master less the pin's socket
+    let cast = master
+    if (pin) cast = k(master.subtract(pinSolid(top + 1)))
+    if (cavityExtra.length) cast = k(cast.subtract(k(Manifold.union(cavityExtra)))) // the cast-in coins
+
+    // ---- the pour: a sprue beside the part and a runner into its lowest point (bottom fill), or straight in from the top
+    const bottomFill = !(p.pour || '').startsWith('top')
     const funnelH = Math.min(10, W)
-    channels.push(cyl(sprR, sprZ, z1 + 1, sprX), cyl(sprR, z1 - funnelH, z1 + 0.01, sprX, 32, sprR + funnelH * 0.9))
+    let sprueX = sprX
+    if (bottomFill) {
+      const lowZ = bb.min[2], sl = k(master.slice(lowZ + 0.4)).bounds()
+      const xl = Number.isFinite(sl.min[0]) ? (sl.min[0] + sl.max[0]) / 2 : 0
+      const gr = Math.min(2.5, sprR)
+      sprueX = bb.max[0] + sprR + 3
+      const zr = lowZ - gr - 2.5
+      z0 = Math.min(z0, zr - sprR - 5)
+      x1 = Math.max(x1, sprueX + sprR + 6)
+      channels.push(cyl(sprR, zr, z1 + 1, sprueX))
+      // the runner climbs from the foot of the sprue into the very bottom of the part: the gate
+      channels.push(k(Manifold.hull([k(k(Manifold.sphere(sprR, 24)).translate([sprueX, 0, zr])), k(k(Manifold.sphere(gr, 24)).translate([xl, 0, lowZ + gr * 0.5]))])))
+    } else channels.push(cyl(sprR, sprZ, z1 + 1, sprX))
+    channels.push(cyl(sprR, z1 - funnelH, z1 + 0.01, sprueX, 32, sprR + funnelH * 0.9))
     for (const [vx, vz, vr] of vents) channels.push(cyl(vr || 1.6, vz, z1 + 1, vx, 16))
+
+    // ---- vents at every air trap the ray test finds (a level ring or flat ceiling is one trap)
+    const castMesh = meshData(cast)
+    const cb = cast.boundingBox(), grid = Math.max(0.7, Math.min(1.6, Math.max(cb.max[0] - cb.min[0], cb.max[1] - cb.min[1]) / 70))
+    const traps = airTraps(castMesh, grid).filter((t) => {
+      if (Math.hypot(t.x - sprueX, t.y) < sprR + 2) return false
+      if (vents.some(([vx, vz]) => Math.abs(t.x - vx) < 4 && Math.abs(t.y) < 2 && t.z < vz + 8)) return false
+      return true
+    }).slice(0, 14)
+    const markVents = [] // mould box: off-split traps are cut into the rubber with a blade afterwards
+    for (const t of traps) {
+      const y = Math.abs(t.y) <= 1.5 ? 0 : t.y
+      if (box && y !== 0) { markVents.push(t); hw.push(k(k(Manifold.sphere(1.3, 12)).translate([t.x, t.y, t.z + 0.6]))); continue }
+      channels.push(k(k(Manifold.cylinder(z1 + 1 - (t.z - 0.4), 1.0, 1.0, 12)).translate([t.x, y, t.z - 0.4])))
+    }
+    const coinR = cavityExtra.length ? cavityExtra.reduce((r, m) => Math.max(r, m.boundingBox().max[0]), 0) : 0
+    const undercut = undercutShare(castMesh, (x, y, z) => !!pin && Math.hypot(x, y) < Math.max(pinTopR, coinR) + 0.4 && z > pin.z0 - 12) // the pin, not the halves, forms the socket
     if (pin) {
       pin.top = z1
-      channels.push(cyl(pinR + 0.15, top - 1, z1 + 1, 0, 64))
+      channels.push(cyl(pinTopR + 0.15, pin.z0 + tipH, z1 + 1, 0, 64))
     }
     const cavity = k(Manifold.union([master, ...channels]))
 
-    // the cast part (what comes out of a printed mould): the master less the pin's socket
-    let cast = master
-    if (pin) cast = k(master.subtract(cyl(pinR, pin.z0, top + 1, 0, 64)))
-    if (cavityExtra.length) cast = k(cast.subtract(k(Manifold.union(cavityExtra)))) // the cast-in coins
-
     // where the bolts and keys can go: clear of the cavity on the split face
     const face = k(k(cavity.rotate([90, 0, 0])).slice(0)).toPolygons().map((poly) => poly.map(([x, y]) => [x, -y]))
-    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2
+    let cx = (x0 + x1) / 2, cz = (z0 + z1) / 2
     const pick = (need, edge, avoid) => {
       const out = []
       for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
@@ -212,8 +339,16 @@ export function buildMould(wasm, p, opts = {}) {
       }
       return out
     }
-    const bolts = !box && (p.clamp || '').startsWith('M5') ? pick(2.75 + 3, 6, []) : []
-    const keys = pick(4.3 + 3, 6, [...bolts.map(([x, z]) => [x, z, 2.75 + 4.3 + 3]), [sprX, z1, sprR + funnelH + 6]])
+    const SEAL = box ? 0 : 3.4 // the seal ridge runs round the cavity 2 to 3 mm out: bolts and keys stay outside it
+    // widen the block (sides and bottom; the top stays where the channels end) until it holds 4 bolts and 3 keys
+    const X0 = x0, X1 = x1, Z0 = z0, wantBolts = !box && (p.clamp || '').startsWith('M5')
+    let bolts = [], keys = []
+    for (const extra of [0, 3, 6, 9, 12]) {
+      x0 = X0 - extra; x1 = X1 + extra; z0 = Z0 - extra; cx = (x0 + x1) / 2; cz = (z0 + z1) / 2
+      bolts = wantBolts ? pick(2.75 + 3 + SEAL, 6, []) : []
+      keys = pick(4.3 + 3 + SEAL, 6, [...bolts.map(([x, z]) => [x, z, 2.75 + 4.3 + 3]), [sprueX, z1, sprR + funnelH + 6]])
+      if ((!wantBolts || bolts.length >= 4) && keys.length >= 3) break
+    }
     if (keys.length < 2) warns.push('There is little room for registration keys: make the mould wall thicker.')
     if (!box && (p.clamp || '').startsWith('M5') && bolts.length < 4) warns.push('Not every corner has room for a bolt: make the mould wall thicker, or hold it with clamps.')
 
@@ -238,9 +373,7 @@ export function buildMould(wasm, p, opts = {}) {
     // the core pin: rests on the top of the mould by its flange, with a grip to pull it out by
     let pinM = null
     if (pin) {
-      pinM = k(Manifold.union([cyl(pinR, pin.z0, z1 + 0.01, 0, 64), cyl(pinR + 7, z1, z1 + 3, 0, 64), cyl(4, z1 + 3, z1 + 15, 0, 24)]))
-      // a little chamfer on its tip so it slides in
-      pinM = k(pinM.subtract(k(k(k(Manifold.cylinder(1.2, pinR + 1, pinR - 0.2, 64)).translate([0, 0, pin.z0 - 0.01])).subtract(cyl(pinR - 1.2, pin.z0 - 1, pin.z0 + 2, 0, 64)))))
+      pinM = k(Manifold.union([pinSolid(z1 + 0.01), cyl(pinTopR + 7, z1, z1 + 3, 0, 64), cyl(4, z1 + 3, z1 + 15, 0, 24)]))
     }
     if (nut) {
       const zt = z1 + 6 // the bolt head sits on top of the mould
@@ -259,6 +392,14 @@ export function buildMould(wasm, p, opts = {}) {
         A = k(A.add(k(Manifold.union(keys.map(([x, z]) => k(along(4.1, x, z, 3.5, 2.2).translate([0, -0.5, 0])))))))
         B = k(B.subtract(k(Manifold.union(keys.map(([x, z]) => k(along(4.3, x, z, 3.3, 2.5).translate([0, -0.01, 0])))))))
       }
+      // a seal ridge round the cavity on half A sits in a groove in half B: no leaks, almost no flash on the parting line
+      const faceCS = k(new CrossSection(face, 'NonZero'))
+      const inBlock = k(k(CrossSection.square([x1 - x0 - 4, z1 - z0 - 4], false)).translate([x0 + 2, z0 + 2]))
+      const ring = k(k(k(faceCS.offset(3.0, 'Round', 2, 12)).subtract(k(faceCS.offset(2.0, 'Round', 2, 12)))).intersect(inBlock))
+      const toY = (cs, h) => k(k(k(cs.extrude(h)).rotate([90, 0, 0])).translate([0, h, 0])) // the section's (x, z) on the split face, h deep in +y
+      const lane = k(Manifold.union(channels)) // keep every channel open across it
+      A = k(A.add(k(k(toY(ring, 1.3).translate([0, -0.3, 0])).subtract(lane)))) // sunk 0.3 mm into A so it fuses
+      B = k(B.subtract(toY(k(ring.offset(0.2, 'Round', 2, 12)), 1.3)))
       // pry slots at the bottom corners so a screwdriver can split it
       A = clean(A); B = clean(B)
       const pry = k(Manifold.union([x0, x1].map((x) => k(k(Manifold.cube([8, 3, 4], true)).translate([x, 0, z0])))))
@@ -274,6 +415,7 @@ export function buildMould(wasm, p, opts = {}) {
       rubberG = (cav / 1000) * rub.d
       if (rub.heavy) warns.push('Steel shot sinks: stir it in well, pour quickly, and keep the mould turning slowly for the first few minutes, or the weight ends up all at the bottom.')
       if (rub.tin) warns.push('Tin silicone is not skin safe and shrinks: for an end you hold, cast platinum silicone or urethane rubber.')
+      if (undercut > 0.02) warns.push(rub.hard ? `${(undercut * 100).toFixed(0)}% of the surface is undercut for a rigid mould, and ${p.rubber.replace(/ \(.*\)/, '')} is firm: open the mould slowly, flexing the part out a little at a time, or it tears. Softer rubber, or the Mould box way, is kinder.` : `${(undercut * 100).toFixed(0)}% of the surface is undercut for a rigid mould: soft rubber flexes out of it. Open slowly and peel, do not pull.`)
     } else {
       // --- mould box: a two-part rubber mould poured round a printed master ---
       if (rub.heavy) warns.push('Steel-shot silicone is for printed moulds only; the mould box uses plain silicone.')
@@ -329,6 +471,7 @@ export function buildMould(wasm, p, opts = {}) {
       if (copy.hot && !(p.rubber || '').startsWith('platinum') && !(p.rubber || '').startsWith('tin')) warns.push('Molten pewter needs a high-heat silicone mould (rated over 300 °C): never urethane.')
       if (copy.hot) warns.push('Pewter: pour outside, leather gloves and goggles, the mould bone dry (any water spits molten metal). Lead-free pewter only.')
       if (copy.d < 1.1 && (p.rubber || '').startsWith('urethane') && !p.copies.startsWith('casting')) warns.push('Urethane sticks to urethane: with a urethane rubber mould, use release on every cast.')
+      if (markVents.length) warns.push(`${markVents.length} air trap${markVents.length > 1 ? 's' : ''} sit away from the split (marked on the master): once the mould is made, cut a fine vent from each one up to the top of the rubber with a craft knife.`)
       if (copy.brass) warns.push('Lost-wax brass: cast the copy in wax, then a foundry or casting shop invests it and pours brass. Ask them for the sprue size they want.')
     }
 
@@ -362,7 +505,7 @@ export function buildMould(wasm, p, opts = {}) {
       mould: {
         kind, box, R, rubber: p.rubber, rub, copies: p.copies,
         castG: (cast.volume() / 1000) * rub.d, castMl: cast.volume() / 1000, rubberG, rubberMl, copyG,
-        bolts: bolts.length, keys: keys.length, plugs: typeof plugsN === 'number' ? plugsN : 0, bore, nut, pin: !!pinM,
+        bolts: bolts.length, keys: keys.length, vents: traps.length + vents.length - markVents.length, markVents: markVents.length, undercut, shrinkPct, bottomFill, seal: !box, plugs: typeof plugsN === 'number' ? plugsN : 0, bore, nut, pin: !!pinM,
         size: [x1 - x0, 2 * ymax, z1 - z0], footprint: footprint[0], gPrint,
         parts: parts.map(([label, file, , n]) => ({ label, file, n })),
       },

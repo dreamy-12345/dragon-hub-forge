@@ -65,6 +65,74 @@ function profile(style, L, R) {
   return pts
 }
 
+// ---- organic surface patterns for the classic spike: the surface is meshed finely and pushed in and out
+const ORGANIC = ['bark', 'tortoise', 'grain']
+const hash3 = (x, y, z, s) => { let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 1440662683) ^ Math.imul(s, 2246822519); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295 }
+const fade = (t) => t * t * (3 - 2 * t)
+function vnoise(x, y, z, s) { // value noise, -1..1
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z), u = fade(x - xi), v = fade(y - yi), w = fade(z - zi)
+  const c = (a, b, d) => hash3(xi + a, yi + b, zi + d, s)
+  const l = (a, b, t) => a + (b - a) * t
+  return 2 * l(l(l(c(0, 0, 0), c(1, 0, 0), u), l(c(0, 1, 0), c(1, 1, 0), u), v), l(l(c(0, 0, 1), c(1, 0, 1), u), l(c(0, 1, 1), c(1, 1, 1), u), v), w) - 1
+}
+const fbm = (x, y, z, s, oct = 3) => { let a = 0, f = 1, amp = 0.5; for (let o = 0; o < oct; o++) { a += amp * vnoise(x * f, y * f, z * f, s + o * 17); f *= 2.03; amp *= 0.5 }; return a }
+function worley(x, y, z, s) { // nearest and second-nearest seed distance, one jittered seed per unit cell
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z)
+  let f1 = 9, f2 = 9
+  for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
+    const X = xi + a, Y = yi + b, Z = zi + c
+    const dx = X + hash3(X, Y, Z, s) - x, dy = Y + hash3(X, Y, Z, s + 1) - y, dz = Z + hash3(X, Y, Z, s + 2) - z
+    const d = Math.sqrt(dx * dx + dy * dy + dz * dz)
+    if (d < f1) { f2 = f1; f1 = d } else if (d < f2) f2 = d
+  }
+  return [f1, f2]
+}
+/** The classic spike's surface with a pattern pressed into it: displacement in mm along the radius (negative cuts in). */
+function organicDart(wasm, k, style, prof, L, R, p) {
+  const { Manifold, Mesh } = wasm
+  const rAt = (z) => { for (let i = 1; i < prof.length; i++) if (prof[i][1] >= z) { const [r0, z0] = prof[i - 1], [r1, z1] = prof[i]; return r0 + ((r1 - r0) * (z - z0)) / Math.max(1e-6, z1 - z0) } return prof[prof.length - 1][0] }
+  const A = p.patDepth ?? 1.4, S = (p.patSize ?? 100) / 100, seed = Math.round(p.patSeed ?? 1)
+  const disp = (x, y, z) => {
+    if (style === 'bark') {
+      // long furrows that wander and fork: ridged noise stretched along the dart, 
+      const n = fbm(x / (3.6 * S), y / (3.6 * S), z / (30 * S), seed, 2) + 0.15 * vnoise(x / (1.6 * S), y / (1.6 * S), z / (9 * S), seed + 3)
+      const ridge = 1 - Math.abs(n) * 3.2
+      return -A * Math.max(0, ridge) ** 2
+    }
+    if (style === 'tortoise') {
+      // plates like a tortoise shell or dry mud: grooves on the cell edges, each plate gently domed with growth rings
+      const c = 7.5 * S, [f1, f2] = worley(x / c, y / c, z / c, seed), e = f2 - f1
+      const groove = e < 0.12 ? 1 - (e / 0.12) ** 2 : 0
+      const rings = 0.18 * Math.max(0, Math.cos(f1 * 2 * Math.PI * 2.5)) * (e > 0.18 ? 1 : 0)
+      return -A * groove - A * rings - A * 0.35 * Math.min(1, f1 * 1.4)
+    }
+    // wood grain: the lines where a wavy field crosses whole numbers, like grain on a turned bowl, with a few knots
+    const w = z / (5.5 * S) + 2.2 * fbm(x / (14 * S), y / (14 * S), z / (22 * S), seed, 4)
+    const fr = w - Math.floor(w), line = Math.exp(-(((fr - 0.5) / 0.13) ** 2))
+    const [k1] = worley(x / (22 * S), y / (22 * S), z / (30 * S), seed + 5)
+    const knot = k1 < 0.14 ? (1 - k1 / 0.14) : 0
+    return -A * 0.75 * line - A * 1.2 * knot * knot
+  }
+  const nT = 240, nZ = Math.max(120, Math.round(L / 0.5))
+  const pos = [0, 0, 0], tri = []
+  const id = (i, j) => 1 + j * nT + (i % nT)
+  for (let j = 0; j < nZ; j++) {
+    const z = (L * (j + 1)) / (nZ + 1), r0 = rAt(z)
+    const ease = Math.min(1, z / 10, (L - z) / 12) // no pattern at the tip or under the eye
+    for (let i = 0; i < nT; i++) {
+      const a = (2 * Math.PI * i) / nT, x = r0 * Math.cos(a), y = r0 * Math.sin(a)
+      const r = Math.max(1, r0 + Math.max(-r0 * 0.25, disp(x, y, z)) * Math.max(0, ease))
+      pos.push(r * Math.cos(a), r * Math.sin(a), z)
+    }
+  }
+  const top = pos.length / 3
+  pos.push(0, 0, L)
+  for (let i = 0; i < nT; i++) tri.push(0, id(i + 1, 0), id(i, 0))
+  for (let j = 0; j < nZ - 1; j++) for (let i = 0; i < nT; i++) tri.push(id(i, j), id(i + 1, j), id(i + 1, j + 1), id(i, j), id(i + 1, j + 1), id(i, j + 1))
+  for (let i = 0; i < nT; i++) tri.push(top, id(i, nZ - 1), id(i + 1, nZ - 1))
+  return k(new Manifold(new Mesh({ numProp: 3, vertProperties: Float32Array.from(pos), triVerts: Uint32Array.from(tri) })))
+}
+
 export function buildDart(wasm, p, opts = {}) {
   const { CrossSection, Manifold } = wasm
   const live = []
@@ -250,12 +318,31 @@ export function buildDart(wasm, p, opts = {}) {
           const skirt = k(k(k(k(CrossSection.circle(R * 0.09, 16)).translate([stemR * 1.12, 0])).revolve(48)).translate([0, 0, capZ - R * 0.3]))
           body = k(Manifold.union([stem, base, cap, skirt]))
         } else {
-          // a morel: a tall honeycombed cone of a cap
-          cap = k(k(k(Manifold.sphere(R, 48)).scale([0.95, 0.95, 1.55])).translate([0, 0, capZ + R * 0.75]))
-          const pits = []
-          for (let i = 0; i < 70; i++) { const zf = -0.75 + (1.6 * i) / 70, a = i * Math.PI * (3 - Math.sqrt(5)), rr = Math.sqrt(Math.max(0, 1 - zf * zf)); pits.push(sph(R * 0.17, R * 0.95 * rr * Math.cos(a), R * 0.95 * rr * Math.sin(a), capZ + R * 0.75 + R * 1.55 * zf, 10)) }
+          // a morel: a broad, pointed honeycomb cone sitting low on a short, wide, wrinkled stub (no round base)
+          const z0 = L * 0.2, stemR2 = R * 0.55, under = (R - stemR2) * 0.9
+          const capR = (t) => R * (1 - t) ** 0.85 + R * 0.1 * t // t from the cap's foot (0) to its point (1)
+          const pts = [[0, z0 - under], [stemR2, z0 - under]]
+          for (let i = 0; i <= 40; i++) { const t = i / 40; pts.push([capR(t), z0 + t * (L - z0)]) }
+          pts.push([0, L])
+          cap = k(k(new CrossSection([pts], 'Positive')).revolve(96))
+          // the pits: columns between wavy vertical ridges, rows staggered, every pit a little different
+          const pits = [], rng = (() => { let s2 = 11; return () => ((s2 = (s2 * 16807) % 2147483647) / 2147483647) })()
+          const cols = 9
+          for (let row = 0, t = 0.04; t < 0.86; row++) {
+            const r = capR(t), w = (2 * Math.PI * r) / cols, pr = w * 0.44, h = pr * 1.6
+            for (let c = 0; c < cols; c++) {
+              const a = ((c + (row % 2) * 0.5 + (rng() - 0.5) * 0.3) / cols) * 2 * Math.PI, sz = 0.85 + rng() * 0.3, zc = z0 + (t + (rng() - 0.5) * 0.03) * (L - z0)
+              pits.push(k(k(k(Manifold.sphere(pr * sz, 12)).scale([1, 1, 1.7])).translate([(r + pr * 0.25) * Math.cos(a), (r + pr * 0.25) * Math.sin(a), zc])))
+            }
+            t += (2 * h * 0.8) / (L - z0)
+          }
           cap = k(cap.subtract(k(Manifold.union(pits))))
-          body = k(Manifold.union([stem, base, cap]))
+          let stub = k(Manifold.cylinder(z0 - under + 1, stemR2 * 0.9, stemR2, 48))
+          const wr = []
+          for (let i = 0; i < 14; i++) { const a = (i / 14) * 2 * Math.PI; wr.push(k(k(Manifold.cylinder(z0, 0.9, 0.9, 8)).translate([stemR2 * 0.98 * Math.cos(a), stemR2 * 0.98 * Math.sin(a), 1.5]))) }
+          stub = k(stub.subtract(k(Manifold.union(wr))))
+          body = k(Manifold.union([stub, cap]))
+          void stem; void base
         }
         Lr = 0
         L = body.boundingBox().max[2] - 0.5 // the eye boss sits right on top of the cap
@@ -297,6 +384,9 @@ export function buildDart(wasm, p, opts = {}) {
       })
       body = k(k(Manifold.union([belly, beard, head, nose, ...boots, hat, brim])).subtract(k(Manifold.union(eyes))))
       warns.push('The gnome has overhangs (beard, nose, belly): print it with tree supports, eye down.')
+    } else if (ORGANIC.includes(style)) {
+      body = organicDart(wasm, k, style, profile('classic', L, R), L, R, p)
+      if (!(body.volume() > 0)) throw new Error('pattern mesh came out inside out')
     } else if (turned) {
       prof = profile(style, L, R)
       const poly = [[0, 0], ...prof.filter(([r]) => r > 0), [0, L]]
@@ -422,6 +512,14 @@ export function dartDesigns() {
     d('dartClassic', 'Classic Dart', 'classic', 'DartClassic', 'The traditional rope dart: a long cone with a blunt tip, a rounded shoulder and an eye for the rope. Turn it in brass or steel on a lathe, or print it in TPU to practise.'),
     d('dartBell', 'Meteor Bell', 'bell', 'DartClassic', 'A round, bell-shaped weight with its mass low and two rings under the eye: the meteor-hammer feel, smooth to wrap and unwrap.', { length: 95, maxD: 42 }),
     d('dartWillow', 'Willow Leaf', 'willow', 'DartClassic', 'A long, slim willow-leaf spindle, drawn out at both ends: fast through the air and easy to catch.', { length: 140, maxD: 28 }),
+    ...[
+      ['dartBark', 'Oak Bark', 'bark', 'The classic spike in a coat of old oak bark: deep furrows that wander and fork down its length between rough plates. Grippy to catch, and the furrows throw shadows as it spins.', { patDepth: 1.6, patSize: 100 }],
+      ['dartTortoise', 'Tortoise Shell', 'tortoise', 'The classic spike covered in tortoise-shell plates (or dry riverbed mud): every plate its own shape, gently domed, with growth rings, and a groove round each one.', { patDepth: 1.2, patSize: 100 }],
+      ['dartGrain', 'Wood Grain', 'grain', 'The classic spike as if turned from a figured burl: flowing grain lines wrap round it and swirl round a few knots. Each pattern seed is a different piece of wood.', { patDepth: 1.0, patSize: 100 }],
+    ].map(([id, name, st, blurb, o]) => { const x = d(id, name, st, 'DartClassic', blurb, { length: 120, maxD: 34 }); x.params = [...x.params,
+      { key: 'patDepth', label: 'Pattern depth', unit: 'mm', min: 0.4, max: 3, step: 0.1, value: o.patDepth, hint: 'How deep the pattern cuts in. Print it at 0.12 mm layers to catch the detail.' },
+      { key: 'patSize', label: 'Pattern size', unit: '%', min: 50, max: 200, step: 5, value: o.patSize, hint: 'Smaller = finer, busier pattern.' },
+      { key: 'patSeed', label: 'Pattern seed', unit: '', min: 1, max: 60, step: 1, value: 1, hint: 'Every number grows a different pattern: no two the same.' }]; x.organic = true; return x }),
     d('dartGlow', 'Glow Drop', 'glow', 'DartModern', 'A teardrop in clear TPU with an LED capsule inside: slide the capsule in from the tip and press the plug in. Lights your whole rope dart.', { length: 140, maxD: 32 }),
     d('dartPrism', 'Prism', 'prism', 'DartModern', 'A faceted crystal: eight flat faces down to the tip and eight up to the eye. Flashes as it spins. Print it, or have it milled or metal-printed.', { length: 105, maxD: 36 }),
     d('dartOrb', 'Orb', 'orb', 'DartRound', 'A plain, perfect ball on the rope: rolls off the body smoothly and is the easiest to catch. Size it with Widest.', { maxD: 46 }),
@@ -438,7 +536,7 @@ export function dartDesigns() {
       ['dartPineOpen', 'Open Pine Cone', 'cone-pine', 'A dry, open pine cone: the scale ends stand right out. Lots of grip to catch, and it throws the light about as it spins.', { length: 115, maxD: 44, scales: 90, open: 0.9 }],
       ['dartEnt', 'Ent', 'ent', 'A walking tree on a rope: a gnarled, twisting bark trunk, roots for feet at the tip, two branch arms, a deep-set face with a knotted nose, and a leafy crown with the rope eye in it. Print in TPU with tree supports.', { length: 130, maxD: 40 }],
       ['dartAmanita', 'Toadstool', 'shroom-amanita', 'A red-and-white fairy-tale toadstool on a rope: a domed cap covered in raised white spots, a frilly skirt round the stem, and a swollen base for the tip. The rope eye is on top of the cap. Print the cap red and the spots white.', { length: 120, maxD: 46 }],
-      ['dartMorel', 'Morel', 'shroom-morel', 'A morel mushroom: a tall, honeycombed cap full of pits on a short, fat stem. Lovely in the hand, and the pits grab the light.', { length: 125, maxD: 36 }],
+      ['dartMorel', 'Morel', 'shroom-morel', 'A morel mushroom: a broad, pointed cone of a cap, honeycombed all over with pits in staggered rows, on a short wrinkled stub. Lovely in the hand, and the pits grab the light.', { length: 100, maxD: 42 }],
       ['dartFir', 'Fir Cone', 'cone-fir', 'A long, slim fir cone with fine, tight scales: fast through the air and easy on the hands.', { length: 140, maxD: 30, scales: 170, open: 0.15 }],
       ['dartPineCartoon', 'Happy Pine Cone', 'cone-cartoon', 'A cartoon pine cone: short and fat, big chunky scales, two big round eyes and a cheeky smile. Print the eyes white with a colour change, or paint the pupils.', { length: 110, maxD: 48, scales: 46, open: 0.55 }],
       ['dartStonePine', 'Stone Pine', 'cone-stone', 'A round stone-pine cone: a ball of chunky scales that rolls off the body. Size it with Widest.', { maxD: 44, scales: 110, open: 0.35 }],

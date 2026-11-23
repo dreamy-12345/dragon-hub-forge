@@ -20,6 +20,6 @@ for (const d of DESIGNS.filter((d) => d.mould && (!only || d.id === only))) {
     }
     console.log(d.id.padEnd(13), method.slice(0, 9), (attach || '').slice(0, 7).padEnd(7), `${(performance.now() - t).toFixed(0)}ms`,
       `size ${m.size.map((x) => x.toFixed(0)).join('x')}`, `print ${m.gPrint.toFixed(0)}g`, m.box ? `rubber ${m.rubberMl.toFixed(0)}ml copy ${m.copyG.toFixed(0)}g` : `cast ${m.castG.toFixed(0)}g`,
-      `keys ${m.keys} bolts ${m.bolts}`, m.nut ? `nut@${m.nut.z.toFixed(0)} w${m.nut.washer} M8x${m.nut.bolt}` : '', bad.join(' '), h.stats.warns.join(' | '))
+      `keys ${m.keys} bolts ${m.bolts} vents ${m.vents}+${m.markVents} uc ${(m.undercut*100).toFixed(1)}% shr ${m.shrinkPct}`, m.nut ? `nut@${m.nut.z.toFixed(0)} w${m.nut.washer} M8x${m.nut.bolt}` : '', bad.join(' '), h.stats.warns.join(' | '))
   }
 }

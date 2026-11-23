@@ -47,8 +47,16 @@ if ((saved.v || 1) < 2) for (const sp of Object.values(saved.params || {})) { de
 if ((saved.v || 1) < 3) for (const sp of Object.values(saved.params || {})) if (sp.ringPlace === 'edge') delete sp.ringPlace
 // v4 (2026-11-22): swords default to Kevlar the full length of the blade, right up to the guard; drop older saved wick choices
 if ((saved.v || 1) < 4) for (const d of DESIGNS) if (d.sword && saved.params?.[d.id]) { delete saved.params[d.id].wicks; delete saved.params[d.id].bare }
-for (const d of DESIGNS) state.params[d.id] = { ...defaults(d), ...(saved.params?.[d.id] || {}) }
-state.v = 4
+// v5 (2026-11-23): the Morel was reshaped squat and broad; drop its old saved size
+if ((saved.v || 1) < 5 && saved.params?.dartMorel) { delete saved.params.dartMorel.length; delete saved.params.dartMorel.maxD }
+// saved values that no longer fit a design's control (an old number where it now takes a choice, or the other way) are dropped
+const fits = (def, v) => !def || (def.options ? def.options.includes(v) : def.check ? typeof v === 'boolean' : typeof def.value === 'number' ? typeof v === 'number' && Number.isFinite(v) : typeof v === typeof def.value)
+for (const d of DESIGNS) {
+  const sp = { ...(saved.params?.[d.id] || {}) }
+  for (const key of Object.keys(sp)) if (!fits(d.params.find((x) => x.key === key) || COMMON_PARAMS.find((x) => x.key === key), sp[key])) delete sp[key]
+  state.params[d.id] = { ...defaults(d), ...sp }
+}
+state.v = 5
 // finish (logo, text, picture) per design
 state.finish = saved.finish && typeof saved.finish === 'object' ? saved.finish : {}
 // How it is made: 3D print (everything above) or CNC cut. CNC settings are per design
@@ -153,6 +161,23 @@ const frameMat = new THREE.MeshStandardMaterial({ color: state.color, roughness:
 const glowMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35, transparent: true, opacity: 0.92, emissive: 0x000000 })
 const lidMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, transparent: true, opacity: 0.55, emissive: 0x000000, depthWrite: false })
 const frameMesh = new THREE.Mesh(new THREE.BufferGeometry(), frameMat)
+// eye balls: the view paints the bands by height, the same heights the filament changes go in at
+const eyeU = { eyeZ: { value: new THREE.Vector3(1e9, 1e9, 1e9) }, eyeC: { value: [0, 1, 2, 3].map(() => new THREE.Color()) } }
+const eyeMat = new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.05 })
+eyeMat.onBeforeCompile = (sh) => {
+  // colour by the part's own height: z over pupil, iris, white thresholds, crisp at any mesh size
+  Object.assign(sh.uniforms, eyeU)
+  sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vEyeZ;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvEyeZ = position.z;')
+  sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vEyeZ;\nuniform vec3 eyeZ;\nuniform vec3 eyeC[4];')
+    .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb = vEyeZ > eyeZ.x ? eyeC[3] : vEyeZ > eyeZ.y ? eyeC[2] : vEyeZ > eyeZ.z ? eyeC[1] : eyeC[0];')
+}
+const EYE_COLOURS = { whole: ['#13369a', '#f4f4f2', '#58b4ff', '#0b0b0e'], nazar: ['#13369a', '#13369a', '#58b4ff', '#0b0b0e'], classic: ['#f4f2ec', '#f4f2ec', '#5e8a3c', '#0b0b0e'], dragon: ['#f4f2ec', '#f4f2ec', '#ff9a1f', '#0b0b0e'], cat: ['#f4f2ec', '#f4f2ec', '#c9d82e', '#0b0b0e'] }
+function paintEye(mesh, e) {
+  ;(EYE_COLOURS[e.kind] || EYE_COLOURS.classic).forEach((h, i) => eyeU.eyeC.value[i].set(h))
+  eyeU.eyeZ.value.set(e.pupilZ, e.irisZ, e.whiteZ ?? e.irisZ)
+  eyeMat.clippingPlanes = frameMat.clippingPlanes; eyeMat.side = frameMat.side; eyeMat.needsUpdate = true
+  mesh.material = eyeMat
+}
 const glowMesh = new THREE.Mesh(new THREE.BufferGeometry(), glowMat)
 const lidMesh = new THREE.Mesh(new THREE.BufferGeometry(), lidMat)
 const ringMat = new THREE.MeshStandardMaterial({ color: state.color, roughness: 0.6, metalness: 0.05 }) // bubble weight ring
@@ -1171,6 +1196,8 @@ function show(hub, d, p, t0) {
   if (!hub.ring && bubbles.enabled) $('vBubbles').click()
   const m = hub.meshes
   setGeo(frameMesh, m.frame || m.combined)
+  frameMesh.material = frameMat
+  if (hub.ball?.eye && frameMesh.visible) paintEye(frameMesh, hub.ball.eye)
   setGeo(glowMesh, m.glow)
   setGeo(lidMesh, m.lids)
   setGeo(ringMesh, m.ring)
@@ -1371,6 +1398,7 @@ function renderMouldVerdict(hub, p, mat) {
     <div class="row"><span>Print</span><span>master (2 halves), parting board, 2 frames${v.pin ? ', core pin' : ''} · about ${(s.grams * 0.4).toFixed(0)} g PLA/PETG</span></div>
     ${v.plugs ? `<div class="row"><span>Eye plug</span><span>prints with the board: it sits in the eye hole for the first pour</span></div>` : ''}
     <div class="row"><span>Registration keys</span><span>${v.keys} (the board makes them in the first half)</span></div>
+    <div class="row"><span>Pour and vents</span><span>${v.bottomFill ? 'sprue and runner fill it from the bottom' : 'straight in from the top'} · ${v.vents} vent${v.vents === 1 ? '' : 's'} on the master${v.markVents ? ` + ${v.markVents} to cut with a blade (marked)` : ''} · +${v.shrinkPct}% for shrink</span></div>
     ${v.bore ? `<div class="row"><span>Pole socket</span><span>the printed core pin: Ø${v.bore.d.toFixed(1)} × ${v.bore.depth.toFixed(0)} mm in every copy</span></div>` : ''}
     ${v.nut ? `<div class="row"><span>In every copy</span><span>M8 nut + Ø${2 * v.nut.washer} washer on an M8 × ${v.nut.bolt} bolt through the mould top</span></div>` : ''}
     <div class="row"><span>Fits ${bed} mm bed</span><span>${fits ? pill('good', 'yes') : pill('bad', `the box is ${Math.max(fw, fh).toFixed(0)} mm`)}</span></div>
@@ -1382,7 +1410,9 @@ function renderMouldVerdict(hub, p, mat) {
     ${v.nut ? `<div class="row"><span>Rope or leash</span><span>M8 nut + Ø${2 * v.nut.washer} mm washer cast in, held by an M8 × ${v.nut.bolt} bolt; then screw in a stainless M8 swivel eye bolt</span></div>` : v.kind === 'dart' ? `<div class="row"><span>Rope or leash</span><span>${(p.attach || '').startsWith('rope cast in') ? `the ${p.ropeD} mm rope cast straight in, a stopper knot on its end set in the middle of the head` : `moulded eye for ${p.ropeD} mm cord`}</span></div>` : ''}
     <div class="row"><span>Same mould, other rubbers</span><span>${Object.entries({ '30A': 1.08, '50A': 1.15, urethane: 1.04, 'with steel shot': 2.4 }).map(([n, d]) => `${n} ${((v.castMl * d)).toFixed(0)} g`).join(' · ')}</span></div>
     <div class="row"><span>Print</span><span>2 halves${v.pin ? ' + core pin' : ''}, split face up, no supports · about ${(s.grams * 0.4).toFixed(0)} g</span></div>
-    <div class="row"><span>Hold shut</span><span>${v.bolts ? `${v.bolts} × M5 × ${boltL} bolts + wing nuts` : 'two clamps or strong rubber bands'} · ${v.keys} keys line it up</span></div>
+    <div class="row"><span>Hold shut</span><span>${v.bolts ? `${v.bolts} × M5 × ${boltL} bolts + wing nuts` : 'two clamps or strong rubber bands'} · ${v.keys} keys line it up · a seal ridge round the cavity stops leaks</span></div>
+    <div class="row"><span>Pour</span><span>${v.bottomFill ? 'into the funnel: it runs down the sprue and fills from the bottom up' : 'into the funnel, straight in from the top'} · ${v.vents} vent${v.vents === 1 ? '' : 's'}, one at every air trap · stop when rubber shows at every vent</span></div>
+    <div class="row"><span>Built in</span><span>+${v.shrinkPct}% for shrink · ${v.undercut > 0.02 ? `${(v.undercut * 100).toFixed(0)}% undercut: peel it out slowly` : 'no undercuts to speak of'}${v.pin ? ' · pointed core pin with draft' : ''}</span></div>
     <div class="row"><span>Mould</span><span>${v.size.map((x) => x.toFixed(0)).join(' × ')} mm</span></div>
     <div class="row"><span>Fits ${bed} mm bed</span><span>${fits ? pill('good', 'yes') : pill('bad', `a half is ${Math.max(fw, fh).toFixed(0)} mm`)}</span></div>
     ${state.material.startsWith('tpu') ? '<div class="warnline">Print the mould rigid, in PLA or PETG: a TPU mould bulges and the cast comes out lopsided.</div>' : ''}
@@ -1578,7 +1608,7 @@ function renderBallVerdict(hub, p, mat) {
     <div class="big">${kg(s.gramsTotal)}<small>each · ${kg(s.gramsTotal * 2)} a pair</small></div>
     <div class="row"><span>Printed ball</span><span>${s.gShell.toFixed(0)} g ${mat.name}</span></div>
     ${b.fill !== 'hollow' ? `<div class="row"><span>${b.fill.startsWith('heaviest') ? 'packed steel shot' : b.fill} inside</span><span>${b.gFill.toFixed(0)} g (${b.fill.startsWith('heaviest') ? 100 : p.fillPct}% full)</span></div>` : ''}
-    ${b.eye ? `<div class="row"><span>Colours (top half)</span><span>print the top half white, change to the iris colour at ${(b.eye.irisZ + 0.2).toFixed(1)} mm and to the pupil colour at ${(b.eye.pupilZ + 0.2).toFixed(1)} mm (slicer: colour change / pause at height). Or paint it with flexible paint.</span></div>` : ''}
+    ${b.eye?.whiteZ ? `<div class="row"><span>Colours</span><span>the bottom half all dark blue. Top half: start dark blue, change to white at ${(b.eye.whiteZ + 0.2).toFixed(1)} mm, light blue at ${(b.eye.irisZ + 0.2).toFixed(1)} mm and black at ${(b.eye.pupilZ + 0.2).toFixed(1)} mm (slicer: colour change / pause at height). A dab of white paint in the catchlight dimple. Or paint it with flexible paint.</span></div>` : b.eye ? `<div class="row"><span>Colours (top half)</span><span>print the top half white, change to the iris colour at ${(b.eye.irisZ + 0.2).toFixed(1)} mm and to the pupil colour at ${(b.eye.pupilZ + 0.2).toFixed(1)} mm (slicer: colour change / pause at height). Or paint it with flexible paint.</span></div>` : ''}
     <div class="row"><span>As heavy as it gets</span><span>${kg(s.gShell + b.fullShot)} packed with steel shot</span></div>
     <div class="row"><span>Chamber holds</span><span>${b.cavityCm3.toFixed(0)} cm³ · up to ${b.fullShot.toFixed(0)} g of steel shot</span></div>
     <div class="row"><span>Ball · socket</span><span>Ø${p.ballD} mm · ${b.depth.toFixed(0)} mm deep</span></div>
@@ -1966,9 +1996,10 @@ function renderExports() {
       ['Top circle STL (with the leash eye)', 'primary', () => download(toSTL(m.flat_top, d.name + ' top'), nm + '-top.stl'), !m?.flat_top],
       ...(m?.flat_small ? [[`Small circle STL (print ${p.smallN - 1})`, 'primary', () => download(toSTL(m.flat_small, d.name + ' small'), nm + '-small.stl'), false]] : []),
       ['Big ring STL', 'primary', () => download(toSTL(m.flat_bigA, d.name + ' big ring'), nm + '-big.stl'), !m?.flat_bigA],
+      ...(m?.flat_smallB ? [[`Small crossing ring STL (print ${p.smallN})`, 'primary', () => download(toSTL(m.flat_smallB, d.name + ' small crossing ring'), nm + '-small-cross.stl'), false]] : []),
       ...(m?.flat_bigB ? [['Crossing ring STL', 'primary', () => download(toSTL(m.flat_bigB, d.name + ' crossing ring'), nm + '-cross.stl'), false]] : []),
     ])
-    $('exportNote').innerHTML = `Print every piece lying flat, PETG, 100% infill, 0.2 mm layers. Link the circles top to bottom with small swivels (or split rings) through the eyes, ${v?.crossed ? 'slot the crossing ring through the big ring, ' : ''}and clip the leash swivel to the top eye. ${(p.film || '').startsWith('string') ? 'Wrap each circle in 100% cotton yarn, tight turns about 3 mm apart, tied off on the wire.' : 'Dip in a tray of mix, lift out slowly, and spin.'} Make two.`
+    $('exportNote').innerHTML = `Print every piece lying flat, PETG, 100% infill, 0.2 mm layers. Link the circles top to bottom with small swivels (or split rings) through the eyes, ${v?.crossSmall ? 'slot a small crossing ring through each small circle (the slots meet half way), ' : ''}${v?.crossed ? 'slot the crossing ring through the big ring, ' : ''}and clip the leash swivel to the top eye. ${(p.film || '').startsWith('string') ? 'Wrap each circle in 100% cotton yarn, tight turns about 3 mm apart, tied off on the wire.' : 'Dip in a tray of mix, lift out slowly, and spin.'} Make two.`
     return
   }
   if (d.joint) {
@@ -2009,8 +2040,8 @@ function renderExports() {
       ['Mould making guide', '', openMouldGuide],
     ])
     $('exportNote').innerHTML = v?.box
-      ? 'Print the master halves split face down and glue them with two short pieces of filament in the holes; sand and seal the master smooth (every layer line shows in the rubber). Print the board and both frames flat, PLA or PETG. The guide takes you through both pours step by step.'
-      : 'Print both halves split face up as they come, PLA or PETG, 3 walls, 20% infill, no supports. Seal the cavity (a thin coat of clear lacquer or epoxy), let it dry fully, then use mould release. Bolt it shut, stand it funnel up and pour slowly into the funnel until the vents fill. The guide has every step.'
+      ? 'Print the master halves split face down, 0.12 mm layers, and glue them with two short pieces of filament in the holes; sand and seal the master smooth (every layer line shows in the rubber). The sprue, runner and vents print as part of the master: they make the channels in the rubber. Print the board and both frames flat, PLA or PETG. Release between the two pours or the halves bond into one. The guide takes you through both pours step by step.'
+      : 'Print both halves split face up as they come, PLA or PETG, <b>0.12 mm layers, 5 walls, 30% infill</b> (thin walls let rubber seep into the infill), no supports. Seal the cavity with two thin coats of brushing epoxy, dry a day, and test a spoonful of rubber on a scrap first. Release on everything the rubber touches, pin included. Bolt it shut with the ridge seated in its groove, pour in one thin, steady stream into the funnel until rubber shows at every vent, top up after 5 minutes, and wait the full cure. Trim the gate and vents flush. The guide has every step.'
     return
   }
   if (d.dart) {

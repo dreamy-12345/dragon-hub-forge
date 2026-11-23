@@ -88,8 +88,8 @@ export function buildBallEnd(wasm, p, opts = {}) {
       ball: { R, depth, style, squeeze, cavityCm3: cavity / 1000, fullShot, gFill, fill: p.fill, jh, eye: style.startsWith('eye-') ? (() => {
         const ri = R * (p.iris ?? 45) / 100, rp = ri * (p.pupil ?? 42) / 100, kind = style.slice(4)
         const z = (r) => Math.sqrt(Math.max(0, R * R - r * r))
-        const pr = kind === 'dragon' ? ri * 0.85 : kind === 'cat' ? ri * 0.85 : kind === 'nazar' ? ri * 0.42 : kind === 'googly' ? ri * 0.38 + Math.max(4, rp) : rp
-        return { kind, irisZ: z(kind === 'nazar' ? ri * 0.66 : ri), pupilZ: z(pr) }
+        const pr = kind === 'dragon' ? ri * 0.85 : kind === 'cat' ? ri * 0.85 : kind === 'nazar' ? ri * 0.42 : kind === 'whole' ? rp + 0.5 : rp
+        return { kind, irisZ: z(kind === 'nazar' ? ri * 0.66 : ri), pupilZ: z(pr), ...(kind === 'whole' ? { whiteZ: z(Math.min(R * 0.9, ri + R * 0.22)) } : {}) }
       })() : null },
       meshes,
       viewR: R * 1.15,
@@ -185,15 +185,35 @@ export function ballMaster(wasm, k, R, style, p) {
       sink(ri * 0.66, 0.4)
       raise(ri * 0.42, 1.3)
       sink(ri * 0.2, 1.0)
-    } else if (kind === 'googly') {
-      raise(ri, 1.0)
-      ringCut(ri - 0.3, ri + 1.2, 0.6)
-      // the pupil: a round button off to one side, standing proud
-      const pr = Math.max(4, rp), ang = 0.35, zc = Math.sqrt(Math.max(0, R * R - (ri * 0.38) ** 2))
-      const dome = k(k(Manifold.sphere(pr, 48)).scale([1, 1, 0.55]))
-      const dir = [Math.sin(ang) * 0.38 * ri / R, 0, 1]
-      solid = k(solid.add(k(dome.translate([ri * 0.38, ri * 0.12, zc + 1.2]))))
-      void dir
+    } else if (kind === 'whole') {
+      // the whole ball is one evil-eye charm: dark blue all over, then a white band, a light blue ridged iris
+      // and a black pupil looking up the staff. Every band is round the axis, so each colour starts at a height.
+      const rw = Math.min(R * 0.9, ri + R * 0.22)
+      raise(rw, 0.6) // the white stands a little proud
+      solid = k(solid.subtract(k(shell(R - 0.01, R + 8).intersect(axisCyl(ri))))) // the iris sits back at the ball's surface
+      // the iris: fine raised spokes from the pupil out to the white
+      const spokes = []
+      for (let i = 0; i < 44; i++) spokes.push(k(k(k(Manifold.cube([ri - rp - 2.4, 0.9, R * 2], true)).translate([(ri + rp) / 2, 0, R])).rotate([0, 0, (360 * i) / 44])))
+      solid = k(solid.add(k(k(Manifold.union(spokes)).intersect(k(shell(R - 0.2, R + 0.6).intersect(axisCyl(ri - 1.2)))))))
+      raise(rp, 1.2) // the pupil: a smooth dome
+      for (const r of [rp + 0.5, ri, rw]) ringCut(r - 0.45, r + 0.45, 0.9) // a fine groove at every colour edge
+      // the catchlight: a small round dimple high in the pupil (a dab of white paint)
+      solid = k(solid.subtract(k(k(Manifold.cylinder(R + 10, rp * 0.2, rp * 0.2, 32)).translate([rp * 0.38, rp * 0.38, Math.sqrt(R * R - (rp * 0.6) ** 2) + 0.4]))))
+      // over the dark blue: rays sweeping down from the white, tapering, with a raised dot between each pair
+      const thW = Math.asin(Math.min(1, (rw + 2.5) / R)), thEnd = Math.PI * 0.66, nR = 16, bits = []
+      const pt = (th, az, rr) => [Math.sin(th) * Math.cos(az) * rr, Math.sin(th) * Math.sin(az) * rr, Math.cos(th) * rr]
+      for (let i = 0; i < nR; i++) {
+        const az = (TAU * i) / nR, steps = 10
+        let prev = null
+        for (let j = 0; j <= steps; j++) {
+          const t = j / steps, th = thW + (thEnd - thW) * t, rr = 1.7 - 1.1 * t
+          const b = k(k(Manifold.sphere(rr, 12)).translate(pt(th, az + 0.12 * Math.sin(t * Math.PI), R - rr * 0.35)))
+          if (prev) bits.push(k(Manifold.hull([prev, b])))
+          prev = b
+        }
+        bits.push(k(k(Manifold.sphere(2.4, 16)).translate(pt(thW + (thEnd - thW) * 0.55, az + Math.PI / nR, R - 0.9))))
+      }
+      solid = k(solid.add(k(Manifold.union(bits))))
     }
   } else if (style === 'grip') {
     // grip rings: shallow grooves round the ball, like a tennis ball seam turned into rings
@@ -226,7 +246,7 @@ export function ballDesigns() {
       ['ballDragonEye', 'Dragon Eye', 'eye-dragon', 'A dragon\'s eye: a big ridged iris and a tall slit pupil. Print the iris in gold or fire orange.', { iris: 52, pupil: 40 }],
       ['ballCatEye', 'Cat Eye', 'eye-cat', 'A cat\'s eye: an almond pupil in a ringed, glassy iris. Glow-in-the-dark filament for the iris is magic at night.', { iris: 55, pupil: 40 }],
       ['ballEvilEye', 'Evil Eye', 'eye-nazar', 'The blue evil-eye charm that wards off bad luck: rings of blue, white and dark blue round a black centre, each ring its own height so a colour change makes it.', { iris: 62, pupil: 40 }],
-      ['ballGoogly', 'Googly Eye', 'eye-googly', 'A giant googly eye: a big white disc with a round pupil standing off to one side. Silly and very grabbable.', { iris: 60, pupil: 45 }],
+      ['ballEvilEyeWhole', 'Evil Eye: Whole Ball', 'eye-whole', 'The whole ball is one evil-eye charm looking up the staff: deep blue all over with raised rays and dots sweeping down it, a white band, a light blue iris with fine raised spokes, and a domed black pupil with a catchlight. Every ring starts at its own height, so four filament changes print it in colour.', { iris: 42, pupil: 45 }],
     ].map(([id, name, st, blurb, o]) => ({ ...ball(id, name, st, blurb, [
       { key: 'iris', label: 'Iris', unit: '%', min: 25, max: 75, step: 1, value: o.iris, hint: 'How wide the iris is, as a share of the ball.' },
       { key: 'pupil', label: 'Pupil', unit: '%', min: 20, max: 70, step: 1, value: o.pupil, hint: 'How big the pupil is inside the iris.' },
