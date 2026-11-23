@@ -24,7 +24,7 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', BubbleHubs: 'Bubble spinners (practice hubs that blow bubbles)', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', BubbleHubs: 'Bubble spinners', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
@@ -857,12 +857,15 @@ function galleryTools() {
   const g = $('gallery')
   if ($('listTools')) return
   g.querySelector('h2').insertAdjacentHTML('afterend', `<div class="listtools" id="listTools">
-    <input type="search" id="listQ" placeholder="Search designs" aria-label="Search designs" autocomplete="off">
+    <div class="searchrow"><input type="search" id="listQ" placeholder="Search all designs" aria-label="Search designs" autocomplete="off"><button class="chip" id="filtBtn" aria-expanded="false">Filters</button></div>
+    <div class="filtbox" id="filtBox" hidden>
     <div class="chips" id="listChips" role="group" aria-label="Show"></div>
     <label class="sortby">Made from <select id="listMade"><option value="all">anything</option><option value="print">3D print</option><option value="metal">metal (CNC, machined)</option><option value="rubber">rubber (moulds)</option><option value="fire">fire (Kevlar)</option></select></label>
     <label class="sortby">Sort <select id="listSort"><option value="groups">by group</option><option value="liked">most liked</option><option value="new">newest</option><option value="az">A to Z</option></select></label>
+    </div>
     <div class="who" id="whoBox" hidden><span>Your name, so hearts are yours:</span><input id="whoName" maxlength="40" placeholder="Name"><button class="btn primary" id="whoOk">OK</button></div>
   </div>`)
+  $('filtBtn').onclick = () => { listUI.filters = !listUI.filters; keepList(); renderGallery() }
   $('listQ').value = listUI.q
   $('listQ').oninput = (e) => { listUI.q = e.target.value; keepList(); renderGallery() }
   $('listSort').value = listUI.sort
@@ -946,19 +949,19 @@ if (!listUI.folders) {
   keepList()
 }
 
+// the browser: prop tiles first, then one prop's designs as a thumbnail grid with style chips
+const CATS = [['hubs', 'Dragon staff hubs', '🐉'], ['rope', 'Rope darts and meteors', '🪢'], ['poi', 'Poi', '🌀'], ['contact', 'Contact staff ends', '⚪'], ['acro', 'Acro staff ends', '🤸'], ['hoops', 'Hoops', '⭕'], ['fire', 'Swords, axes and fire metal', '🔥'], ['moulds', 'Rubber moulds', '🧪'], ['fittings', 'Pole fittings', '🔩']]
+const catOf = (g) => { const x = SECTION_OF[g]; return x === 'collapse' ? 'hoops' : x === 'sparks' ? 'fire' : x }
 function renderGallery() {
   galleryTools()
   const g = $('gallery')
-  g.querySelectorAll('.design, h3, .empty').forEach((n) => n.remove())
+  g.querySelectorAll('.design, h3, .empty, .cats, .catbar, .dgrid, .nowopen').forEach((n) => n.remove())
   for (const b of $('listChips').children) b.setAttribute('aria-pressed', b.dataset.f === listUI.filter)
-  const { list, all, grouped, mine } = entries()
-  // folders: every group sits in a big folder (Dragon staff hubs, Fire and metal, ...)
-  const secOrder = isCnc() ? ['fire', 'acro', 'sparks', 'hubs', 'rope', 'poi', 'hoops', 'collapse', 'contact', 'moulds', 'fittings'] : ['hubs', 'fire', 'rope', 'poi', 'hoops', 'collapse', 'contact', 'acro', 'moulds', 'sparks', 'fittings'] // CNC mode: metal first
-  const order0 = [...new Set(DESIGNS.map((d) => d.group))]
-  const secRank = (g) => (SECTION_OF[g] ? 1 + secOrder.indexOf(SECTION_OF[g]) : 0)
-  const order = [...order0].sort((a, b) => secRank(a) - secRank(b) || order0.indexOf(a) - order0.indexOf(b))
-  const groupOf = (e) => e.group
-  // made from: printed, metal, rubber or fire
+  $('filtBox').hidden = !listUI.filters
+  const filtOn = listUI.filter !== 'all' || (listUI.made && listUI.made !== 'all') || listUI.sort !== 'groups'
+  $('filtBtn').setAttribute('aria-expanded', String(!!listUI.filters))
+  $('filtBtn').textContent = filtOn ? 'Filters •' : 'Filters'
+  const { list, grouped } = entries()
   const madeOf = (d) => {
     const m = new Set()
     if (!d) return m
@@ -970,57 +973,66 @@ function renderGallery() {
     if (!d.cncOnly && !printOnly(d) && !d.dart && !d.mould && !d.adaptor && !d.custom && d.draw) m.add('fire') // any hub cut in metal can carry wicks
     return m
   }
-  let rows = listUI.made && listUI.made !== 'all' ? list.filter((e) => !e.design || madeOf(e.design).has(listUI.made)) : list
-  if (grouped) {
-    rows = [...rows].sort((a, b) => order.indexOf(groupOf(a)) - order.indexOf(groupOf(b)))
-    // pin what you like near the top of the full list
-    if (listUI.filter === 'all' && mine.size) {
-      const pinned = all.filter((e) => mine.has(e.key)).map((e) => ({ ...e, group: '__liked' }))
-      rows = [...pinned, ...rows]
-    }
+  const rows = listUI.made && listUI.made !== 'all' ? list.filter((e) => !e.design || madeOf(e.design).has(listUI.made)) : list
+  const grid = () => { const x = document.createElement('div'); x.className = 'dgrid'; g.append(x); return x }
+  const label = (txt) => { const h = document.createElement('h3'); h.className = 'sub'; h.textContent = txt; g.append(h) }
+  const card = (e) => (e.design ? designCard(e) : ideaCard(e))
+  const empty = (t) => g.insertAdjacentHTML('beforeend', `<div class="empty">${t}</div>`)
+  // searching, or a filter other than All: one flat grid of everything that matches
+  if (!grouped || listUI.filter !== 'all') {
+    if (!rows.length) return empty(listUI.filter === 'liked' ? 'No hearts yet. Tap ♡ on any design you love.' : listUI.filter === 'top' ? 'Nothing has a heart yet. Be the first!' : listUI.q ? 'Nothing matches. Try a shorter word.' : 'Nothing here yet.')
+    label(`${rows.length} design${rows.length === 1 ? '' : 's'}`)
+    const x = grid(); for (const e of rows) x.append(card(e))
+    return
   }
-  if (!rows.length) {
-    g.insertAdjacentHTML('beforeend', `<div class="empty">${listUI.filter === 'liked' ? 'No hearts yet. Tap ♡ on any design you love.' : listUI.filter === 'top' ? 'Nothing has a heart yet. Be the first!' : listUI.q ? 'Nothing matches. Try a shorter word.' : 'Nothing here yet.'}</div>`)
+  const cur = DESIGNS.find((d) => d.id === state.design)
+  if (!listUI.cat) {
+    // the start: what is open now, then one tile per prop
+    if (cur) {
+      const now = document.createElement('div'); now.className = 'nowopen'
+      now.innerHTML = '<span>Open now</span>'
+      const e = { key: 'd:' + cur.id, design: cur, group: cur.group }
+      const c = designCard(e); c.classList.add('wide'); now.append(c); g.append(now)
+    }
+    const box = document.createElement('div'); box.className = 'cats'
+    const count = {}
+    for (const e of rows) if (e.design && !e.design.custom) count[catOf(e.group)] = (count[catOf(e.group)] || 0) + 1
+    const mineN = rows.filter((e) => e.group === 'Creations' || e.design?.custom).length
+    const tile = (icon, name, n, fn) => { const b = document.createElement('button'); b.className = 'cat'; b.innerHTML = `<span class="ci">${icon}</span><b>${name}</b><small>${n}</small>`; b.onclick = fn; box.append(b) }
+    for (const [key, name, icon] of CATS) if (count[key]) tile(icon, name, count[key], () => { listUI.cat = key; listUI.sub = 'all'; keepList(); renderGallery(); g.scrollTop = 0 })
+    tile('✏️', 'Your creations', mineN || 'make one', () => { listUI.filter = 'creations'; listUI.filters = true; keepList(); renderGallery() })
+    g.append(box)
+    return
   }
-  const counts = {}
-  for (const e of rows) counts[e.group] = (counts[e.group] || 0) + 1
-  let group = null, section = null
-  const secCount = {}
-  for (const e of rows) if (SECTION_OF[e.group]) secCount[SECTION_OF[e.group]] = (secCount[SECTION_OF[e.group]] || 0) + 1
-  for (const e of rows) {
-    const sec = grouped && e.group !== '__liked' ? SECTION_OF[e.group] || null : null
-    if (grouped && sec !== section) {
-      section = sec
-      if (sec) {
-        const key = 'sec:' + sec, closed = listUI.collapsed.includes(key)
-        const h = document.createElement('h3')
-        h.className = 'section'
-        h.innerHTML = `<button class="grouphead" aria-expanded="${!closed}"><span>${closed ? '📁' : '📂'} ${SECTIONS[sec]}</span><small>${secCount[sec]}</small></button>`
-        h.firstChild.onclick = () => {
-          listUI.collapsed = closed ? listUI.collapsed.filter((x) => x !== key) : [...new Set([...listUI.collapsed, key])]
-          keepList()
-          renderGallery()
-        }
-        g.append(h)
-      }
-    }
-    if (sec && listUI.collapsed.includes('sec:' + sec)) continue
-    if (grouped && e.group !== group) {
-      group = e.group
-      const closed = listUI.collapsed.includes(group)
-      const h = document.createElement('h3')
-      if (sec) h.className = 'sub'
-      h.innerHTML = `<button class="grouphead" aria-expanded="${!closed}"><span>${closed ? '▸' : '▾'} ${group === '__liked' ? '♥ Liked by me' : GROUPS[group] || group}</span><small>${counts[group]}</small></button>`
-      const name = group // the loop moves on; the click needs this heading's group
-      h.firstChild.onclick = () => {
-        listUI.collapsed = closed ? listUI.collapsed.filter((x) => x !== name) : [...new Set([...listUI.collapsed, name])]
-        keepList()
-        renderGallery()
-      }
-      g.append(h)
-    }
-    if (grouped && listUI.collapsed.includes(e.group)) continue
-    g.append(e.design ? designCard(e) : ideaCard(e))
+  // inside one prop: back, style chips, the grid
+  const name = CATS.find(([key]) => key === listUI.cat)?.[1] || ''
+  const inCat = rows.filter((e) => e.design && !e.design.custom && catOf(e.group) === listUI.cat)
+  const bar = document.createElement('div'); bar.className = 'catbar'
+  bar.innerHTML = `<button class="back">← All props</button><b>${name}</b><small>${inCat.length}</small><div class="chips subs"></div>`
+  bar.querySelector('.back').onclick = () => { listUI.cat = null; keepList(); renderGallery(); g.scrollTop = 0 }
+  const groups = [...new Set(inCat.map((e) => e.group))]
+  const subs = bar.querySelector('.subs')
+  if (!groups.includes(listUI.sub)) listUI.sub = 'all'
+  const nOf = (gname) => (gname === 'all' ? inCat.length : inCat.filter((e) => e.group === gname).length)
+  if (groups.length > 7) {
+    // lots of styles: one dropdown instead of a wall of chips
+    const sel = document.createElement('select'); sel.className = 'subsel'; sel.setAttribute('aria-label', 'Style')
+    for (const gname of ['all', ...groups]) { const o = document.createElement('option'); o.value = gname; o.textContent = `${gname === 'all' ? 'All styles' : GROUPS[gname] || gname} (${nOf(gname)})`; o.selected = listUI.sub === gname; sel.append(o) }
+    sel.onchange = () => { listUI.sub = sel.value; keepList(); renderGallery() }
+    subs.append(sel)
+  } else if (groups.length > 1) for (const gname of ['all', ...groups]) {
+    const c = document.createElement('button'); c.className = 'chip'
+    const n = gname === 'all' ? inCat.length : inCat.filter((e) => e.group === gname).length
+    c.textContent = `${gname === 'all' ? 'All' : GROUPS[gname] || gname} ${n}`
+    c.setAttribute('aria-pressed', String(listUI.sub === gname))
+    c.onclick = () => { listUI.sub = gname; keepList(); renderGallery() }
+    subs.append(c)
+  }
+  g.append(bar)
+  if (!inCat.length) return empty('Nothing here with this filter.')
+  for (const gname of listUI.sub === 'all' ? groups : [listUI.sub]) {
+    if (listUI.sub === 'all' && groups.length > 1) label(GROUPS[gname] || gname)
+    const x = grid(); for (const e of inCat.filter((r) => r.group === gname)) x.append(card(e))
   }
 }
 
@@ -1031,7 +1043,8 @@ function designCard(e) {
   b.setAttribute('aria-pressed', d.id === state.design)
   const cm = d.cnc ? matOf(cncDefaults(d)) : null
   const tag = !cm ? '' : `<span class="cutTag ${cm.kind}">⚙️ ${d.spokeHub ? 'machined metal · fire spokes' : cm.kind === 'metal' ? `CNC · ${cm.name.split(' ')[0].toLowerCase()} · fire` : `CNC · ${cm.name.split(' ')[0]} · practice`}</span>`
-  b.innerHTML = `<canvas width="128" height="128"></canvas><div><b>${d.name}</b>${tag}<small>${d.blurb.split('. ')[0].replace(/\.$/, '')}.</small></div>${heartHTML(e)}`
+  b.title = d.blurb.split('. ')[0].replace(/\.$/, '') + '.'
+  b.innerHTML = `<canvas width="128" height="128"></canvas><div><b>${d.name}</b>${tag}<small>${b.title}</small></div>${heartHTML(e)}`
   b.onclick = (ev) => {
     if (ev.target.closest('.heart')) return tapHeart(e.key)
     state.design = d.id

@@ -174,15 +174,41 @@ details > div { display: grid; gap: 10px; margin-top: 10px; }
 
 @media (max-width: 1000px) {
   .app { grid-template-columns: 1fr; grid-template-rows: auto auto 62vh auto; height: auto; }
-  .gallery { grid-auto-flow: column; grid-auto-columns: 210px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
-  .gallery h2, .gallery h3 { display: none; }
-  .listtools { position: static; grid-row: 1 / span 1; width: 210px; }
+  .gallery { max-height: 60vh; border-right: 0; border-bottom: 1px solid var(--line); }
+  .cats, .dgrid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
   .stagectl { left: 8px; right: 8px; bottom: 8px; width: auto; }
   .blurb { display: none; }
   .side { border-left: 0; overflow: visible; }
   header { flex-wrap: wrap; }
 }
 
+/* design list: search, prop tiles, thumbnail grid */
+.searchrow { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
+.filtbox { display: grid; gap: 8px; }
+.cats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.cat { display: grid; justify-items: start; gap: 2px; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; cursor: pointer; color: inherit; }
+.cat:hover, .cat:focus-visible { border-color: var(--ember); }
+.cat .ci { font-size: 20px; line-height: 1; }
+.cat b { font-size: 13px; line-height: 1.2; font-weight: 600; }
+.cat small { color: var(--muted); font: 500 11px var(--mono); }
+.catbar { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 8px; align-items: center; position: sticky; top: 52px; z-index: 1; background: var(--bg); padding: 4px 0 6px; }
+.catbar .back { all: unset; cursor: pointer; color: var(--ember); font-size: 13px; }
+.catbar b { font-size: 13px; }
+.catbar small { color: var(--muted); font: 500 11px var(--mono); }
+.catbar .subs { grid-column: 1 / -1; }
+.subs .chip { padding: 3px 8px; min-height: 26px; font-size: 12px; }
+.subsel { width: 100%; background: var(--raise); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; color: var(--fg); font-size: 13px; }
+.dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.dgrid .design { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 4px; padding: 6px 4px 8px; border: 1px solid var(--line); }
+.dgrid .design canvas { width: 76px; height: 76px; }
+.dgrid .design small, .dgrid .design .cutTag { display: none; }
+.dgrid .design b { font-size: 12px; line-height: 1.2; }
+.dgrid .design .heart { top: 2px; right: 2px; font-size: 11px; padding: 3px 5px; min-width: 0; }
+.dgrid .creation { grid-template-columns: 1fr; justify-items: center; }
+.nowopen { display: grid; gap: 4px; }
+.nowopen > span, #gallery h3.sub { font: 500 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 6px 0 0; padding: 0; }
+.nowopen .design { border: 1px solid var(--ember); }
+.nowopen .design small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 /* design list: search, filters, sort, hearts */
 .listtools { display: grid; gap: 8px; position: sticky; top: -14px; z-index: 2; background: var(--bg); padding: 6px 0 8px; margin-top: -6px; }
 .listtools input[type=search] { background: var(--raise); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; font-size: 14px; }
@@ -322,6 +348,7 @@ kbd { font: 13px var(--mono); border: 1px solid var(--line); border-radius: 5px;
     <h2>🔥 Fire spinning comes with risks</h2>
     <p>Fire spinning and flow arts come with real risks: burns, fire, injury, and damage to people and property. By making, using or performing with any prop designed here, you take part entirely <b>at your own risk</b>.</p>
     <p>These are designs and guidance, not tested or certified products. We take <b>no liability</b> for these props, for how they are made, or for how they are used. Check every prop before every burn, train with experienced spinners, and always have a safety person and fire blanket ready.</p>
+    <p>The forge works best on a computer: on a phone the 3D view and the settings are cramped.</p>
     <p>Thank you for understanding, and spin safe. 🙏</p>
     <form method="dialog"><button class="btn primary" value="ok">I understand</button></form>
   </dialog>
@@ -517,6 +544,6 @@ kbd { font: 13px var(--mono); border: 1px solid var(--line); border-radius: 5px;
   </aside>
 </div>
 <script type="module" src="./app.js"></script>
-<div class="liability" id="liabilityLine" role="button" tabindex="0">Fire spinning comes with risks: you take part at your own risk, and we take no liability for these props. Thank you for understanding.</div>
+<div class="liability" id="liabilityLine" role="button" tabindex="0">Fire spinning comes with risks: you take part at your own risk, and we take no liability for these props. Thank you for understanding. The forge works best on a computer.</div>
 </body>
 </html>
