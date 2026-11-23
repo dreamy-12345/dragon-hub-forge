@@ -38,6 +38,7 @@ export function hubLockZ(p, T) {
 /** The hub's lock parameters (Common, group Lock: off unless ticked). */
 export const LOCK_PARAMS = [
   { key: 'lockOn', label: 'Lock onto a metal dowel', check: true, value: false, group: 'Lock', rerender: true, hint: 'Optional, for hubs you never want flying off: a metal Locking Dowel goes in the pole end (Pole fittings), and the hub locks onto it. Off = the usual push-on hub.' },
+  { key: 'lockAngle', label: 'Lock screw: round the collar', unit: '°', min: -180, max: 180, step: 5, value: 0, group: 'Lock', showIf: (p) => !!p.lockOn && !(p.lockType || '').includes('bolt'), hint: 'Move the lock screw round the collar; 0 is between the first two spokes.' },
   { key: 'lockType', label: 'Lock with', options: Object.values(LOCKS), value: LOCKS.grub, group: 'Lock', showIf: (p) => !!p.lockOn, rerender: true, hint: 'Grub screw: an M5 grub screw through the collar into a groove on the dowel; a nut is trapped in the collar. Cross pin: an M5 bolt or clevis pin right through collar and dowel. End bolt: the dowel bolt goes through a big washer on the hub face.' },
 ]
 

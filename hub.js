@@ -116,7 +116,9 @@ export const COMMON_PARAMS = [
   { key: 'collarH', label: 'Collar length', unit: 'mm', min: 4, max: 60, step: 0.5, value: 26, group: 'Fit', hint: 'Longer collar keeps the disc square to the staff.' },
   { key: 'flareW', label: 'Collar flare', unit: 'mm', min: 0, max: 20, step: 0.5, value: 8, group: 'Fit', hint: 'Cone where the collar meets the web, so a hit on the rim does not snap the collar off.' },
   ...LOCK_PARAMS,
-  { key: 'screw', label: 'Set-screw pilot', unit: 'mm', min: 0, max: 5, step: 0.1, value: 0, group: 'Fit', hint: '0 = none. 3.3 for an M4 screw tapped straight into TPU.' },
+  { key: 'screw', label: 'Set-screw pilot', unit: 'mm', min: 0, max: 5, step: 0.1, value: 0, group: 'Fit', rerender: true, hint: '0 = none. 3.3 for an M4 screw tapped straight into TPU.' },
+  { key: 'screwAngle', label: 'Set screw: round the collar', unit: '°', min: 0, max: 355, step: 5, value: 0, group: 'Fit', showIf: (p) => p.screw > 0, hint: 'Turn the screw to wherever your fingers and allen key reach best. It shows as a metal screw in the view.' },
+  { key: 'screwUp', label: 'Set screw: up or down', unit: 'mm', min: -15, max: 15, step: 0.5, value: 0, group: 'Fit', showIf: (p) => p.screw > 0 },
 ]
 
 /** A bore of radius r with crush ribs bulging into it. */
@@ -669,9 +671,14 @@ export function buildHub(wasm, design, p, opts = {}) {
       }
     }
     const sz = screwZ(p, T)
+    const screws = [], screwMarks = [] // where every grub screw goes, shown as metal in the view
+    const screwMark = (r, x0, x1, z, deg) => screwMarks.push(k(k(k(k(Manifold.cylinder(x1 - x0, r, r, 16)).rotate([0, 90, 0])).translate([x0, 0, z])).rotate([0, 0, deg])))
     if (sz != null) {
-      const z = sz
-      solid = k(solid.subtract(k(k(k(Manifold.cylinder(R, p.screw / 2, p.screw / 2, 24)).rotate([0, 90, 0])).translate([0, 0, z]))))
+      const z = Math.max(T + p.screw / 2 + 1, Math.min(p.collarH - p.screw / 2 - 1, sz + (p.screwUp || 0)))
+      const a = p.screwAngle || 0
+      solid = k(solid.subtract(k(k(k(k(Manifold.cylinder(R, p.screw / 2, p.screw / 2, 24)).rotate([0, 90, 0])).translate([0, 0, z])).rotate([0, 0, a]))))
+      screws.push({ what: 'set screw', size: p.screw <= 2.6 ? 'M3' : p.screw <= 3.4 ? 'M4' : 'M5', len: Math.ceil(Math.max(6, Rc - boreR)), angle: a, z })
+      screwMark(p.screw / 2 + 0.3, boreR + 0.3, Rc - 0.8, z, a)
     }
     // optional: lock onto a metal Locking Dowel in the pole end (dowel.js)
     let lockInfo = null
@@ -682,15 +689,20 @@ export function buildHub(wasm, design, p, opts = {}) {
       if (lk !== 'bolt' && zL == null) lockWarn(`The collar is too short to lock onto the dowel: make Collar length at least ${Math.ceil(T + 10)} mm.`)
       else {
         const along = (r, len, x0, z) => k(k(k(Manifold.cylinder(len, r, r, 24)).rotate([0, 90, 0])).translate([x0, 0, z]))
-        const turn = (m) => k(m.rotate([0, 0, (g.rot * 180) / Math.PI + 90])) // between the first spokes, off the set-screw line
+        const lockA = (g.rot * 180) / Math.PI + 90 + (p.lockAngle || 0)
+        const turn = (m) => k(m.rotate([0, 0, lockA])) // between the first spokes, off the set-screw line (then wherever you turn it)
         if (lk === 'grub') {
           // M5 clearance through the collar wall, an M5 nut trapped in the wall, loaded from the collar end
           const rm = (boreR + Rc) / 2
           if (Rc - boreR < 7) lockWarn(`The collar wall is ${(Rc - boreR).toFixed(1)} mm: make Collar OD at least ${Math.ceil(2 * boreR + 14)} mm to hold the grub screw's nut.`)
           const slot = k(k(Manifold.cube([4.4, 9.6, p.collarH - zL + 4.8 + 1], false)).translate([rm - 2.2, -4.8, zL - 4.8]))
           solid = k(solid.subtract(turn(k(along(2.7, Rc + 2, boreR - 1, zL).add(slot)))))
+          screws.push({ what: 'dowel lock grub screw (M5, cup point) with an M5 nut in the slot', size: 'M5', len: Math.ceil(Rc - boreR + 2), angle: ((lockA % 360) + 360) % 360, z: zL })
+          screwMark(2.4, boreR - 1, Rc - 1, zL, lockA)
         } else if (lk === 'pin') {
           solid = k(solid.subtract(turn(along(2.75, 2 * Rc + 4, -Rc - 2, zL))))
+          screws.push({ what: 'cross pin (M5 bolt or clevis pin) right through', size: 'M5', len: Math.ceil(2 * Rc + 6), angle: ((lockA % 360) + 360) % 360, z: zL })
+          screwMark(2.4, -Rc - 3, Rc + 3, zL, lockA)
         }
         Object.assign(lockInfo, { zL, fromCollarEnd: zL == null ? null : p.collarH - zL })
       }
@@ -702,7 +714,13 @@ export function buildHub(wasm, design, p, opts = {}) {
       const real = partsList.filter((m) => m.volume() > 1)
       if (real.length < partsList.length) solid = k(Manifold.compose(real))
     }
+    // two screws turned onto each other: say so
+    if (screws.length > 1) {
+      const [s1, s2] = screws, da = Math.abs(((s1.angle - s2.angle + 540) % 360) - 180)
+      if (da < 25 && Math.abs(s1.z - s2.z) < 8) (lockInfo?.warns || []).push('The set screw and the lock screw are on top of each other: turn one of them round the collar.')
+    }
     const meshes = { combined: meshData(solid) }
+    if (screwMarks.length) meshes.screws = meshData(k(Manifold.union(screwMarks)))
     if (ring) {
       meshes.ringFlat = meshData(ring)
       meshes.ring = meshData(ringInfo.snap ? ringWorn
@@ -777,6 +795,7 @@ export function buildHub(wasm, design, p, opts = {}) {
       ring: ringInfo,
       snap: snapInfo,
       lock: lockInfo,
+      screws,
       colourChangeAt: zoneB.length ? T : null, // one-nozzle trick: swap filament at this height
       stats: {
         grams: gBody,

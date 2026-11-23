@@ -1475,7 +1475,7 @@ function show(hub, d, p, t0) {
   setGeo(lidMesh, m.lids)
   setGeo(ringMesh, m.ring)
   setGeo(snapMesh, m.snap)
-  setGeo(rodMesh, m.rods)
+  setGeo(rodMesh, m.rods || m.screws) // spokes and hardware, or a hub's grub screws
   setGeo(kevMesh, m.kevlar)
   setGeo(zoneMesh, hub.infill?.zone && hub.infill.bodyKey === 'combined' ? m.solidZone : null)
   showZone()
@@ -2085,6 +2085,7 @@ function renderVerdict(hub, p) {
     <div class="row"><span>Material</span><span>${pill(matPill, mat.name)}</span></div>
     <div class="row"><span>Fits ${bedMax} mm bed</span><span>${p.diameter <= bedMax - 2 ? pill('good', `${p.diameter} mm`) : pill('bad', `${p.diameter} mm, too big`)}</span></div>
     <div class="row"><span>Grip on Ø${p.poleOD} pole</span><span>${squeeze > 0 ? squeeze.toFixed(2) + ' mm squeeze' : pill('bad', 'loose')}</span></div>
+    ${hub.screws?.length ? `<div class="row"><span>Grub screws</span><span>${hub.screws.map((sc) => `${sc.what === 'set screw' ? `${sc.size} × ${sc.len} set screw` : sc.what}, ${Math.round(sc.angle)}° round the collar, ${sc.z.toFixed(1)} mm up`).join(' · ')}: shown in metal in the view. Move them with the sliders under Pole size and fit${hub.lock ? ' and Lock' : ''}.</span></div>` : ''}
     ${hub.lock ? `<div class="row"><span>Locks onto a dowel</span><span>${hub.lock.name}${hub.lock.fromCollarEnd != null ? ` · set the dowel's Stub to ${p.collarH} mm and Lock from the flange to ${hub.lock.fromCollarEnd.toFixed(1)} mm` : hub.lock.type === 'bolt' ? ` · set the dowel's Stub to ${p.collarH} mm` : ''}. Fit it with the flat face out, collar end on the dowel's flange.</span></div>${hub.lock.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}` : ''}
     ${p.screw > 0 ? insertTip('The set screw presses on the pole.') : ''}
     ${caps ? `<div class="row"><span>Lantern height</span><span>${hub.podH.toFixed(1)} mm</span></div>` : ''}
