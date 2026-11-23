@@ -12,6 +12,7 @@
  * g = { R, Ri, Rc, hubR, w, rimW, rot, cap: { L, D } }; p = all params.
  */
 
+import { tinyDesigns } from './tiny.js'
 import { JUNCTIONS, EDGES, RING_RADII } from './dome.js'
 import { DOGS_DESIGNS } from './designs-dogs.js'
 import { VEINS_DESIGNS } from './designs-veins.js'
@@ -3329,6 +3330,8 @@ DESIGNS.push(...tubeSwordDesigns(), ...tubeAxeDesigns(), ...tubeMaceDesigns(), .
 DESIGNS.push(...fistDesigns(), ...hiltDesigns(), ...cageDesigns())
 // Aotearoa New Zealand plants and birds, and a brown beer can
 DESIGNS.push(...nzDesigns(), ...canDesigns(), ...shroomDesigns())
+// tiny props (tiny copies of the designs above, at a small scale) and tiny juggling clubs: keep this last
+DESIGNS.push(...tinyDesigns(DESIGNS))
 
 const polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)]
 

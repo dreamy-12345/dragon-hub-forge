@@ -75,6 +75,19 @@ self.onmessage = async ({ data }) => {
         : buildPlate(wasm, buildHub(wasm, d, { ...data.params, ring: 'off', snap: 'off' }), data.params, c)
     } else if (op === 'fit') result = buildFitTest(wasm, data.params)
     else if (op === 'captest') result = buildCapsuleTest(wasm, data.params)
+    // Scale (tiny props, or bigger): everything shrinks or grows together before the finish, lights and infill go on
+    if (op === 'build' && data.scale && data.scale !== 1 && result) {
+      const s = data.scale
+      for (const md of Object.values(result.meshes || {})) if (md?.positions) for (let i = 0; i < md.positions.length; i++) md.positions[i] *= s
+      for (const key of ['grams', 'gramsTotal', 'gShot', 'gramsSolid']) if (result.stats?.[key]) result.stats[key] *= s ** 3
+      if (result.stats?.height) result.stats.height *= s
+      if (result.viewR) result.viewR *= s
+      const sp = (polys) => polys?.map((poly) => poly.map(([x, y]) => [x * s, y * s]))
+      if (result.polygons) for (const key of Object.keys(result.polygons)) result.polygons[key] = sp(result.polygons[key])
+      if (result.podH) result.podH *= s
+      for (const an of result.anim || []) if (an.dir) an.dir = an.dir.map((v) => v * s)
+      result.scale = s
+    }
     if ((op === 'build' || op === 'cnc') && data.finish && result) result = applyFinish(wasm, result, data.finish)
     if (op === 'build' && data.lights && result) result = applyLights(wasm, result, data.lights)
     if (op === 'build' && data.infill && result) result = applyInfill(wasm, result, data.infill)

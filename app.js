@@ -26,7 +26,7 @@ const GLOWS = [
   ['Pink', '#ff3d7f'], ['Red', '#ff2a2a'], ['Amber', '#ffae2a'], ['Lime', '#b9ff5c'],
   ['Cyan', '#3fe0ff'], ['Blue', '#3b5bff'], ['Violet', '#a64dff'], ['White', '#fff4e6'],
 ]
-const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', CageStaff: 'Ringed fire staff ends', BubbleHubs: 'Bubble spinners', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
+const GROUPS = { Creations: 'Your creations', Adaptors: 'Pole adaptors', Glow: 'Glowing lanterns', Spin: 'Made for spinning', Creatures: 'Creatures', Organic: 'Organic', Classics: 'Classics', Claude: "Claude's own", Earth: 'Earth fractals', 'Fractal creatures': 'Fractal creatures', Thai: 'Myths and patterns', Fire: '⚙️ CNC cut: metal and fire', SpokeHubs: '⚙️ Machined metal: fire spoke hubs', PracticeSpokes: 'Practice spokes (fit the spoke hubs)', TinyJuggle: 'Tiny juggling clubs', TinyHubs: 'Tiny dragon staff hubs', TinyDarts: 'Tiny rope darts', TinyPoi: 'Tiny poi', TinyContact: 'Tiny contact ends', TinyAcro: 'Tiny acro ends', TinyAxes: 'Tiny axes', TinyBubbles: 'Tiny bubble toys', CageStaff: 'Ringed fire staff ends', BubbleHubs: 'Bubble spinners', Sleeves: 'Pole inserts (stop clamps crushing the pole)', Dowels: '⚙️ Locking dowels: lock a hub on the pole end', Grips: 'Hub to pole grips (no crushing)', Collapsible: 'Collapsible staff joints', Contact: 'Balls and fun ends', Axes: 'Battle axes (with counterweights)', Acro: 'Acro staff ends (printed, weighted)', FistContact: "Monkey's fist ends", MeteorCages: '⚙️ Meteor cages (metal bands, Kevlar)', CagePoi: '⚙️ Ringed fire poi', Aotearoa: 'Aotearoa New Zealand', Cans: 'Beer can', Mushrooms: 'Mushrooms', Eyes: 'Eyeball balls', FistRope: "Monkey's fist heads", FistPoi: "Monkey's fist poi", PineContact: 'Pine cone staff ends', DartPine: 'Pine cones', PineCones: 'Pine cones', AcroMetal: '⚙️ Acro staff ends: turned metal', MouldAcro: 'Acro end moulds', DartClassic: 'Classic', DartModern: 'Modern', DartRound: 'Round', DartPattern: 'Detailed patterns', DartNature: 'Nature and fun', Poi: 'Poi heads', MouldContact: 'Contact ball moulds', MouldDart: 'Rope dart moulds', MouldPoi: 'Poi moulds', Hoops: 'Hoops: cut lengths and connectors', HoopJoints: 'Push-button and pin joints', Swords: '⚙️ CNC cut: fire contact swords', TubeSwords: '⚙️ Tube fire swords (hilt connector on your pole)', TubeAxes: '⚙️ Tube fire axes (Viking and anime)', BubblePoi: 'Bubble poi', SparkDragon: 'For dragon staffs (spoke tips)', SparkRope: 'For rope darts', SparkStaff: 'For staff ends', Dreamscape: 'Dreamscape', Dogs: 'Dogs', LoyalDog: 'The loyal dog', Signature: 'Signature', Melt: 'Melted' }
 
 // ------------------------------------------------------------------ state --
 const saved = (() => {
@@ -67,6 +67,8 @@ state.infill = saved.infill && typeof saved.infill === 'object' ? saved.infill :
 // gloving-light pockets per design
 state.lights = saved.lights && typeof saved.lights === 'object' ? saved.lights : {}
 state.units = ['mm', 'in', 'banana'].includes(saved.units) ? saved.units : 'mm'
+// scale per design (tiny props start small)
+state.scale = saved.scale && typeof saved.scale === 'object' ? saved.scale : {}
 // How it is made: 3D print (everything above) or CNC cut. CNC settings are per design
 // and live apart from the print settings, so switching never changes a print design.
 state.mode = saved.mode === 'cnc' ? 'cnc' : 'print'
@@ -74,7 +76,7 @@ state.cncp = {}
 for (const d of DESIGNS) state.cncp[d.id] = { ...cncDefaults(d), ...(saved.cncp?.[d.id] || {}) }
 const isCnc = () => state.mode === 'cnc'
 const cncOnly = (d) => !!d.cncOnly // fire swords: metal, cut on a CNC, never printed
-const printOnly = (d) => !!(d.bubbleHub || d.fist || (d.acro && !d.acroMetal) || d.bubblePoi || d.hoop || d.mould || d.adaptor || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.grip) // always 3D printed, in either mode
+const printOnly = (d) => !!(d.club || d.bubbleHub || d.fist || (d.acro && !d.acroMetal) || d.bubblePoi || d.hoop || d.mould || d.adaptor || d.ballEnd || d.sleeve || d.practiceSpoke || d.novelty || d.grip) // always 3D printed, in either mode
 const cncp = () => state.cncp[state.design]
 const design = () => DESIGNS.find((d) => d.id === state.design)
 const params = () => state.params[state.design]
@@ -693,6 +695,11 @@ function renderParams() {
     }
     cp.append(det)
   }
+  if (!(isCnc() && !printOnly(d)) && !d.cncOnly) {
+    // Scale: everything together, from tiny props to bigger than life
+    const sc = control({ key: 'scale', label: 'Scale', unit: '%', min: 5, max: 200, step: 1, presets: [25, 50, 100, 150], hint: 'Shrinks or grows the whole design together: tiny props, keyrings, desk toys. Screws, nuts and pole sizes shrink too: at tiny sizes use push-fits and glue, and fit a tiny hub on a rod the size the panel shows.' }, () => Math.round(scaleOf(d.id) * 100), (v) => { state.scale[d.id] = v / 100; persist(); schedule(150) })
+    cp.prepend(sc)
+  }
   if (!d.custom) cp.append(finishPanel(d))
   if (!d.custom && !d.cncOnly && !(isCnc() && !printOnly(d))) cp.append(infillPanel(d))
   if ((lightsOK(d) || capsuleOK(d)) && !(isCnc() && !printOnly(d))) cp.append(lightsPanel(d))
@@ -1132,9 +1139,9 @@ if (!listUI.folders) {
 }
 
 // the browser: prop tiles first, then one prop's designs as a thumbnail grid with style chips
-const CATS = [['hubs', 'Dragon staff hubs', '🐉'], ['bubbles', 'Bubble toys', '🫧'], ['rope', 'Rope darts and meteors', '🪢'], ['poi', 'Poi', '🌀'], ['contact', 'Contact staff ends', '⚪'], ['acro', 'Acro staff ends', '🤸'], ['hoops', 'Hoops', '⭕'], ['fire', 'Swords, axes and fire metal', '🔥'], ['moulds', 'Rubber moulds', '🧪'], ['fittings', 'Pole fittings', '🔩']]
+const CATS = [['hubs', 'Dragon staff hubs', '🐉'], ['tiny', 'Tiny props', '🔹'], ['bubbles', 'Bubble toys', '🫧'], ['rope', 'Rope darts and meteors', '🪢'], ['poi', 'Poi', '🌀'], ['contact', 'Contact staff ends', '⚪'], ['acro', 'Acro staff ends', '🤸'], ['hoops', 'Hoops', '⭕'], ['fire', 'Swords, axes and fire metal', '🔥'], ['moulds', 'Rubber moulds', '🧪'], ['fittings', 'Pole fittings', '🔩']]
 const BUBBLE_GROUPS = ['BubblePoi', 'BubbleHubs']
-const catOf = (g) => { if (BUBBLE_GROUPS.includes(g)) return 'bubbles'; const x = SECTION_OF[g]; return x === 'collapse' ? 'hoops' : x === 'sparks' ? 'fire' : x }
+const catOf = (g) => { if (String(g).startsWith('Tiny')) return 'tiny'; if (BUBBLE_GROUPS.includes(g)) return 'bubbles'; const x = SECTION_OF[g]; return x === 'collapse' ? 'hoops' : x === 'sparks' ? 'fire' : x }
 const METAL_HUB_GROUPS = ['Fire', 'SpokeHubs', 'PracticeSpokes']
 const inCatOf = (e, cat) => catOf(e.group) === cat || !!e.design?.alsoIn?.includes(cat) || (cat === 'hubs' && METAL_HUB_GROUPS.includes(e.group))
 function renderGallery() {
@@ -1341,8 +1348,9 @@ const finishPayload = (id) => { const f = state.finish[id]; return f && f.kind !
 const infOf = (id) => (state.infill[id] = { ...INFILL0, ...(state.infill[id] || {}) })
 const litOf = (id) => (state.lights[id] = { ...LIGHTS0, ...(state.lights[id] || {}) })
 const lightsPayload = (id) => { const L = state.lights[id]; return L && L.on && L.spots?.length ? { ...LIGHTS0, ...L } : null }
+const scaleOf = (id) => state.scale[id] ?? DESIGNS.find((x) => x.id === id)?.tiny ?? 1
 const infillPayload = (id) => { const f = state.infill[id]; return f && f.fill < 100 ? { ...INFILL0, ...f } : null }
-const keyOf = (id, p, mode = 'print') => { const f = finishPayload(id); return JSON.stringify([id, p, state.material, state.bed, mode === 'cnc' ? state.cncp[id] : 0, f ? { ...f, loops: f.sig } : 0, mode === 'cnc' ? 0 : infillPayload(id), mode === 'cnc' ? 0 : lightsPayload(id)]) }
+const keyOf = (id, p, mode = 'print') => { const f = finishPayload(id); return JSON.stringify([id, p, state.material, state.bed, mode === 'cnc' ? state.cncp[id] : 0, f ? { ...f, loops: f.sig } : 0, mode === 'cnc' ? 0 : infillPayload(id), mode === 'cnc' ? 0 : lightsPayload(id), mode === 'cnc' ? 1 : scaleOf(id)]) }
 function remember(k, hub) {
   cache.delete(k)
   cache.set(k, hub)
@@ -1439,7 +1447,7 @@ async function rebuild() {
   try {
     hub = cncNow
       ? await work('cnc', { design: d.id, params: p, cnc: { ...cncp() }, finish: finishPayload(d.id) })
-      : await work('build', { design: d.id, params: p, material: state.material, bed: Number(state.bed), finish: finishPayload(d.id), infill: infillPayload(d.id), lights: lightsOK(d) ? lightsPayload(d.id) : null })
+      : await work('build', { design: d.id, params: p, material: state.material, bed: Number(state.bed), finish: finishPayload(d.id), infill: infillPayload(d.id), lights: lightsOK(d) ? lightsPayload(d.id) : null, scale: scaleOf(d.id) })
     remember(k, hub)
   } catch (e) {
     inflight = false
@@ -1486,7 +1494,7 @@ function show(hub, d, p, t0) {
   drawHalo(hub, p)
   infillReadout()
   // no staff through things held by a hilt, or ends that sit on the pole's tip
-  const noPole = !!(hub.bubbleHub?.end || hub.cageBall || hub.hilt || hub.fist || hub.sword || hub.tsword || hub.taxe || hub.acro || hub.dowel || hub.bubblePoi || hub.hoop || hub.mould || hub.ball || hub.novelty || hub.dart || hub.cage || hub.sleeve || hub.practiceSpoke || hub.grip)
+  const noPole = !!(hub.club || hub.scale < 0.9 || hub.bubbleHub?.end || hub.cageBall || hub.hilt || hub.fist || hub.sword || hub.tsword || hub.taxe || hub.acro || hub.dowel || hub.bubblePoi || hub.hoop || hub.mould || hub.ball || hub.novelty || hub.dart || hub.cage || hub.sleeve || hub.practiceSpoke || hub.grip)
   $('vPole').hidden = noPole
   // swords, poi and rope darts are not spun on a staff: no spin controls
   const noSpin = !!(hub.sword || hub.tsword || hub.dart || hub.bubblePoi)
@@ -1506,6 +1514,7 @@ function show(hub, d, p, t0) {
   applyLook()
   renderGuide()
   renderVerdict(hub, p)
+  if (hub.scale && hub.scale !== 1 && !hub.club) $('verdict').insertAdjacentHTML('afterbegin', `<div class="warnline">Scaled to ${Math.round(hub.scale * 100)}%: the weight and the files are at this size; sizes written below are full size, so multiply them by ${hub.scale}.${hub.scale < 0.5 ? ' Screws and nuts this small: use push-fits and a drop of glue instead.' : ''}</div>`)
   renderExports()
   if (hub.finishNote) $('exportNote').insertAdjacentHTML('beforeend', `<div class="hint">✨ ${hub.finishNote}</div>`)
   $('busy').hidden = true
@@ -2026,6 +2035,15 @@ function renderVerdict(hub, p) {
   if (hub.hoop) return renderHoopVerdict(hub, p, mat)
   if (hub.bubblePoi) return renderBubblePoiVerdict(hub, p, mat)
   if (hub.bubbleHub) return renderBubbleHubVerdict(hub, p, mat)
+  if (hub.club) {
+    const c = hub.club, s = hub.stats
+    $('verdict').innerHTML = `<div class="big">${s.grams.toFixed(0)} g<small>one club in ${mat.name} · ${(s.grams * 3).toFixed(0)} g for a set of three</small></div>
+      <div class="row"><span>Size</span><span>${(c.L * (hub.scale || 1)).toFixed(0)} mm long · Ø${(2 * c.R * (hub.scale || 1)).toFixed(0)} body</span></div>
+      <div class="row"><span>Prints</span><span>standing on its body as shown, no supports${c.stripes.length ? ` · change colour at ${c.stripes.map((z) => (z * (hub.scale || 1)).toFixed(1)).join(', ')} mm for stripes` : ''}</span></div>
+      <div class="row"><span>Juggling</span><span>print three, the same colour or one of each; PETG or PLA is crisp, TPU is kind when you drop them</span></div>
+      ${s.warns.map((w) => `<div class="warnline">${w}</div>`).join('')}`
+    return
+  }
   if (hub.cnc) return renderCncVerdict(hub, p)
   if (hub.spoke) return renderSpokeVerdict(hub, p)
   if (hub.ball) return renderBallVerdict(hub, p, mat)
@@ -2262,6 +2280,11 @@ function renderExports0() {
       ...(v?.insertNames || []).map((n) => [`${n[0].toUpperCase() + n.slice(1)} insert STL${n === 'guard' ? ' (print 2)' : ''}`, '', () => download(toSTL(m[`ins_${n}`], `${d.name} ${n} insert`), `${nm}-${n}-insert.stl`), !m]),
     ])
     $('exportNote').innerHTML = 'Print the block in PETG or nylon at 100% infill, lying on its side; print the inserts standing on their collars. This printed block is for practice and LED swords: for fire, switch to CNC and have the block (and the inserts) machined in aluminium.'
+    return
+  }
+  if (d.club) {
+    exportButtons([['Club STL (print 3)', 'primary', () => download(toSTL(m.printFlat, d.name), `${d.id}-${Math.round(params().clubL * scaleOf(d.id))}mm.stl`), !m?.printFlat]])
+    $('exportNote').innerHTML = 'Print three, standing on their bodies as they come, 0.16 mm layers, 3 walls, 30% infill (100% for heavier clubs). Pause or change filament at the stripe heights for stripes.'
     return
   }
   if (d.bubbleHub) {
